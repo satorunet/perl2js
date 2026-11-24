@@ -224,7 +224,7 @@ function braceKind(T, i) {
   if (p.t === 'op') {
     if (p.v === '->') return 'sub';
     if ((p.v === ']' || (p.v === '}' && p.kind === 'sub')) && !t.sp) return 'sub';
-    if (p.v === '{' && p.kind === 'fn') return 'obj';
+    if (p.v === '{' && (p.kind === 'fn' || p.kind === 'deref')) return 'obj';
     if (OBJPREV.has(p.v)) return 'obj';
     return 'block';
   }
@@ -282,17 +282,18 @@ function rewriteMods(T) {
     if (t.t === 'op') {
       const v = t.v;
       if (v === '(' || v === '[' || v === '{') {
-        stk.push({ start, startDepth });
-        if (v === '{' && t.kind === 'block') { start = i + 1; startDepth = stk.length; }
+        // a `do {}` / `eval {}` / `sub {}` block is an expression: a following `while`/`until`/`if` is still a modifier of the whole statement
+        stk.push({ start, startDepth, ex: v === '{' && t.kind === 'block' && !!T[i - 1] && T[i - 1].t === 'id' && (T[i - 1].v === 'do' || T[i - 1].v === 'eval' || T[i - 1].v === 'sub') });
+        if (v === '{' && t.kind === 'block') { start = i + 1; startDepth = stk.length; }      // statements inside the block start here
       } else if (v === ')' || v === ']' || v === '}') {
         const e = stk.pop();
         if (!e) continue;
         start = e.start; startDepth = e.startDepth;
-        if (v === '}' && t.kind === 'block') { start = i + 1; startDepth = stk.length; }
+        if (v === '}' && t.kind === 'block' && !e.ex) { start = i + 1; startDepth = stk.length; }
       } else if (v === ';' && stk.length === startDepth) start = i + 1;
       continue;
     }
-    if (t.t === 'id' && MODS.has(t.v) && i > start && stk.length === startDepth) {
+    if (t.t === 'id' && MODS.has(t.v) && !t.dwTail && i > start && stk.length === startDepth) {
       let d = 0, j = i + 1;
       for (; j < T.length; j++) {
         const u = T[j];
@@ -302,6 +303,12 @@ function rewriteMods(T) {
         else if (u.v === ';' && d === 0) break;
       }
       const stmt = T.slice(start, i), cond = T.slice(i + 1, j);
+      if ((t.v === 'while' || t.v === 'until') && stmt.length > 2 && stmt[0].t === 'id' && stmt[0].v === 'do' && stmt[1].t === 'op' && stmt[1].v === '{' && matching(stmt, 1) === stmt.length - 1) {
+        const dw = Object.assign({}, stmt[0], { dw: true, ir: true });
+        const tail = tok.id(t.v); tail.dwTail = true;        // already handled: do not treat this `while` as a modifier again
+        T.splice(start, j - start, dw, ...stmt.slice(1), tail, tok.op('('), ...cond, tok.op(')'));
+        return true;
+      }
       const kw = t.v === 'for' ? 'foreach' : t.v;
       T.splice(start, j - start, tok.id(kw), tok.op('('), ...cond, tok.op(')'), tok.op('{'), ...stmt, tok.op('}'));
       return true;
@@ -479,6 +486,26 @@ function rewriteFnBlocks(T) {
   return false;
 }
 
+function rewriteCopyAssign(T) {
+  for (let i = 0; i < T.length; i++) {
+    const t = T[i];
+    if (!(t.t === 'op' && t.v === '(')) continue;
+    const prev = T[i - 1];
+    if (prev && !(prev.t === 'op' && (prev.v === ';' || prev.v === '{' || prev.v === '}'))) continue;      // statement start only
+    let k = i + 1;
+    const decl = T[k] && T[k].t === 'id' && (T[k].v === 'my' || T[k].v === 'our' || T[k].v === 'local') ? T[k++] : null;
+    const v = T[k];
+    if (!(v && v.t === 'var' && v.sig === '$' && !v.elem && T[k + 1] && T[k + 1].t === 'op' && T[k + 1].v === '=')) continue;
+    const e = matching(T, i);
+    if (e < 0 || !(T[e + 1] && T[e + 1].t === 'op' && T[e + 1].v === '=~' && T[e + 2] && (T[e + 2].t === 'subst' || T[e + 2].t === 'trans'))) continue;
+    const expr = T.slice(k + 2, e);
+    const copy = Object.assign({}, v, { elem: null, sp: true });
+    T.splice(i, e - i + 1, ...(decl ? [decl] : []), Object.assign({}, v), tok.op('='), ...expr, tok.op(';'), copy);
+    return true;
+  }
+  return false;
+}
+
 // our @ISA = ('Base');  ==>  use parent -norequire, ('Base');
 function rewriteISA(T) {
   for (let i = 0; i < T.length; i++) {
@@ -524,7 +551,7 @@ function rewriteHashList(T) {
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -684,7 +711,7 @@ function interp(raw) {
         if (c === '$') {
           for (;;) {
             const ch = sub[j];
-            if (ch === '[' && /^\[(-?\d+|\$\w+|[^\]]*\$\w+[^\]]*)\]/.test(sub.slice(j))) {
+            if (ch === '[' && /^\[(-?\d+|\$#?\w+|[^\]]*\$#?\w+[^\]]*)\]/.test(sub.slice(j))) {
               const e = matchBraceStr(sub, j); expr += sub.slice(j, e + 1); j = e + 1;
             } else if (ch === '{') {
               const e = matchBraceStr(sub, j); expr += sub.slice(j, e + 1); j = e + 1;
@@ -969,12 +996,14 @@ function translate(T, opts) {
         // operators spelled as words
         if (valueEnd(prev) && v === 'x') { flush(UNARY_ONLY); emit(' .$x('); pendOne = true; break; }
         switch (v) {
-          case 'eq': flush(UNARY_ONLY); emit(' === '); break;
-          case 'ne': flush(UNARY_ONLY); emit(' !== '); break;
-          case 'lt': flush(UNARY_ONLY); emit(' < '); break;
-          case 'gt': flush(UNARY_ONLY); emit(' > '); break;
-          case 'le': flush(UNARY_ONLY); emit(' <= '); break;
-          case 'ge': flush(UNARY_ONLY); emit(' >= '); break;
+          case 'eq': case 'ne': case 'lt': case 'gt': case 'le': case 'ge': {
+            flush(UNARY_ONLY);
+            if (prev && prev.t === 'var' && prev.sig === '$' && !prev.elem && out[out.length - 1] === vname(prev)) out[out.length - 1] = '_s(' + out[out.length - 1] + ')';
+            else if (prev && prev.t === 'num' && out[out.length - 1] === prev.v.replace(/_/g, '')) out[out.length - 1] = '_s(' + out[out.length - 1] + ')';
+            emit(' ' + { eq: '==', ne: '!=', lt: '<', gt: '>', le: '<=', ge: '>=' }[v] + ' _s(');
+            st.push({ k: 'unary', close: ')', callee: '_s' });
+            break;
+          }
           case 'cmp': flush(UNARY_ONLY); emit(' .$scmp('); pendOne = true; break;
           case 'and': flush(PEND); emit(' && '); break;
           case 'or': flush(PEND); emit(' || '); break;
@@ -1094,6 +1123,7 @@ function translate(T, opts) {
             break;
           }
           case 'do': case 'eval': {
+            if (t.dw && isOp(next, '{')) { emit('do '); break; }          // do { ... } while (...)
             if (isOp(next, '{')) { emit(v === 'do' ? '(() => ' : 'eval_(() => '); T[i + 1].after = v === 'do' ? ')()' : ')'; }
             else emit(v + ' ');
             break;
@@ -1147,7 +1177,7 @@ function translate(T, opts) {
             const e = top();
             if (e && e.k === 'exprfn') {
               st.pop(); emit(e.close + ', ');
-              st.push({ k: 'call', close: ')', callee: e.callee, argc: 1 });
+              st.push({ k: 'call', close: e.inParen ? '' : ')', callee: e.callee, argc: 1 });
             } else {
               if (e && e.argc !== undefined) e.argc++;
               emit(', ');
@@ -1290,11 +1320,17 @@ function translate(T, opts) {
           case '\\': break;
           case '++': case '--': emit(v); break;
           case '-': case '+':
-            if (valueEnd(prev)) { flush(UNARY_ONLY); emit(' ' + v + ' '); } else emit(v);
+            if (valueEnd(prev)) {
+              flush(UNARY_ONLY);
+              if (v === '+') { emit(' - -('); st.push({ k: 'unary', close: ')', callee: '_n' }); }      // "3" + "4" is 7 in Perl, "34" in JS: a - -(b) adds as numbers
+              else emit(' ' + v + ' ');
+            } else emit(v);
             break;
+          case '+=': flush(UNARY_ONLY); emit(' -= - ('); st.push({ k: 'call', close: ')', callee: '_n', argc: 0 }); break;
           default:
             if (UFLUSH.has(v)) flush(UNARY_ONLY);
-            emit(' ' + v + ' ');
+            if (v === '<' || v === '>' || v === '<=' || v === '>=' || v === '==' || v === '!=') emit(' ' + v + ' + ');    // right side coerced to a number
+            else emit(' ' + v + ' ');
         }
         break;
       }
@@ -1347,6 +1383,14 @@ function translate(T, opts) {
       condNext = false;
       if (negNext) { negNext = false; emit('(!('); st.push({ k: 'paren', close: '))', cond: true }); }
       else { emit('('); st.push({ k: 'paren', close: ')', cond: true }); }
+      return;
+    }
+    // sort(LIST) / map(EXPR, LIST) / grep(EXPR, LIST) with parentheses
+    if (prev && prev.t === 'id' && (prev.v === 'sort' || prev.v === 'map' || prev.v === 'grep') && !isOp(T[i - 2], '->') && !isOp(next, '{') && !CUR.imports.has(prev.v)) {
+      if (prev.v === 'sort') { emit('(null, '); st.push({ k: 'paren', close: ')', call: true, callee: 'sort', argc: 1 }); return; }
+      emit('(($_) => ' + (prev.v === 'map' ? '[' : '('));
+      st.push({ k: 'paren', close: ')', call: true, callee: prev.v, argc: 0 });
+      st.push({ k: 'exprfn', close: prev.v === 'map' ? ']' : ')', callee: prev.v, inParen: true });
       return;
     }
     // callable

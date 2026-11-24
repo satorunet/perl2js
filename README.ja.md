@@ -17,7 +17,7 @@
 HTMLに貼るだけです。`print` の出力は `<pre id="output">` に書き込まれます(ページに無ければ自動で作ります)。
 
 ```html
-<script src="perl2js.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js"></script>
 <script type="text/perl2js">
   use strict;
   use warnings;
@@ -53,6 +53,8 @@ year 2026, month 11, day 24
 ### ページを操作する(jQuery風)
 
 ```html
+<script src="https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js"></script>
+<button id="hello">click me</button> <span id="hello-n"></span>
 <script type="text/perl2js">
   my $n = 0;
   $("#hello")->on("click", sub {
@@ -67,7 +69,8 @@ year 2026, month 11, day 24
 - 外部ファイル: `<script type="text/perl2js" src="app.p2j"></script>`(拡張子は何でも構いません。`require "lib/util.p2j";` で別ファイルも取り込めます)
 - JavaScriptから: `Perl2JS.run('print "hi\n"')`、`await Perl2JS.runAsync(src)`、`Perl2JS.compile(src)`(生成されたJSを返します)
 - Node.js: `const Perl2JS = require('./perl2js.js'); Perl2JS.run(src);`
-- `perl2js.js` と `modules/` フォルダを同じ場所に置いてください(場所は `Perl2JS.libPath = "/path/"` で変更できます)。
+- 自分のサーバーに置く場合: `perl2js.js`(またはミニファイ版)と `modules/` フォルダを並べて置きます。`use` は、スクリプトの隣の `modules/` を探します(場所は `Perl2JS.libPath = "/path/"` で変更できます)。
+- 上のCDNの例は `main` の最新を指します。本番では、リリースのタグを指定してください(例: `perl2js@v0.1.0/perl2js.min.js`)。jsDelivr は `.min.js` を指定すると、自動でミニファイしてくれます。
 - モダンブラウザ(ES2021)が必要です。
 
 ## モジュールは必要な時だけ読み込まれます

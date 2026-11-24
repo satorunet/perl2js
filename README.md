@@ -17,7 +17,7 @@ Write `my $x`, `@list`, `%hash`, `->{}`, `=~ s///`, `sub`, `package`/`bless`, he
 Drop this into any HTML page. `print` writes into `<pre id="output">` (created automatically if the page has none).
 
 ```html
-<script src="perl2js.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js"></script>
 <script type="text/perl2js">
   use strict;
   use warnings;
@@ -53,6 +53,8 @@ year 2026, month 11, day 24
 ### Talk to the page (jQuery-style)
 
 ```html
+<script src="https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js"></script>
+<button id="hello">click me</button> <span id="hello-n"></span>
 <script type="text/perl2js">
   my $n = 0;
   $("#hello")->on("click", sub {
@@ -67,7 +69,8 @@ year 2026, month 11, day 24
 - External files: `<script type="text/perl2js" src="app.p2j"></script>` (any extension works; `require "lib/util.p2j";` pulls in other files)
 - From JavaScript: `Perl2JS.run('print "hi\n"')`, `await Perl2JS.runAsync(src)`, `Perl2JS.compile(src)` (returns the generated JS)
 - Node.js: `const Perl2JS = require('./perl2js.js'); Perl2JS.run(src);`
-- Put `perl2js.js` and the `modules/` folder together (override with `Perl2JS.libPath = "/path/"`).
+- Self-hosting: copy `perl2js.js` (or a minified build) and the `modules/` folder side by side; `use` finds the modules next to the script (override with `Perl2JS.libPath = "/path/"`).
+- The CDN snippet above follows `main`; for production pin a release tag, e.g. `perl2js@v0.1.0/perl2js.min.js`. jsDelivr minifies automatically when you ask for `.min.js`.
 - Needs a modern browser (ES2021).
 
 ## Modules are loaded on demand
