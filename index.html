@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl構文の言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124q" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124q">
+<link rel="icon" href="assets/icon.svg?v=20261124r" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124r">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124q">
+<meta property="og:image" content="assets/social-preview.png?v=20261124r">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -101,6 +101,15 @@
   table.libs td:nth-child(3), table.libs th:nth-child(3) { width: 3.2em; text-align: center; white-space: nowrap; }
   table.libs td:nth-child(2) { width: 16em; }
   p.note { color: var(--mut); font-size: 13px; margin: 6px 0 0; }
+  .quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 22px 0 6px; }
+  .quick a { display: block; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--fg); text-decoration: none; }
+  .quick a:hover { border-color: var(--acc); }
+  .quick b { display: block; font-size: 14.5px; color: var(--acc); }
+  .quick span { font-size: 12.5px; color: var(--mut); }
+  details.more { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 0 14px; }
+  details.more > summary { cursor: pointer; padding: 11px 0; font-weight: 600; color: var(--mut); }
+  details.more[open] > summary { color: var(--fg); border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  details.more > :last-child { margin-bottom: 14px; }
   .why { margin: 4px 0 20px; }
   .why h2 { font-size: 18px; margin: 0 0 4px; }
   .why .big { font-size: 17px; margin: 0 0 12px; }
@@ -116,7 +125,7 @@
 <main>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124q"><img src="assets/logo-light.svg?v=20261124q" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124r"><img src="assets/logo-light.svg?v=20261124r" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <section class="why" aria-labelledby="why-h">
@@ -179,6 +188,15 @@
     </div>
   </div>
 
+  <nav class="quick" aria-label="詳しい情報">
+    <a href="docs/syntax.ja.html"><b>対応している構文</b><span>Perl の書き方と例</span></a>
+    <a href="docs/functions.ja.html"><b>組み込み関数</b><span>使える・使えない一覧</span></a>
+    <a href="docs/modules.ja.html"><b>モジュール</b><span>List::Util・JSON::PP ほか</span></a>
+    <a href="docs/cpan.ja.html"><b>人気の CPAN</b><span>対応状況の表</span></a>
+    <a href="docs/writing-modules.ja.html"><b>モジュールを作る</b><span>自分で追加できます</span></a>
+    <a href="docs/differences.ja.html"><b>Perl との違い</b><span>できないこと</span></a>
+  </nav>
+
   <section class="doc">
     <h2>HTMLに直接書く</h2>
     <pre style="height:auto">&lt;script src="https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js"&gt;&lt;/script&gt;
@@ -195,7 +213,7 @@
       <span id="hello-n"></span>
     </div>
 
-    <h2 style="margin-top:28px">対応している構文</h2>
+    <details class="more"><summary>対応している構文の表</summary>
     <table>
       <tr><th>Perl構文</th><th>変換先</th></tr>
       <tr><td><code>my $x</code> <code>my @a</code> <code>my %h</code> <code>local</code></td><td><code>let</code> + 変数名にシジルを保持。<code>local</code> はブロックを抜けると(<code>die</code> で抜けても)元の値に戻る</td></tr>
@@ -213,10 +231,11 @@
       <tr><td><code>￥n</code> <code>￥t</code></td><td>全角の <code>￥</code>/<code>¥</code> は <code>\</code> として扱います</td></tr>
     </table>
     <p style="color:var(--mut);font-size:13px">未対応: <code>AUTOLOAD</code>/<code>DESTROY</code>、<code>use overload</code>、ファイルI/O、<code>wantarray</code>、リスト/スカラーコンテキストの完全な区別 など。数値の足し算は JS の <code>+</code> なので、文字列の数値は <code>num($x)</code> で変換してください。</p>
+    </details>
   </section>
 
   <section class="doc" id="libs">
-    <h2>Perl人気モジュールの対応状況</h2>
+    <details class="more"><summary>Perl人気モジュールの対応状況・自分でモジュールを作る</summary>
     <p style="color:var(--mut);margin:0 0 6px">よく使われる順の目安です(公式のランキングではありません)。
       <span class="ok">○ 対応</span> / <span class="part">△ 一部</span> / <span class="todo">… 未対応(予定)</span> / <span class="na">✕ ブラウザでは対象外</span>。</p>
     <div class="demo" style="margin:10px 0 4px">
@@ -288,6 +307,7 @@
     };
   },
 });</pre>
+    </details>
   </section>
   <footer class="site">ソースコード: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a> &nbsp;·&nbsp; Issue・プルリクエスト歓迎です。</footer>
 </main>
