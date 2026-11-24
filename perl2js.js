@@ -740,8 +740,8 @@ function interp(raw) {
         i += end + 1; continue;
       }
       if (c === '$' && (m = /^\$#([A-Za-z_]\w*)/.exec(sub))) { s += '${(_a$' + m[1] + '.length-1)}'; i += m[0].length; continue; }
-      if ((m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
-        let expr = c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : ''));
+      if ((m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{)|(&))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
+        let expr = c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : '') || (m[6] ? '&' : ''));
         let j = m[0].length;
         if (c === '$') {
           for (;;) {
