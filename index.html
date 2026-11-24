@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl風言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124c" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124c">
+<link rel="icon" href="assets/icon.svg?v=20261124d" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124d">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl風の構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124c">
+<meta property="og:image" content="assets/social-preview.png?v=20261124d">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -51,7 +51,8 @@
   .win button.tab[aria-pressed=true] { background:#388bfd33; border-color:#388bfd; color:#fff; }
   .win-status { display:flex; justify-content:space-between; gap:12px; padding:4px 12px; background:#161b22; border-top:1px solid #30363d; font:11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#8b949e; }
   .win-status .ok { color:#3fb950; } .win-status .bad { color:#ff7b72; }
-  .editor { display:flex; height:440px; }
+  :root { --paneH: clamp(240px, 38vh, 340px); }          /* keeps #stage visible below the editor/console on a normal screen */
+  .editor { display:flex; height:var(--paneH); }
   .editor pre.gutter { width:auto; min-width:3.4em; margin:0; padding:12px 10px 12px 8px; border:0; border-right:1px solid #21262d; border-radius:0; background:#0d1117; color:#6e7681;
     text-align:right; white-space:pre; overflow:hidden; user-select:none; font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .editor pre.gutter .bad { color:#fff; background:#da3633; border-radius:3px; padding:0 3px; margin-right:-3px; }
@@ -72,7 +73,7 @@
   .dt-toolbar input { width:9.5em; padding:2px 7px; background:#292a2d; border:1px solid #3c3c3c; border-radius:3px; color:#e8eaed; font:12px system-ui, sans-serif; outline:0; }
   .dt-toolbar input:focus { border-color:#8ab4f8; }
   .dt-lv { margin-left:auto; }
-  .console .con-body { height:440px; overflow:auto; background:#1e1e1e; color:#e8eaed; font:12px/1.55 Menlo, Consolas, "DejaVu Sans Mono", monospace; }
+  .console .con-body { height:calc(var(--paneH) - 31px); overflow:auto; background:#1e1e1e; color:#e8eaed; font:12px/1.55 Menlo, Consolas, "DejaVu Sans Mono", monospace; }
   .console .ol { display:block; border-bottom:1px solid #2f2f2f; }
   .console .ol .t { display:block; white-space:pre-wrap; word-break:break-word; padding:2px 12px 2px 22px; }
   .console .errs { padding:0; }
@@ -103,7 +104,7 @@
 <body>
 <main>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124c"><img src="assets/logo-light.svg?v=20261124c" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124d"><img src="assets/logo-light.svg?v=20261124d" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <div class="bar">

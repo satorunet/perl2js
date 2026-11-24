@@ -137,7 +137,7 @@ function lex(src) {
       if (src[i + 1] === '(' || (src[i + 1] === '-' && src[i + 2] === '>')) { push({ t: 'id', v: '$' }); i++; continue; }   // jQuery: $("#id") / $->ajax(..)
       if ((m = /^\$#\$([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '$#', name: m[1], ref: true }); i += m[0].length; continue; }
       if ((m = /^\$#([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '$#', name: m[1] }); i += m[0].length; continue; }
-      if ((m = /^\$([A-Za-z_]\w*(?:::\w+)*|\d+|[@!&])/.exec(rest))) {
+      if ((m = /^\$([A-Za-z_]\w*(?:::\w+)*|\d+|[@!&|,\\\/]|\+(?=\{))/.exec(rest))) {
         i += m[0].length;
         const nx = src[i];
         push({ t: 'var', sig: '$', name: m[1], elem: nx === '[' ? '[' : nx === '{' ? '{' : null });
@@ -506,6 +506,32 @@ function rewriteCopyAssign(T) {
   return false;
 }
 
+function rewriteEach(T) {
+  const isO = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && T[i].v === 'while' && isO(T[i + 1], '(') && T[i + 2] && T[i + 2].t === 'id' && T[i + 2].v === 'my' && isO(T[i + 3], '('))) continue;
+    const k = T[i + 4], v = T[i + 6];
+    if (!(k && k.t === 'var' && k.sig === '$' && isO(T[i + 5], ',') && v && v.t === 'var' && v.sig === '$' && isO(T[i + 7], ')') && isO(T[i + 8], '=') && T[i + 9] && T[i + 9].t === 'id' && T[i + 9].v === 'each')) continue;
+    // the hash: %name   or   %$name
+    let j = i + 10, hashToks, valToks;
+    const h = T[j];
+    if (h && h.t === 'var' && h.sig === '%') {
+      hashToks = [Object.assign({}, h)];
+      valToks = [{ t: 'var', sig: '$', name: h.name, elem: '{', sp: true }, { t: 'op', v: '{', sp: false }, Object.assign({}, k, { sp: false }), { t: 'op', v: '}', sp: false }];
+      j += 1;
+    } else if (h && h.t === 'deref' && h.sig === '%' && T[j + 1] && T[j + 1].t === 'var' && T[j + 1].sig === '$') {
+      hashToks = [Object.assign({}, h), Object.assign({}, T[j + 1])];
+      valToks = [Object.assign({}, T[j + 1], { sp: true }), tok.op('->'), { t: 'op', v: '{', sp: false }, Object.assign({}, k, { sp: false }), { t: 'op', v: '}', sp: false }];
+      j += 2;
+    } else continue;
+    if (!(isO(T[j], ')') && isO(T[j + 1], '{'))) continue;
+    const decl = [tok.id('my'), Object.assign({}, v), tok.op('='), ...valToks, tok.op(';')];
+    T.splice(i, j + 2 - i, tok.id('foreach'), tok.id('my'), Object.assign({}, k), tok.op('('), tok.id('keys'), ...hashToks, tok.op(')'), tok.op('{'), ...decl);
+    return true;
+  }
+  return false;
+}
+
 // our @ISA = ('Base');  ==>  use parent -norequire, ('Base');
 function rewriteISA(T) {
   for (let i = 0; i < T.length; i++) {
@@ -551,7 +577,7 @@ function rewriteHashList(T) {
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -563,7 +589,7 @@ function prepare(T) {
 const BUILTINS = new Set(['print', 'say', 'printf', 'sprintf', 'push', 'pop', 'shift', 'unshift', 'splice', 'join',
   'split', 'map', 'grep', 'sort', 'reverse', 'keys', 'values', 'exists', 'defined', 'scalar', 'length', 'substr',
   'index', 'rindex', 'uc', 'lc', 'ucfirst', 'lcfirst', 'abs', 'int', 'sqrt', 'sin', 'cos', 'atan2', 'exp', 'log',
-  'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime']);
+  'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode']);
 const UNARY = new Set(['length', 'defined', 'ref', 'scalar', 'uc', 'lc', 'ucfirst', 'lcfirst', 'int', 'abs', 'sqrt',
   'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime']);
 const LISTFN = new Set(['map', 'grep', 'sort', 'split', 'keys', 'values', 'reverse', 'splice', 'localtime', 'gmtime']);
@@ -634,6 +660,11 @@ function vname(t) {
     if (t.elem === '[') return nm === '_' ? '$_args' : '_a$' + safeName(nm);
     if (t.elem === '{') return '_h$' + safeName(nm);
     if (nm === 'this') return 'this';
+    if (nm === '+') return '$NAMED';          // $+{name}: named captures
+    if (nm === '|') return '$AUTOFLUSH';
+    if (nm === ',') return '$OFS';
+    if (nm === '\\') return '$ORS';
+    if (nm === '/') return '$RS';
     if (nm === '@') return '$ERR';
     if (nm === '!') return '$ERRNO';
     if (nm === '&') return '$MATCH';
@@ -670,14 +701,18 @@ function reLiteral(pat, flags, xflag) {
 }
 
 function interp(raw) {
-  let s = '`', i = 0;
+  let s = '`', i = 0, open = 0, one = '';           // open: \U / \L spans not closed yet;  one: pending \u / \l
   const n = raw.length;
+  const piece = (js) => (one ? '${_c' + one + '(' + js + ')}' : '${' + js + '}');
   while (i < n) {
     const c = raw[i];
     if (c === '\\') {
       const d = raw[i + 1];
       if (d === undefined) { s += '\\\\'; i++; continue; }
       let em;
+      if (d === 'U' || d === 'L') { s += '${_c' + d + '(`'; open++; i += 2; continue; }                 // \U ... \E
+      if (d === 'E') { if (open > 0) { s += '`)}'; open--; } i += 2; continue; }
+      if (d === 'u' || d === 'l') { one = d; i += 2; continue; }                                     // \u$name
       if ('ntr\\"fb'.includes(d)) s += d === '"' ? '"' : '\\' + d;
       else if (d === 'e') s += '\\x1b';
       else if (d === 'a') s += '\\x07';
@@ -705,8 +740,8 @@ function interp(raw) {
         i += end + 1; continue;
       }
       if (c === '$' && (m = /^\$#([A-Za-z_]\w*)/.exec(sub))) { s += '${(_a$' + m[1] + '.length-1)}'; i += m[0].length; continue; }
-      if ((m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
-        let expr = c + (m[1] || m[2] || m[3] || (m[4] ? '@' : ''));
+      if ((m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
+        let expr = c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : ''));
         let j = m[0].length;
         if (c === '$') {
           for (;;) {
@@ -719,7 +754,7 @@ function interp(raw) {
               const e = matchBraceStr(sub, j + 2); expr += sub.slice(j, e + 1); j = e + 1;
             } else break;
           }
-          s += '${_s(' + compileExpr(expr) + ')}';
+          s += piece('_s(' + compileExpr(expr) + ')'); one = '';
         } else {
           if (sub[j] === '[') { const e = matchBraceStr(sub, j); expr += sub.slice(j, e + 1); j = e + 1; }   // "@a[0,1]"
           s += '${' + compileExpr(expr) + '.join(" ")}';
@@ -728,8 +763,10 @@ function interp(raw) {
       }
       s += c === '$' ? '\\$' : '@'; i++; continue;
     }
+    if (one) { s += one === 'u' ? c.toUpperCase() : c.toLowerCase(); one = ''; i++; continue; }          // \u followed by a plain character
     s += c; i++;
   }
+  for (; open > 0; open--) s += '`)}';
   return s + '`';
 }
 function matchBraceStr(str, at) {
@@ -742,7 +779,7 @@ function matchBraceStr(str, at) {
   return str.length - 1;
 }
 
-const STRICT_OK = new Set(['_', '@', '!', '&', '0', 'a', 'b', 'this', 'ARGV', 'ENV', 'ISA', 'VERSION', 'EXPORT', 'EXPORT_OK', 'INC', 'STDIN', 'STDOUT', 'STDERR']);
+const STRICT_OK = new Set(['_', '@', '!', '&', '|', ',', '\\', '/', '+', '0', 'a', 'b', 'this', 'ARGV', 'ENV', 'ISA', 'VERSION', 'EXPORT', 'EXPORT_OK', 'INC', 'STDIN', 'STDOUT', 'STDERR']);
 
 function translate(T, opts) {
   const marks = !!(opts && opts.marks);
@@ -765,7 +802,7 @@ function translate(T, opts) {
   };
   const out = [];
   const st = [];
-  let i = 0, subBody = false, pendOne = false, lastListClose = -2, forList = false, negNext = false, condNext = false;
+  let i = 0, listRhs = false, subBody = false, pendOne = false, lastListClose = -2, forList = false, negNext = false, condNext = false;
   const emit = (s) => out.push(s);
   const top = () => st[st.length - 1];
   const flush = (kinds) => { while (st.length && kinds.has(top().k)) emit(st.pop().close); };
@@ -851,9 +888,9 @@ function translate(T, opts) {
     return T[k];
   }
   function countCtx(prev, nxt) {
-    if (prev && ((prev.t === 'op' && (prev.v === '!' || CMPOPS.has(prev.v) || '+-*/'.includes(prev.v) && prev.v.length === 1)) ||
+    if (prev && ((prev.t === 'op' && (prev.v === '!' || prev.v === '.' || CMPOPS.has(prev.v) || '+-*/'.includes(prev.v) && prev.v.length === 1)) ||
         (prev.t === 'id' && ['not', 'eq', 'ne', 'lt', 'gt', 'le', 'ge'].includes(prev.v)))) return true;
-    if (nxt && nxt.t === 'op' && (CMPOPS.has(nxt.v) || ['?', '&&', '||', '+', '-', '*', '/'].includes(nxt.v))) return true;
+    if (nxt && nxt.t === 'op' && (CMPOPS.has(nxt.v) || ['?', '&&', '||', '+', '-', '*', '/', '.'].includes(nxt.v))) return true;
     if (nxt && nxt.t === 'id' && ['and', 'or', 'eq', 'ne', 'lt', 'gt', 'le', 'ge'].includes(nxt.v)) return true;
     if (prev && isOp(prev, '(') && isOp(nxt, ')') && top() && top().cond) return true;
     if (prev && isOp(prev, '=') && (!nxt || isOp(nxt, ';') || isOp(nxt, ')'))) {
@@ -991,6 +1028,8 @@ function translate(T, opts) {
         if (next && isOp(next, '=>')) { emit(JSON.stringify(v)); break; }
         // method / property after ->
         if (prev && isOp(prev, '->')) { emit(v); break; }
+        // LABEL:  (at the start of a statement)
+        if (/^[A-Z_][A-Z0-9_]*$/.test(v) && next && isOp(next, ':') && (!prev || (prev.t === 'op' && (prev.v === ';' || ((prev.v === '{' || prev.v === '}') && prev.kind === 'block'))))) { emit(v + ': '); i++; break; }
         // Class->new(...)  ==>  new Class(...)
         if (next && isOp(next, '->') && isId(T[i + 2], 'new') && !knownPkgs.has(v) && !CUR.classes.has(v)) { emit('new ' + safeName(v)); i += 2; break; }
         // operators spelled as words
@@ -1126,8 +1165,11 @@ function translate(T, opts) {
             i = isOp(next, '(') ? b : b - 1;
             break;
           }
-          case 'last': emit('break'); break;
-          case 'next': emit('continue'); break;
+          case 'last': case 'next': {
+            const kw = v === 'last' ? 'break' : 'continue';
+            if (next && next.t === 'id' && /^[A-Z_][A-Z0-9_]*$/.test(next.v)) { emit(kw + ' ' + next.v); i++; } else emit(kw);       // last OUTER;
+            break;
+          }
           case 'undef': emit('undefined'); break;
           case 'return': {
             const lr = listReturn(i + 1);
@@ -1185,7 +1227,7 @@ function translate(T, opts) {
       case 'op': {
         const v = t.v;
         switch (v) {
-          case ';': flush(PEND); emit(';'); break;
+          case ';': flush(PEND); emit(';'); listRhs = false; break;
           case ',': {
             flush(UNARY_RNG);
             const e = top();
@@ -1304,7 +1346,7 @@ function translate(T, opts) {
             flush(UNARY_ONLY);
             const nx = next;
             if (nx && nx.t === 're') {
-              emit((v === '=~' ? '.$m(' : '.$nm(') + reLiteral(nx.pat, nx.flags) + ')'); i++;
+              emit((v === '=~' ? (listRhs ? '.$ml(' : '.$m(') : '.$nm(') + reLiteral(nx.pat, nx.flags) + ')'); i++;
             } else if (nx && nx.t === 'trans') {
               const a = trArgs(nx);
               if (/r/.test(nx.flags)) emit('.$tr(' + a + ')');
@@ -1321,6 +1363,7 @@ function translate(T, opts) {
           }
           case '=': {
             flush(UNARY_ONLY);
+            listRhs = lastListClose === i - 1 || (prev && prev.t === 'var' && prev.sig === '@');      // `my ($a, $b) = $s =~ /../` : the match is in list context
             if (prev && prev.t === 'var' && prev.sig === '@' && next && !isOp(next, '(') && !isOp(next, '[') && next.t !== 'qw') {
               emit(' = _arr('); st.push({ k: 'call', close: ')', callee: '_list', argc: 0 });
             } else if (prev && prev.t === 'var' && prev.sig === '%' && !isOp(next, '(')) {
@@ -1333,7 +1376,20 @@ function translate(T, opts) {
           case '!': emit('!'); break;
           case '\\': break;
           case '++': case '--': emit(v); break;
+          case '%': {
+            flush(UNARY_ONLY);
+            // lhs term: number / variable / (group) / call / subscript. `a * b % c` and `-a % c` keep the plain JS operator.
+            let k = i - 1; const u = T[k];
+            let simple = u && (u.t === 'num' || (u.t === 'var' && u.sig === '$') || (u.t === 'op' && (u.v === ')' || u.v === ']' || (u.v === '}' && u.kind === 'sub'))));
+            if (simple && u.t === 'op') { k = findOpen(T, k); while (k > 0 && ((T[k - 1].t === 'id' && !WORDOPS.has(T[k - 1].v)) || T[k - 1].t === 'var' || isOp(T[k - 1], '->'))) k--; }
+            const b = T[k - 1];
+            if (b && ((b.t === 'op' && ['*', '/', '%', '**', '.', '!', '\\'].includes(b.v)) || (b.t === 'id' && b.v === 'x') || (b.t === 'op' && (b.v === '-' || b.v === '+') && !valueEnd(T[k - 2])))) simple = false;
+            if (simple && isOp(next, '-') && T[i + 2] && T[i + 2].t === 'num') { emit(' .$mod(-' + T[i + 2].v + ')'); i += 2; }
+            else if (simple) { emit(' .$mod('); pendOne = true; } else emit(' % ');
+            break;
+          }
           case '-': case '+':
+            if (!valueEnd(prev) && v === '-' && next && next.t === 'num' && isOp(T[i + 2], '%')) { emit('(-' + next.v + ')'); i++; break; }   // (-7) % 3
             if (valueEnd(prev)) {
               flush(UNARY_ONLY);
               if (v === '+') { emit(' - -('); st.push({ k: 'unary', close: ')', callee: '_n' }); }      // "3" + "4" is 7 in Perl, "34" in JS: a - -(b) adds as numbers
@@ -1461,7 +1517,8 @@ function translate(T, opts) {
       emit(name + '('); st.push({ k: 'unary', close: ')', callee: v, argc: 0 });
       return;
     }
-    if (!startsTerm(next)) { emit(name + '()'); return; }
+    const minusTerm = isOp(next, '-') && T[i + 2] && !T[i + 2].sp && (T[i + 2].t === 'num' || T[i + 2].t === 'var' || T[i + 2].t === 'id' || isOp(T[i + 2], '('));   // print -7, ...
+    if (!startsTerm(next) && !minusTerm) { emit(name + '()'); return; }
     emit(name + '('); st.push({ k: 'call', close: ')', callee: v, argc: 0 });
   }
 }
@@ -1476,8 +1533,9 @@ G.$ERR = '';
 function sprintf_(fmt, ...args) {
   args = args.flat(1);
   let ai = 0;
-  return String(fmt).replace(/%([-+ 0#]*)(v?)(\*|\d+)?(?:\.(\d+))?([sdifgeExXobcu%])/g, (all, flags, vflag, width, prec, conv) => {
+  return String(fmt).replace(/%(?:(\d+)\$)?([-+ 0#]*)(v?)(\*|\d+)?(?:\.(\d+))?([sdifgeExXobcu%])/g, (all, pos, flags, vflag, width, prec, conv) => {
     if (conv === '%') return '%';
+    if (pos) { const keep = ai; ai = +pos - 1; const r = sprintf_('%' + flags + vflag + (width || '') + (prec !== undefined ? '.' + prec : '') + conv, args[ai]); ai = keep; return r; }
     if (vflag) { const sv = String(_s(args[ai++])); return Array.from(sv, (ch) => sprintf_('%' + flags + (width || '') + conv, ch.codePointAt(0))).join('.'); }   // %vd
     if (width === '*') width = args[ai++];
     let a = args[ai++];
@@ -1595,8 +1653,10 @@ const RT = {
     const P = typeof cls === 'string' ? pkg(cls) : (cls && cls.__ps ? cls.__ps : cls);
     Object.setPrototypeOf(obj, P.proto); return obj;
   },
-  print_: (...l) => { Perl2JS.stdout(l.flat(1).map(_s).join('')); return 1; },
-  say_: (...l) => { Perl2JS.stdout(l.flat(1).map(_s).join('') + '\n'); return 1; },
+  print_: (...l) => { Perl2JS.stdout(l.flat(1).map(_s).join(G.$OFS === undefined ? '' : G.$OFS) + (G.$ORS === undefined ? '' : G.$ORS)); return 1; },
+  say_: (...l) => { Perl2JS.stdout(l.flat(1).map(_s).join(G.$OFS === undefined ? '' : G.$OFS) + '\n'); return 1; },
+  binmode_: () => 1,
+  STDOUT: 'STDOUT', STDERR: 'STDERR', STDIN: 'STDIN',
   printf_: (f, ...l) => { Perl2JS.stdout(sprintf_(f, ...l)); return 1; },
   sprintf_,
   push_: (a, ...v) => a.push(...v.flat(0)),
@@ -1684,6 +1744,8 @@ const RT = {
   _arr: (x) => x instanceof Lst ? Array.from(x) : x,
   _rx: (v) => (v instanceof RegExp ? '(?:' + v.source + ')' : String(v)),
   _s,
+  _cU: (x) => String(x).toUpperCase(), _cL: (x) => String(x).toLowerCase(),
+  _cu: (x) => { x = String(x); return x.charAt(0).toUpperCase() + x.slice(1); }, _cl: (x) => { x = String(x); return x.charAt(0).toLowerCase() + x.slice(1); },
 };
 // Perl prints numbers with %.15g (0.1+0.2 => 0.3, 1e15 => 1e+15); JS would print 0.30000000000000004
 function fmtNum(v) {
@@ -1704,10 +1766,22 @@ function _s(v) {
 }
 
 const POS = new Map();
+function strInc(s) {                                      // "az" -> "ba", "Zz" -> "AAa", "a9" -> "b0"
+  const a = s.split('');
+  for (let i = a.length - 1; i >= 0; i--) {
+    const c = a[i];
+    if (c === 'z') a[i] = 'a'; else if (c === 'Z') a[i] = 'A'; else if (c === '9') a[i] = '0';
+    else { a[i] = String.fromCharCode(c.charCodeAt(0) + 1); return a.join(''); }
+  }
+  const f = s[0];
+  return (f === 'z' ? 'a' : f === 'Z' ? 'A' : '1') + a.join('');
+}
+hide(Array.prototype, '$x', function (n) { const r = new Lst(); for (let i = 0; i < n; i++) r.push(...this); return r; });   // (1, 2) x 3
 // $1..$9 / $MATCH are lazy getters over the last successful match (much cheaper than writing 10 globals per match)
 let LAST = null;
 for (let k = 1; k < 10; k++) Object.defineProperty(G, '$' + k, { get() { return LAST ? LAST[k] : undefined; }, set() {}, configurable: true });
 Object.defineProperty(G, '$MATCH', { get() { return LAST ? LAST[0] : undefined; }, set() {}, configurable: true });
+Object.defineProperty(G, '$NAMED', { get() { return LAST && LAST.groups ? LAST.groups : {}; }, set() {}, configurable: true });   // $+{name}
 function trExpand(s) {
   s = s.replace(/\\(.)/g, (m, c) => ({ n: '\n', t: '\t', r: '\r', '\\': '\\', '-': '\u0001' })[c] || c);
   const out = [];
@@ -1746,8 +1820,10 @@ for (const P of [String.prototype, Number.prototype]) {
   def(P, '$rng', function (e) {
     const r = new Lst();
     const a = this.valueOf();
-    if (typeof a === 'string' && isNaN(a)) {
-      for (let c = a.charCodeAt(0); c <= String(e).charCodeAt(0); c++) r.push(String.fromCharCode(c));
+    if (typeof a === 'string' && isNaN(a)) {            // 'a'..'e', 'aa'..'ad' : Perl's magic string increment
+      const end = String(e);
+      let cur = a;
+      for (let guard = 0; cur.length <= end.length && guard < 1e6; guard++) { r.push(cur); if (cur === end) break; cur = strInc(cur); }
     } else for (let k = +a; k <= +e; k++) r.push(k);
     return r;
   });
@@ -1765,12 +1841,31 @@ for (const P of [String.prototype, Number.prototype]) {
     return true;
   });
   def(P, '$nm', function (re) { return !this.$m(re); });
+  def(P, '$mod', function (o) {                                 // -7 % 3 == 2 in Perl (JS: -1);  7.5 % 2 == 1
+    const a = Math.trunc(+this), b = Math.trunc(+o);
+    if (b === 0) throw 'Illegal modulus zero at line ' + RT._ln.v + '.\n';
+    const m = a % b;
+    return m !== 0 && (m < 0) !== (b < 0) ? m + b : m;
+  });
+  def(P, '$ml', function (re) {                                 // a match in list context: the captures
+    const str = String(this);
+    if (re.global) {
+      const out = []; re.lastIndex = 0; let m;
+      while ((m = re.exec(str))) { out.push(...(m.length > 1 ? m.slice(1) : [m[0]])); LAST = m; if (m[0] === '') re.lastIndex++; }
+      return mk(out);
+    }
+    const m = re.exec(str);
+    if (!m) return mk([]);
+    LAST = m;
+    return mk(m.length > 1 ? m.slice(1) : [1]);
+  });
   def(P, '$tr', function (from, to, flags) { return trans(String(this), from, to, flags).out; });
   def(P, '$trc', function (from, to, flags) { return trans(String(this), from, to, flags).count; });
   def(P, '$sub', function (re, fn) {
     return String(this).replace(re, (...a) => {
       const n = typeof a[a.length - 1] === 'object' ? a.length - 3 : a.length - 2;   // number of capture groups
       LAST = a.slice(0, n + 1);
+      if (typeof a[a.length - 1] === 'object') LAST.groups = a[a.length - 1];
       return fn();
     });
   });
