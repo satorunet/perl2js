@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Differences from real Perl — Perl2JS</title>
+<meta name="description" content="Perl2JS is a Perl-flavoured language that runs on JavaScript, not a full perl. It is checked against real Perl with the programs in these docs, and these are th">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.html">Overview</a><a href="syntax.html">Syntax</a><a href="modules.html">Modules</a><a href="cpan.html">CPAN status</a><a href="writing-modules.html">Write a module</a><a href="browser.html">Browser</a><a href="differences.html" aria-current="page">Differences</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">Playground</a>
+  <a class="pill" href="differences.ja.html" hreflang="ja">日本語</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>Differences from real Perl</h1>
+<p>Perl2JS is a Perl-flavoured language that runs on JavaScript, not a full <code>perl</code>. It is checked against real Perl with the programs in these docs, and these are the places where it still differs.</p>
+<h2 id="numbers-and-strings"><a class="anchor" href="#numbers-and-strings" aria-hidden="true">#</a>Numbers and strings</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Perl</th>
+<th>Perl2JS</th>
+</tr>
+</thead><tbody><tr>
+<td>64-bit integers (<code>9007199254740993</code>)</td>
+<td>numbers are JavaScript doubles: integers above 2**53 lose precision, and the output uses Perl&#39;s <code>%.15g</code> formatting</td>
+</tr>
+<tr>
+<td><code>&quot;0x10&quot; + 0</code> is 0, <code>&quot;1_000&quot; + 0</code> is 1</td>
+<td>the same string-to-number rules are implemented for common cases; hex/underscore strings may differ</td>
+</tr>
+<tr>
+<td><code>1 &lt;&lt; 33</code>, <code>~5</code> act on 64 bits</td>
+<td>bit operations are 32-bit</td>
+</tr>
+<tr>
+<td><code>&quot;az&quot;++</code> is <code>&quot;ba&quot;</code> (magic string increment)</td>
+<td>works for <code>..</code> ranges (<code>&quot;aa&quot;..&quot;ad&quot;</code>); not for <code>++</code> on a string variable</td>
+</tr>
+</tbody></table></div>
+<h2 id="references"><a class="anchor" href="#references" aria-hidden="true">#</a>References</h2>
+<p>References behave as in Perl: <code>\$x</code>, <code>\@a</code>, <code>\%h</code>, <code>\&amp;f</code>, <code>$$r</code>, <code>@$r</code>, <code>%$r</code>, <code>$r-&gt;[0]</code>, <code>ref($r)</code> (<code>SCALAR ARRAY HASH CODE REF Regexp</code>), <code>&quot;$r&quot;</code> prints <code>ARRAY(0x55d0c8a1f000)</code> and <code>==</code>/<code>eq</code> compare identity, <code>@a = (...)</code> changes the array in place so earlier references see it, and <code>foreach</code> aliases the elements.</p>
+<p>Not the same: <code>\$x == \$x</code> is false (each <code>\$x</code> makes a new reference object), and <code>\$h{k}</code> / <code>\$a[0]</code> (reference to an element) are not supported.</p>
+<h2 id="context"><a class="anchor" href="#context" aria-hidden="true">#</a>Context</h2>
+<p>Perl decides list or scalar context at run time. Perl2JS decides from the shape of the code, which matches Perl in the common cases:</p>
+<ul>
+<li>works: <code>my ($a, $b) = f();</code>, <code>my $n = @a;</code>, <code>my $n = () = $s =~ /x/g;</code>, <code>scalar(@a)</code>, <code>if (@a)</code>, <code>print &quot;n=&quot; . @a</code>.</li>
+<li>does not exist: <code>wantarray</code>, so a sub cannot behave differently in list and scalar context.</li>
+<li>a sub that returns a list used as <code>my $x = f();</code> gets the whole list, where Perl gives the last element.</li>
+</ul>
+<h2 id="not-implemented"><a class="anchor" href="#not-implemented" aria-hidden="true">#</a>Not implemented</h2>
+<p><code>wantarray</code>, formats (<code>format STDOUT =</code>), <code>tie</code>, <code>pos()</code> and <code>\G</code>, <code>sort by_name LIST</code> (use a block: <code>sort { $a &lt;=&gt; $b } LIST</code>), <code>goto</code>, typeglobs (<code>*name</code>), <code>AUTOLOAD</code>, <code>DESTROY</code> timing, <code>local</code> on array and hash elements.
+File and process functions (<code>open</code>, <code>opendir</code>, <code>system</code>, <code>fork</code>, <code>-e</code>) do not exist in a browser.
+<code>binmode</code> and <code>STDIN</code> are accepted and ignored; <code>print STDERR</code> goes to <code>console.warn</code>.</p>
+<h2 id="things-that-are-better-than-perl-in-a-browser"><a class="anchor" href="#things-that-are-better-than-perl-in-a-browser" aria-hidden="true">#</a>Things that are better than Perl in a browser</h2>
+<p><code>$(&quot;#id&quot;)-&gt;...</code> (jQuery style), calling DOM and JS objects with <code>-&gt;</code> or <code>.</code>, <a href="syntax.html#perl--javascript-hybrid">hybrid syntax</a>, and full-width symbols (<code>＄ｘ ＝ （１）；</code>) typed with an IME are read as their half-width twins (inside strings they stay as they are).</p>
+<h2 id="names"><a class="anchor" href="#names" aria-hidden="true">#</a>Names</h2>
+<p><code>$_ @_ $0 $1.. $&amp; $+{name} $@ $! $, $\ $/ $|</code> exist. <code>@ARGV</code> and <code>%ENV</code> are empty and <code>$0</code> is <code>main.p2j</code>.</p>
+<p>Found a difference that is not listed? Open an issue with the smallest program that shows it and what real Perl prints.</p>
+
+<footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#numbers-and-strings">Numbers and strings</a><a href="#references">References</a><a href="#context">Context</a><a href="#not-implemented">Not implemented</a><a href="#things-that-are-better-than-perl-in-a-browser">Things that are better than Perl in a browser</a><a href="#names">Names</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

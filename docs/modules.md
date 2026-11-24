@@ -14,7 +14,7 @@ every `perl` block on this page runs identically under real Perl and Perl2JS (`n
 | [Time](#time) | `POSIX` `Time::Local` `Time::Piece` `Time::Seconds` `Time::HiRes` `DateTime` |
 | [Control and testing](#control-and-testing) | `Carp` `Try::Tiny` `Test::More` `constant` |
 | [Files and math](#files-and-math) | `File::Basename` `File::Spec` `Math::Trig` |
-| Browser | [jQuery-style `$`](browser.md#jquery-style-api) |
+| Browser | [jQuery-style `$`](browser.md#the-dom-and-the-jquery-style) |
 
 Not available in a browser (no files, processes or sockets): `Getopt::Long`, `Cwd`, `File::Temp`, `IO::File`, `Socket`, `DBI`, `LWP::UserAgent` (use `$->get/post/ajax` instead).
 Not implemented yet: `Moose`/`Moo`, `Text::CSV`, `YAML`, `Benchmark`.

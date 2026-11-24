@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Using Perl2JS in the browser — Perl2JS</title>
+<meta name="description" content="&lt;script src=&quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js&quot;&gt;&lt;/script&gt;">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.html">Overview</a><a href="syntax.html">Syntax</a><a href="modules.html">Modules</a><a href="cpan.html">CPAN status</a><a href="writing-modules.html">Write a module</a><a href="browser.html" aria-current="page">Browser</a><a href="differences.html">Differences</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">Playground</a>
+  <a class="pill" href="browser.ja.html" hreflang="ja">日本語</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>Using Perl2JS in the browser</h1>
+<h2 id="loading-it"><a class="anchor" href="#loading-it" aria-hidden="true">#</a>Loading it</h2>
+<div class="code"><div class="code-bar"><span class="lang">HTML</span><button class="copy" type="button">Copy</button></div><pre><code>&lt;script src=&quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js&quot;&gt;&lt;/script&gt;</code></pre></div>
+<p>That one tag is the whole core. Modules (<code>List::Util</code>, <code>DateTime</code>, the jQuery-style <code>$</code>, ...) are fetched from the same place the first time a program needs them, so a page that does not use them downloads nothing extra.
+Pin a release instead of <code>@main</code> once you publish one (<code>perl2js@v0.1.0</code>).</p>
+<h2 id="perl-in-a-page"><a class="anchor" href="#perl-in-a-page" aria-hidden="true">#</a>Perl in a page</h2>
+<div class="code"><div class="code-bar"><span class="lang">HTML</span><button class="copy" type="button">Copy</button></div><pre><code>&lt;div id=&quot;out&quot;&gt;&lt;/div&gt;
+&lt;script type=&quot;text/perl2js&quot;&gt;
+  use List::Util qw(sum);
+  my @n = (3, 1, 4);
+  $(&quot;#out&quot;)-&gt;text(&quot;sum = &quot; . sum(@n));
+  print &quot;printed text goes to &lt;pre id=\&quot;output\&quot;&gt;\n&quot;;
+&lt;/script&gt;</code></pre></div>
+<ul>
+<li><code>print</code> writes to the element with <code>id=&quot;output&quot;</code> (it is created at the end of <code>&lt;body&gt;</code> if missing).</li>
+<li>Put code in a file with <code>&lt;script type=&quot;text/perl2js&quot; src=&quot;main.p2j&quot;&gt;&lt;/script&gt;</code>.</li>
+<li>Errors are shown on the page with the Perl line number and the source line (<code>Perl2JS.renderError</code>); the browser console gets the full JavaScript error.</li>
+</ul>
+<h3 id="splitting-code-into-files"><a class="anchor" href="#splitting-code-into-files" aria-hidden="true">#</a>Splitting code into files</h3>
+<p><code>require &quot;lib/util.p2j&quot;;</code> at the start of a line pulls another file in first (paths are relative to the file that requires it). All files share one top-level scope, so <code>sub</code>s defined in <code>lib/util.p2j</code> are callable from <code>main.p2j</code>. See <a href="https://github.com/satorunet/perl2js/blob/main/main.p2j" target="_blank" rel="noopener"><code>main.p2j</code></a>, <a href="https://github.com/satorunet/perl2js/blob/main/lib/util.p2j" target="_blank" rel="noopener"><code>lib/util.p2j</code></a> and <a href="https://github.com/satorunet/perl2js/blob/main/require-demo.html" target="_blank" rel="noopener"><code>require-demo.html</code></a>.</p>
+<h2 id="the-dom-and-the-jquery-style"><a class="anchor" href="#the-dom-and-the-jquery-style" aria-hidden="true">#</a>The DOM and the jQuery-style <code>$</code></h2>
+<p><code>$(&quot;#id&quot;)</code> is built in and returns a wrapper with the jQuery methods you expect. Chains work, callbacks are <code>sub { ... }</code>.</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">Copy</button></div><pre><code>$(&quot;#stage&quot;)-&gt;html(&quot;&lt;button id='b'&gt;Click&lt;/button&gt; &lt;b id='n'&gt;0&lt;/b&gt;&quot;);
+my $count = 0;
+$(&quot;#b&quot;)-&gt;on(&quot;click&quot;, sub {
+    $count++;
+    $(&quot;#n&quot;)-&gt;text($count);
+});
+$(&quot;#stage&quot;)-&gt;fadeOut(300)-&gt;fadeIn(300);</code></pre></div>
+<div class="tablewrap"><table><thead><tr>
+<th>Area</th>
+<th>Methods</th>
+</tr>
+</thead><tbody><tr>
+<td>Select</td>
+<td><code>$(&quot;css&quot;)  $(sub { ... })</code> (ready)  <code>find children parent closest siblings next prev eq first last filter not has is</code></td>
+</tr>
+<tr>
+<td>Content</td>
+<td><code>html text val attr prop data append prepend before after remove empty clone replaceWith wrap</code></td>
+</tr>
+<tr>
+<td>Class and style</td>
+<td><code>addClass removeClass toggleClass hasClass css show hide toggle width height</code></td>
+</tr>
+<tr>
+<td>Events</td>
+<td><code>on off one trigger click dblclick change input submit focus blur hover keydown keyup</code></td>
+</tr>
+<tr>
+<td>Effects</td>
+<td><code>fadeIn fadeOut fadeToggle slideUp slideDown slideToggle animate delay stop</code></td>
+</tr>
+<tr>
+<td>Iteration</td>
+<td><code>each map get length</code></td>
+</tr>
+<tr>
+<td>Ajax</td>
+<td><code>$-&gt;get  $-&gt;post  $-&gt;getJSON  $-&gt;ajax({ url =&gt; ..., success =&gt; sub { ... } })</code></td>
+</tr>
+</tbody></table></div>
+<p>If the page already loads the real jQuery, <code>$</code> uses that instead. Any DOM object also works directly, see the <a href="syntax.html#perl--javascript-hybrid">hybrid syntax</a>:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">Copy</button></div><pre><code>my $el = document.getElementById(&quot;out&quot;);
+$el-&gt;{textContent} = &quot;plain DOM&quot;;</code></pre></div>
+<h2 id="the-javascript-api"><a class="anchor" href="#the-javascript-api" aria-hidden="true">#</a>The JavaScript API</h2>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">Copy</button></div><pre><code>Perl2JS.run(source)                  // compile and run synchronously (modules loaded earlier or from a &lt;script&gt;)
+await Perl2JS.runAsync(source)       // loads the `use`d modules first, then runs; use this one
+Perl2JS.compile(source)              // the generated JavaScript, as a string
+await Perl2JS.use(&quot;List::Util&quot;, &quot;DateTime&quot;)   // preload modules
+Perl2JS.requires(source)             // module names a program uses
+Perl2JS.stdout = (text) =&gt; { ... }   // where print goes (default: #output / process.stdout)
+Perl2JS.libPath = &quot;/js/modules/&quot;     // where modules are loaded from (default: next to perl2js.js)
+Perl2JS.notes                        // hints from the last compile (full-width symbols that were read as half-width)
+Perl2JS.renderError(err, el, { dark: true })   // show a PerlError in an element</code></pre></div>
+<p>Runtime errors are <code>PerlError</code> objects with <code>.kind</code> (<code>compile</code> / <code>runtime</code>), <code>.line</code> (the Perl line), the message and source excerpt; <code>Perl2JS.errorText(err)</code> formats them as plain text.</p>
+<h2 id="the-playground"><a class="anchor" href="#the-playground" aria-hidden="true">#</a>The playground</h2>
+<p><a href="https://satoru.net/perl2js/" target="_blank" rel="noopener">satoru.net/perl2js</a> has an editor with line numbers, a DevTools-style console, a &quot;generated JS&quot; tab, copy buttons and about 30 runnable examples. <code>Ctrl+Enter</code> runs the program. The <code>#stage</code> area below it is where the DOM examples draw.</p>
+<h2 id="in-nodejs"><a class="anchor" href="#in-nodejs" aria-hidden="true">#</a>In Node.js</h2>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">Copy</button></div><pre><code>const Perl2JS = require(&quot;./perl2js.js&quot;);
+Perl2JS.run('print &quot;Hello from Node\\n&quot;; use List::Util qw(max); print max(1, 7, 3), &quot;\\n&quot;;');</code></pre></div>
+<p>Modules are read from the <code>modules/</code> directory next to the file with <code>fs</code>; no DOM, so <code>$</code>/<code>document</code> are not available.</p>
+
+<footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#loading-it">Loading it</a><a href="#perl-in-a-page">Perl in a page</a><a href="#the-dom-and-the-jquery-style">The DOM and the jQuery-style $</a><a href="#the-javascript-api">The JavaScript API</a><a href="#the-playground">The playground</a><a href="#in-nodejs">In Node.js</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

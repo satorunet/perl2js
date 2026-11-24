@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主要な CPAN モジュールの対応状況 — Perl2JS</title>
+<meta name="description" content="凡例: ✅ 同梱 (動作し、本物の Perl と比較済み) · 🟡 一部対応 (よく使う関数のみ) · 🌐 ブラウザの代替あり (JS/DOM の方法を使う) · ⛔ ブラウザでは不可能 · ➖ 未対応。">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html" aria-current="page">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="cpan.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>主要な CPAN モジュールの対応状況</h1>
+<p>凡例: <strong>✅ 同梱</strong> (動作し、本物の Perl と比較済み) · <strong>🟡 一部対応</strong> (よく使う関数のみ) · <strong>🌐 ブラウザの代替あり</strong> (JS/DOM の方法を使う) · <strong>⛔ ブラウザでは不可能</strong> · <strong>➖ 未対応</strong>。
+同梱モジュールの読み込み方: <code>use List::Util qw(sum);</code> と書くと <code>modules/List/Util.js</code> が必要に応じて読み込まれます (<a href="modules.ja.html">同梱モジュール</a>を参照)。</p>
+<h2 id="リストデータテキスト"><a class="anchor" href="#リストデータテキスト" aria-hidden="true">#</a>リスト、データ、テキスト</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>モジュール</th>
+<th>状況</th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>List::Util</code></td>
+<td>✅</td>
+<td><code>sum min max first any all none reduce uniq shuffle pairs ...</code></td>
+</tr>
+<tr>
+<td><code>List::MoreUtils</code></td>
+<td>🟡</td>
+<td><code>uniq any all firstidx indexes minmax part ...</code>。<code>zip</code>、<code>natatime</code>、<code>pairwise</code> はなし</td>
+</tr>
+<tr>
+<td><code>Scalar::Util</code></td>
+<td>✅</td>
+<td><code>blessed reftype looks_like_number refaddr weaken</code> (<code>weaken</code> は何もしません)</td>
+</tr>
+<tr>
+<td><code>Data::Dumper</code></td>
+<td>✅</td>
+<td><code>Indent</code>、<code>Sortkeys</code>、<code>Terse</code></td>
+</tr>
+<tr>
+<td><code>JSON::PP</code>, <code>JSON</code>, <code>JSON::XS</code>, <code>JSON::MaybeXS</code></td>
+<td>✅</td>
+<td><code>encode_json decode_json</code>、<code>-&gt;pretty-&gt;canonical</code></td>
+</tr>
+<tr>
+<td><code>Storable</code></td>
+<td>🟡</td>
+<td><code>dclone freeze thaw</code>。<code>store</code>/<code>retrieve</code> (ファイル) はなし</td>
+</tr>
+<tr>
+<td><code>Text::Wrap</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Term::ANSIColor</code></td>
+<td>✅</td>
+<td>色コード。プレイグラウンドのペインではテキストとして表示されます</td>
+</tr>
+<tr>
+<td><code>Text::CSV</code>, <code>Text::CSV_XS</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>YAML</code>, <code>YAML::XS</code>, <code>TOML</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Text::Template</code>, <code>Template</code> (TT)</td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="エンコーディングとハッシュ"><a class="anchor" href="#エンコーディングとハッシュ" aria-hidden="true">#</a>エンコーディングとハッシュ</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>モジュール</th>
+<th>状況</th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>Encode</code></td>
+<td>✅</td>
+<td>UTF-8、Latin-1、UTF-16、<strong>Shift_JIS / CP932 / EUC-JP</strong>、ISO-2022-JP のデコード</td>
+</tr>
+<tr>
+<td><code>MIME::Base64</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>URI::Escape</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>URI</code> (オブジェクトインターフェース)</td>
+<td>➖</td>
+<td>ハイブリッド構文の <code>new URL(...)</code> を使ってください</td>
+</tr>
+<tr>
+<td><code>Digest::MD5</code>, <code>Digest::SHA</code></td>
+<td>✅</td>
+<td><code>md5_hex sha1_hex sha256_hex hmac_sha256_hex</code>。SHA-512 はなし</td>
+</tr>
+</tbody></table></div>
+<h2 id="時刻"><a class="anchor" href="#時刻" aria-hidden="true">#</a>時刻</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>モジュール</th>
+<th>状況</th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>POSIX</code></td>
+<td>🟡</td>
+<td><code>strftime mktime floor ceil fmod pow round trunc</code>、各種上限値</td>
+</tr>
+<tr>
+<td><code>Time::Local</code></td>
+<td>✅</td>
+<td><code>timelocal timegm</code></td>
+</tr>
+<tr>
+<td><code>Time::Piece</code>, <code>Time::Seconds</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Time::HiRes</code></td>
+<td>🟡</td>
+<td><code>time gettimeofday tv_interval</code>。<code>sleep</code>/<code>usleep</code> はブラウザをブロックできません</td>
+</tr>
+<tr>
+<td><code>DateTime</code>, <code>DateTime::Duration</code></td>
+<td>✅</td>
+<td>実際のタイムゾーン (IANA 名) に対応</td>
+</tr>
+<tr>
+<td><code>DateTime::Format::*</code>, <code>Date::Calc</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="制御フローとテスト"><a class="anchor" href="#制御フローとテスト" aria-hidden="true">#</a>制御フローとテスト</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>モジュール</th>
+<th>状況</th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>Carp</code></td>
+<td>✅</td>
+<td><code>croak carp confess cluck</code></td>
+</tr>
+<tr>
+<td><code>Try::Tiny</code></td>
+<td>✅</td>
+<td><code>try/catch/finally</code></td>
+</tr>
+<tr>
+<td><code>Test::More</code></td>
+<td>✅</td>
+<td>TAP 出力</td>
+</tr>
+<tr>
+<td><code>constant</code>, <code>strict</code>, <code>warnings</code>, <code>utf8</code>, <code>parent</code>, <code>base</code></td>
+<td>✅</td>
+<td>言語の一部です</td>
+</tr>
+<tr>
+<td><code>Moose</code>, <code>Moo</code>, <code>Mouse</code></td>
+<td>➖</td>
+<td>素の <code>package</code>/<code>bless</code> を使ってください (<a href="syntax.ja.html">構文</a>)</td>
+</tr>
+<tr>
+<td><code>Class::Accessor</code>, <code>Object::Pad</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Readonly</code>, <code>Const::Fast</code></td>
+<td>➖</td>
+<td><code>use constant</code> を使ってください</td>
+</tr>
+<tr>
+<td><code>Benchmark</code></td>
+<td>➖</td>
+<td><code>Time::HiRes</code> を使ってください</td>
+</tr>
+</tbody></table></div>
+<h2 id="ファイル数学システム"><a class="anchor" href="#ファイル数学システム" aria-hidden="true">#</a>ファイル、数学、システム</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>モジュール</th>
+<th>状況</th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>File::Basename</code>, <code>File::Spec</code></td>
+<td>✅</td>
+<td>文字列処理のみ</td>
+</tr>
+<tr>
+<td><code>Math::Trig</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Math::BigInt</code>, <code>Math::BigFloat</code></td>
+<td>➖</td>
+<td>JavaScript の <code>BigInt</code> はハイブリッド構文から利用できます</td>
+</tr>
+<tr>
+<td><code>File::Temp</code>, <code>File::Find</code>, <code>File::Slurp</code>, <code>Path::Tiny</code>, <code>Cwd</code>, <code>IO::File</code></td>
+<td>⛔</td>
+<td>ブラウザにはファイルシステムがありません</td>
+</tr>
+<tr>
+<td><code>Getopt::Long</code>, <code>Pod::Usage</code></td>
+<td>⛔</td>
+<td>コマンドラインがありません</td>
+</tr>
+<tr>
+<td><code>Socket</code>, <code>IO::Socket</code>, <code>Net::*</code></td>
+<td>⛔</td>
+<td>生のソケットはありません</td>
+</tr>
+</tbody></table></div>
+<h2 id="web-とデータベース"><a class="anchor" href="#web-とデータベース" aria-hidden="true">#</a>Web とデータベース</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>モジュール</th>
+<th>状況</th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td>jQuery 風の <code>$(&quot;#id&quot;)-&gt;on(...)-&gt;fadeIn</code></td>
+<td>✅</td>
+<td><code>modules/jQuery.js</code>。<code>$</code> を使うと読み込まれます。<a href="browser.ja.html">ブラウザ</a>を参照</td>
+</tr>
+<tr>
+<td><code>LWP::UserAgent</code>, <code>HTTP::Tiny</code>, <code>Mojo::UserAgent</code></td>
+<td>🌐</td>
+<td><code>$-&gt;get</code>、<code>$-&gt;post</code>、<code>$-&gt;ajax</code></td>
+</tr>
+<tr>
+<td><code>CGI</code>, <code>Plack</code>, <code>Mojolicious</code>, <code>Dancer2</code></td>
+<td>⛔</td>
+<td>サーバー用フレームワーク</td>
+</tr>
+<tr>
+<td><code>DBI</code> とドライバ</td>
+<td>⛔</td>
+<td>データベースドライバがありません。<code>$-&gt;ajax</code> で HTTP API を呼び出してください</td>
+</tr>
+</tbody></table></div>
+<p>必要なものが足りませんか? <a href="writing-modules.ja.html">数行で自分で書く</a>か、issue を開いてください。</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#リストデータテキスト">リスト、データ、テキスト</a><a href="#エンコーディングとハッシュ">エンコーディングとハッシュ</a><a href="#時刻">時刻</a><a href="#制御フローとテスト">制御フローとテスト</a><a href="#ファイル数学システム">ファイル、数学、システム</a><a href="#web-とデータベース">Web とデータベース</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Popular CPAN modules: status — Perl2JS</title>
+<meta name="description" content="Legend: ✅ bundled (works, compared with real Perl) · 🟡 partial (common functions only) · 🌐 browser equivalent (use the JS/DOM way) · ⛔ not possible in a brows">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.html">Overview</a><a href="syntax.html">Syntax</a><a href="modules.html">Modules</a><a href="cpan.html" aria-current="page">CPAN status</a><a href="writing-modules.html">Write a module</a><a href="browser.html">Browser</a><a href="differences.html">Differences</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">Playground</a>
+  <a class="pill" href="cpan.ja.html" hreflang="ja">日本語</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>Popular CPAN modules: status</h1>
+<p>Legend: <strong>✅ bundled</strong> (works, compared with real Perl) · <strong>🟡 partial</strong> (common functions only) · <strong>🌐 browser equivalent</strong> (use the JS/DOM way) · <strong>⛔ not possible in a browser</strong> · <strong>➖ not yet</strong>.
+How to load a bundled module: <code>use List::Util qw(sum);</code> loads <code>modules/List/Util.js</code> on demand (see <a href="modules.html">Bundled modules</a>).</p>
+<h2 id="lists-data-and-text"><a class="anchor" href="#lists-data-and-text" aria-hidden="true">#</a>Lists, data and text</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Module</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td><code>List::Util</code></td>
+<td>✅</td>
+<td><code>sum min max first any all none reduce uniq shuffle pairs ...</code></td>
+</tr>
+<tr>
+<td><code>List::MoreUtils</code></td>
+<td>🟡</td>
+<td><code>uniq any all firstidx indexes minmax part ...</code>; no <code>zip</code>, <code>natatime</code>, <code>pairwise</code></td>
+</tr>
+<tr>
+<td><code>Scalar::Util</code></td>
+<td>✅</td>
+<td><code>blessed reftype looks_like_number refaddr weaken</code> (<code>weaken</code> is a no-op)</td>
+</tr>
+<tr>
+<td><code>Data::Dumper</code></td>
+<td>✅</td>
+<td><code>Indent</code>, <code>Sortkeys</code>, <code>Terse</code></td>
+</tr>
+<tr>
+<td><code>JSON::PP</code>, <code>JSON</code>, <code>JSON::XS</code>, <code>JSON::MaybeXS</code></td>
+<td>✅</td>
+<td><code>encode_json decode_json</code>, <code>-&gt;pretty-&gt;canonical</code></td>
+</tr>
+<tr>
+<td><code>Storable</code></td>
+<td>🟡</td>
+<td><code>dclone freeze thaw</code>; no <code>store</code>/<code>retrieve</code> (files)</td>
+</tr>
+<tr>
+<td><code>Text::Wrap</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Term::ANSIColor</code></td>
+<td>✅</td>
+<td>colour codes; the playground pane shows them as text</td>
+</tr>
+<tr>
+<td><code>Text::CSV</code>, <code>Text::CSV_XS</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>YAML</code>, <code>YAML::XS</code>, <code>TOML</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Text::Template</code>, <code>Template</code> (TT)</td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="encoding-and-hashing"><a class="anchor" href="#encoding-and-hashing" aria-hidden="true">#</a>Encoding and hashing</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Module</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td><code>Encode</code></td>
+<td>✅</td>
+<td>UTF-8, Latin-1, UTF-16, <strong>Shift_JIS / CP932 / EUC-JP</strong>, ISO-2022-JP decode</td>
+</tr>
+<tr>
+<td><code>MIME::Base64</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>URI::Escape</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>URI</code> (object interface)</td>
+<td>➖</td>
+<td>use <code>new URL(...)</code> from the hybrid syntax</td>
+</tr>
+<tr>
+<td><code>Digest::MD5</code>, <code>Digest::SHA</code></td>
+<td>✅</td>
+<td><code>md5_hex sha1_hex sha256_hex hmac_sha256_hex</code>; no SHA-512</td>
+</tr>
+</tbody></table></div>
+<h2 id="time"><a class="anchor" href="#time" aria-hidden="true">#</a>Time</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Module</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td><code>POSIX</code></td>
+<td>🟡</td>
+<td><code>strftime mktime floor ceil fmod pow round trunc</code>, limits</td>
+</tr>
+<tr>
+<td><code>Time::Local</code></td>
+<td>✅</td>
+<td><code>timelocal timegm</code></td>
+</tr>
+<tr>
+<td><code>Time::Piece</code>, <code>Time::Seconds</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Time::HiRes</code></td>
+<td>🟡</td>
+<td><code>time gettimeofday tv_interval</code>; <code>sleep</code>/<code>usleep</code> cannot block a browser</td>
+</tr>
+<tr>
+<td><code>DateTime</code>, <code>DateTime::Duration</code></td>
+<td>✅</td>
+<td>with real time zones (IANA names)</td>
+</tr>
+<tr>
+<td><code>DateTime::Format::*</code>, <code>Date::Calc</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="control-flow-and-testing"><a class="anchor" href="#control-flow-and-testing" aria-hidden="true">#</a>Control flow and testing</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Module</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td><code>Carp</code></td>
+<td>✅</td>
+<td><code>croak carp confess cluck</code></td>
+</tr>
+<tr>
+<td><code>Try::Tiny</code></td>
+<td>✅</td>
+<td><code>try/catch/finally</code></td>
+</tr>
+<tr>
+<td><code>Test::More</code></td>
+<td>✅</td>
+<td>TAP output</td>
+</tr>
+<tr>
+<td><code>constant</code>, <code>strict</code>, <code>warnings</code>, <code>utf8</code>, <code>parent</code>, <code>base</code></td>
+<td>✅</td>
+<td>part of the language</td>
+</tr>
+<tr>
+<td><code>Moose</code>, <code>Moo</code>, <code>Mouse</code></td>
+<td>➖</td>
+<td>use plain <code>package</code>/<code>bless</code> (<a href="syntax.html#packages-and-objects">syntax</a>)</td>
+</tr>
+<tr>
+<td><code>Class::Accessor</code>, <code>Object::Pad</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Readonly</code>, <code>Const::Fast</code></td>
+<td>➖</td>
+<td>use <code>use constant</code></td>
+</tr>
+<tr>
+<td><code>Benchmark</code></td>
+<td>➖</td>
+<td>use <code>Time::HiRes</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="files-math-system"><a class="anchor" href="#files-math-system" aria-hidden="true">#</a>Files, math, system</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Module</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td><code>File::Basename</code>, <code>File::Spec</code></td>
+<td>✅</td>
+<td>string handling only</td>
+</tr>
+<tr>
+<td><code>Math::Trig</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Math::BigInt</code>, <code>Math::BigFloat</code></td>
+<td>➖</td>
+<td>JavaScript&#39;s <code>BigInt</code> is reachable from the hybrid syntax</td>
+</tr>
+<tr>
+<td><code>File::Temp</code>, <code>File::Find</code>, <code>File::Slurp</code>, <code>Path::Tiny</code>, <code>Cwd</code>, <code>IO::File</code></td>
+<td>⛔</td>
+<td>no file system in a browser</td>
+</tr>
+<tr>
+<td><code>Getopt::Long</code>, <code>Pod::Usage</code></td>
+<td>⛔</td>
+<td>no command line</td>
+</tr>
+<tr>
+<td><code>Socket</code>, <code>IO::Socket</code>, <code>Net::*</code></td>
+<td>⛔</td>
+<td>no raw sockets</td>
+</tr>
+</tbody></table></div>
+<h2 id="web-and-databases"><a class="anchor" href="#web-and-databases" aria-hidden="true">#</a>Web and databases</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Module</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td>jQuery-style <code>$(&quot;#id&quot;)-&gt;on(...)-&gt;fadeIn</code></td>
+<td>✅</td>
+<td><code>modules/jQuery.js</code>, loaded when <code>$</code> is used; see <a href="browser.html">browser</a></td>
+</tr>
+<tr>
+<td><code>LWP::UserAgent</code>, <code>HTTP::Tiny</code>, <code>Mojo::UserAgent</code></td>
+<td>🌐</td>
+<td><code>$-&gt;get</code>, <code>$-&gt;post</code>, <code>$-&gt;ajax</code></td>
+</tr>
+<tr>
+<td><code>CGI</code>, <code>Plack</code>, <code>Mojolicious</code>, <code>Dancer2</code></td>
+<td>⛔</td>
+<td>server frameworks</td>
+</tr>
+<tr>
+<td><code>DBI</code> and drivers</td>
+<td>⛔</td>
+<td>no database driver; call an HTTP API with <code>$-&gt;ajax</code></td>
+</tr>
+</tbody></table></div>
+<p>Missing something you need? <a href="writing-modules.html">Write it yourself in a few lines</a> or open an issue.</p>
+
+<footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#lists-data-and-text">Lists, data and text</a><a href="#encoding-and-hashing">Encoding and hashing</a><a href="#time">Time</a><a href="#control-flow-and-testing">Control flow and testing</a><a href="#files-math-system">Files, math, system</a><a href="#web-and-databases">Web and databases</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>本物の Perl との違い — Perl2JS</title>
+<meta name="description" content="Perl2JS は JavaScript 上で動く Perl 風の言語であり、完全な perl ではありません。これらのドキュメントのプログラムで本物の Perl と照合していますが、まだ違いが残っている点を以下に示します。">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html" aria-current="page">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="differences.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>本物の Perl との違い</h1>
+<p>Perl2JS は JavaScript 上で動く Perl 風の言語であり、完全な <code>perl</code> ではありません。これらのドキュメントのプログラムで本物の Perl と照合していますが、まだ違いが残っている点を以下に示します。</p>
+<h2 id="数値と文字列"><a class="anchor" href="#数値と文字列" aria-hidden="true">#</a>数値と文字列</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Perl</th>
+<th>Perl2JS</th>
+</tr>
+</thead><tbody><tr>
+<td>64 ビット整数 (<code>9007199254740993</code>)</td>
+<td>数値は JavaScript の倍精度浮動小数点数です。2**53 を超える整数は精度を失い、出力は Perl の <code>%.15g</code> 形式になります</td>
+</tr>
+<tr>
+<td><code>&quot;0x10&quot; + 0</code> は 0、<code>&quot;1_000&quot; + 0</code> は 1</td>
+<td>文字列から数値への同じ変換規則を、一般的なケースについて実装しています。16 進数やアンダースコアを含む文字列では異なる場合があります</td>
+</tr>
+<tr>
+<td><code>1 &lt;&lt; 33</code>、<code>~5</code> は 64 ビットで動作する</td>
+<td>ビット演算は 32 ビットです</td>
+</tr>
+<tr>
+<td><code>&quot;az&quot;++</code> は <code>&quot;ba&quot;</code> (マジカルな文字列インクリメント)</td>
+<td><code>..</code> 範囲 (<code>&quot;aa&quot;..&quot;ad&quot;</code>) では動作します。文字列変数への <code>++</code> では動作しません</td>
+</tr>
+</tbody></table></div>
+<h2 id="リファレンス"><a class="anchor" href="#リファレンス" aria-hidden="true">#</a>リファレンス</h2>
+<p>リファレンスは Perl と同じように動作します。<code>\$x</code>、<code>\@a</code>、<code>\%h</code>、<code>\&amp;f</code>、<code>$$r</code>、<code>@$r</code>、<code>%$r</code>、<code>$r-&gt;[0]</code>、<code>ref($r)</code> (<code>SCALAR ARRAY HASH CODE REF Regexp</code>)、<code>&quot;$r&quot;</code> は <code>ARRAY(0x55d0c8a1f000)</code> のように出力され、<code>==</code>/<code>eq</code> は同一性を比較します。<code>@a = (...)</code> は配列をその場で変更するため、以前に取ったリファレンスからも変更が見え、<code>foreach</code> は要素のエイリアスになります。</p>
+<p>異なる点: <code>\$x == \$x</code> は偽になります (<code>\$x</code> と書くたびに新しいリファレンスオブジェクトが作られるため)。また、<code>\$h{k}</code> や <code>\$a[0]</code> (要素へのリファレンス) には対応していません。</p>
+<h2 id="コンテキスト"><a class="anchor" href="#コンテキスト" aria-hidden="true">#</a>コンテキスト</h2>
+<p>Perl はリストコンテキストかスカラーコンテキストかを実行時に決めます。Perl2JS はコードの形から決めますが、一般的なケースでは Perl と一致します。</p>
+<ul>
+<li>動作するもの: <code>my ($a, $b) = f();</code>、<code>my $n = @a;</code>、<code>my $n = () = $s =~ /x/g;</code>、<code>scalar(@a)</code>、<code>if (@a)</code>、<code>print &quot;n=&quot; . @a</code>。</li>
+<li>存在しないもの: <code>wantarray</code>。そのため、sub がリストコンテキストとスカラーコンテキストで異なる動作をすることはできません。</li>
+<li>リストを返す sub を <code>my $x = f();</code> のように使うと、Perl では最後の要素が返りますが、Perl2JS ではリスト全体が返ります。</li>
+</ul>
+<h2 id="未実装"><a class="anchor" href="#未実装" aria-hidden="true">#</a>未実装</h2>
+<p><code>wantarray</code>、フォーマット (<code>format STDOUT =</code>)、<code>tie</code>、<code>pos()</code> と <code>\G</code>、<code>sort by_name LIST</code> (ブロックを使ってください: <code>sort { $a &lt;=&gt; $b } LIST</code>)、<code>goto</code>、型グロブ (<code>*name</code>)、<code>AUTOLOAD</code>、<code>DESTROY</code> のタイミング、配列要素とハッシュ要素に対する <code>local</code>。
+ファイルとプロセスに関する関数 (<code>open</code>、<code>opendir</code>、<code>system</code>、<code>fork</code>、<code>-e</code>) は、ブラウザには存在しません。
+<code>binmode</code> と <code>STDIN</code> は受け付けられて無視され、<code>print STDERR</code> は <code>console.warn</code> に出力されます。</p>
+<h2 id="ブラウザでは-perl-より便利な点"><a class="anchor" href="#ブラウザでは-perl-より便利な点" aria-hidden="true">#</a>ブラウザでは Perl より便利な点</h2>
+<p><code>$(&quot;#id&quot;)-&gt;...</code> (jQuery 風)、<code>-&gt;</code> または <code>.</code> による DOM や JS オブジェクトの呼び出し、<a href="syntax.ja.html">ハイブリッド構文</a>、そして IME で入力した全角記号 (<code>＄ｘ ＝ （１）；</code>) は、対応する半角記号として読み取られます (文字列の中ではそのままです)。</p>
+<h2 id="名前"><a class="anchor" href="#名前" aria-hidden="true">#</a>名前</h2>
+<p><code>$_ @_ $0 $1.. $&amp; $+{name} $@ $! $, $\ $/ $|</code> が存在します。<code>@ARGV</code> と <code>%ENV</code> は空で、<code>$0</code> は <code>main.p2j</code> です。</p>
+<p>ここにない違いを見つけましたか? それを示す最小のプログラムと、本物の Perl の出力を添えて issue を開いてください。</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#数値と文字列">数値と文字列</a><a href="#リファレンス">リファレンス</a><a href="#コンテキスト">コンテキスト</a><a href="#未実装">未実装</a><a href="#ブラウザでは-perl-より便利な点">ブラウザでは Perl より便利な点</a><a href="#名前">名前</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

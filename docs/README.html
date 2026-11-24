@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perl2JS documentation — Perl2JS</title>
+<meta name="description" content="Perl2JS compiles a Perl-flavoured language to JavaScript in the browser. No server, no WebAssembly.">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.html" aria-current="page">Overview</a><a href="syntax.html">Syntax</a><a href="modules.html">Modules</a><a href="cpan.html">CPAN status</a><a href="writing-modules.html">Write a module</a><a href="browser.html">Browser</a><a href="differences.html">Differences</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">Playground</a>
+  <a class="pill" href="README.ja.html" hreflang="ja">日本語</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>Perl2JS documentation</h1>
+<p>Perl2JS compiles a Perl-flavoured language to JavaScript <strong>in the browser</strong>. No server, no WebAssembly.
+Every <code>perl</code> code block in these pages is run through real Perl 5.40 and Perl2JS in CI-style checks (<code>node tools/verify-docs.js docs/*.md</code>), and the output must be identical.</p>
+<div class="tablewrap"><table><thead><tr>
+<th>I want to...</th>
+<th>Read</th>
+</tr>
+</thead><tbody><tr>
+<td>see which Perl syntax works, with examples</td>
+<td><strong><a href="syntax.html">Supported syntax</a></strong></td>
+</tr>
+<tr>
+<td>mix Perl and JavaScript (<code>Math.max</code>, <code>document.getElementById</code>, <code>alert</code>)</td>
+<td><a href="syntax.html#perl--javascript-hybrid">Perl + JavaScript hybrid</a></td>
+</tr>
+<tr>
+<td>use <code>List::Util</code>, <code>JSON::PP</code>, <code>POSIX</code>, <code>DateTime</code>...</td>
+<td><strong><a href="modules.html">Bundled modules</a></strong></td>
+</tr>
+<tr>
+<td>check whether a popular CPAN module is available</td>
+<td><strong><a href="cpan.html">Popular CPAN modules: status</a></strong></td>
+</tr>
+<tr>
+<td>write my own module (<code>use Foo::Bar</code>)</td>
+<td><strong><a href="writing-modules.html">Writing your own module</a></strong></td>
+</tr>
+<tr>
+<td>put it on a web page, use the DOM and jQuery-style <code>$</code></td>
+<td><a href="browser.html">Using it in the browser</a></td>
+</tr>
+<tr>
+<td>know what behaves differently from real Perl</td>
+<td><a href="differences.html">Differences from Perl</a></td>
+</tr>
+</tbody></table></div>
+<h2 id="the-30-second-version"><a class="anchor" href="#the-30-second-version" aria-hidden="true">#</a>The 30-second version</h2>
+<div class="code"><div class="code-bar"><span class="lang">HTML</span><button class="copy" type="button">Copy</button></div><pre><code>&lt;script src=&quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/perl2js&quot;&gt;
+  my @langs = qw(Perl JavaScript);
+  for my $l (@langs) { print &quot;Hello, $l!\n&quot;; }
+  $(&quot;#out&quot;)-&gt;text(&quot;done&quot;);            # jQuery-style DOM, built in
+&lt;/script&gt;</code></pre></div>
+<p>The core (<code>perl2js.js</code>) is small on purpose. Everything else (<code>List::Util</code>, <code>DateTime</code>, jQuery-style <code>$</code>, ...) is a separate file in <a href="https://github.com/satorunet/perl2js/blob/main/modules" target="_blank" rel="noopener"><code>modules/</code></a> that is downloaded the first time a program says <code>use ...</code>.</p>
+
+<footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>構文ガイド — Perl2JS</title>
+<meta name="description" content="Perl2JS は Perl 5 の実用的なサブセットを読み取ります。このページでは、書けるものを順に見ていきます。">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html">概要</a><a href="syntax.ja.html" aria-current="page">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="syntax.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>構文ガイド</h1>
+<p>Perl2JS は Perl 5 の実用的なサブセットを読み取ります。このページでは、書けるものを順に見ていきます。
+このページにあるすべての <code>perl</code> コードブロックは、<strong>本物の Perl 5.40 と Perl2JS の両方</strong> で実行され、出力が一致する必要があります
+(<code>node tools/verify-docs.js docs/syntax.md</code>)。</p>
+<ul>
+<li><a href="#変数">変数</a> · <a href="#配列ハッシュリファレンス">配列、ハッシュ、リファレンス</a> · <a href="#文字列">文字列</a></li>
+<li><a href="#数値と演算子">数値と演算子</a> · <a href="#制御構文">制御構文</a> · <a href="#サブルーチン">サブルーチン</a></li>
+<li><a href="#正規表現">正規表現</a> · <a href="#パッケージとオブジェクト">パッケージとオブジェクト</a> · <a href="#エラー">エラー</a></li>
+<li><a href="#その他の機能">その他の機能</a> · <a href="#組み込み関数">組み込み関数</a></li>
+</ul>
+<h2 id="変数"><a class="anchor" href="#変数" aria-hidden="true">#</a>変数</h2>
+<p><code>$scalar</code>、<code>@array</code>、<code>%hash</code> です。宣言には <code>my</code> (ブロックスコープ)、<code>our</code> (パッケージ/グローバル)、<code>local</code> (一時的な値) を使います。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use strict;
+use warnings;
+
+my $name  = &quot;Perl2JS&quot;;
+my @langs = (&quot;Perl&quot;, &quot;JavaScript&quot;, &quot;Raku&quot;);
+my %age   = (ann =&gt; 31, bob =&gt; 25);
+
+print &quot;$name knows &quot;, scalar(@langs), &quot; languages: @langs\n&quot;;
+print &quot;Ann is $age{ann}, the last language is $langs[-1] (index $#langs)\n&quot;;
+
+my ($first, @rest) = @langs;      # list assignment
+print &quot;first=$first rest=@rest\n&quot;;
+my ($x, $y) = (1, 2);
+($x, $y) = ($y, $x);              # swap
+print &quot;x=$x y=$y\n&quot;;</code></pre></div>
+<p><code>use strict;</code> はコンパイル時にチェックされます。宣言していない変数を使うと、行番号つきでプログラムが停止します。</p>
+<h2 id="配列ハッシュリファレンス"><a class="anchor" href="#配列ハッシュリファレンス" aria-hidden="true">#</a>配列、ハッシュ、リファレンス</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my @a = (10, 20, 30, 40, 50);
+push @a, 60;                       # also: pop, shift, unshift, splice
+print &quot;count=&quot;, scalar(@a), &quot; last=$a[-1] slice=@a[1,2] range=@a[1..3]\n&quot;;
+print &quot;reversed: @{[ reverse @a ]}\n&quot;;
+print &quot;sorted desc: @{[ sort { $b &lt;=&gt; $a } @a ]}\n&quot;;
+
+my %h = (one =&gt; 1, two =&gt; 2, three =&gt; 3);
+$h{four} = 4;
+delete $h{one};
+for my $k (sort keys %h) {
+    print &quot;$k=$h{$k} &quot;;
+}
+print &quot;\n&quot;;
+print &quot;has two: &quot;, (exists $h{two} ? &quot;yes&quot; : &quot;no&quot;), &quot;, has one: &quot;, (exists $h{one} ? &quot;yes&quot; : &quot;no&quot;), &quot;\n&quot;;
+print &quot;values sum: &quot;, eval { my $s = 0; $s += $_ for values %h; $s }, &quot;\n&quot;;</code></pre></div>
+<p>リファレンスは素の JavaScript のオブジェクトと配列なので、<code>\@a</code> と <code>\%h</code> は配列やハッシュそのものです。
+<code>[ ... ]</code> と <code>{ ... }</code> は無名の配列・ハッシュを作り、<code>-&gt;</code> でその中をたどります。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my $data = {
+    name  =&gt; &quot;Ann&quot;,
+    langs =&gt; [&quot;Perl&quot;, &quot;JS&quot;],
+    pos   =&gt; { x =&gt; 3, y =&gt; 4 },
+};
+push @{ $data-&gt;{langs} }, &quot;Rust&quot;;
+$data-&gt;{pos}{x} += 10;
+
+print &quot;$data-&gt;{name} knows @{ $data-&gt;{langs} }; x=$data-&gt;{pos}{x}\n&quot;;
+print &quot;number of langs: &quot;, scalar(@{ $data-&gt;{langs} }), &quot;\n&quot;;
+print &quot;ref types: &quot;, join(&quot;,&quot;, ref($data), ref($data-&gt;{langs}), ref(sub { 1 })), &quot;\n&quot;;
+
+my @matrix = ([1, 2, 3], [4, 5, 6]);
+print &quot;matrix[1][2] = $matrix[1][2], row 0 = @{ $matrix[0] }\n&quot;;
+
+my @copy = @{ $data-&gt;{langs} };    # copy of the array
+my %by_name = map { $_ =&gt; length($_) } @copy;
+print join(&quot;, &quot;, map { &quot;$_:$by_name{$_}&quot; } sort keys %by_name), &quot;\n&quot;;</code></pre></div>
+<p>ハッシュの順序: Perl では順序がランダムになりますが、Perl2JS は挿入順を保ちます。順序が重要な場合は <code>sort keys %h</code> を使ってください。</p>
+<h2 id="文字列"><a class="anchor" href="#文字列" aria-hidden="true">#</a>文字列</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my $n = 3;
+my @items = (&quot;a&quot;, &quot;b&quot;);
+my %h = (k =&gt; &quot;v&quot;);
+my $r = { list =&gt; [1, 2] };
+
+print &quot;Interpolation: $n $items[0] @items $h{k} $r-&gt;{list}[1] @{[ $n * 2 ]}\n&quot;;
+print 'No interpolation: $n @items\n', &quot;\n&quot;;
+print &quot;Escapes: tab[\t] unicode[\x{263A}] quote[\&quot;]\n&quot;;
+print q(single quoted with $n), &quot; | &quot;, qq{double quoted with $n}, &quot;\n&quot;;
+my @words = qw(alpha beta gamma);
+print &quot;qw: @words\n&quot;;</code></pre></div>
+<p>ヒアドキュメント (<code>&lt;&lt;&quot;EOT&quot;</code>、<code>&lt;&lt;&#39;EOT&#39;</code>、およびインデントを取り除く <code>&lt;&lt;~EOT</code>):</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my $who = &quot;world&quot;;
+print &lt;&lt;&quot;EOT&quot;;
+Hello, $who!
+  (interpolated)
+EOT
+print &lt;&lt;'EOT';
+Hello, $who! (not interpolated)
+EOT
+print &lt;&lt;~EOT;
+    indented text
+      keeps relative indentation
+    EOT</code></pre></div>
+<p>文字列関数と演算子:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my $s = &quot;Hello, World&quot;;
+print length($s), &quot; &quot;, uc($s), &quot; &quot;, lc($s), &quot; &quot;, ucfirst(lc(&quot;PERL&quot;)), &quot; &quot;, lcfirst(&quot;ABC&quot;), &quot;\n&quot;;
+print substr($s, 0, 5), &quot;|&quot;, substr($s, -5), &quot;|&quot;, index($s, &quot;World&quot;), &quot;|&quot;, rindex($s, &quot;o&quot;), &quot;\n&quot;;
+print join(&quot;-&quot;, split(/,\s*/, $s)), &quot;|&quot;, scalar reverse(&quot;abc&quot;), &quot;|&quot;, &quot;ab&quot; x 3, &quot;|&quot;, &quot;-&quot; x 10, &quot;\n&quot;;
+print sprintf(&quot;%05.1f|%-6s|%6s|%x|%o|%b|%e|%3d%%&quot;, 3.14159, &quot;ab&quot;, &quot;cd&quot;, 255, 8, 5, 12345.678, 42), &quot;\n&quot;;
+print &quot;chr/ord: &quot;, chr(65), ord(&quot;a&quot;), &quot; &quot;, join(&quot;,&quot;, map { sprintf &quot;%02x&quot;, ord } split //, &quot;AB&quot;), &quot;\n&quot;;
+my $line = &quot;text\n&quot;;
+chomp $line;
+print &quot;[$line] &quot;, ($s =~ tr/a-z//), &quot; lowercase letters\n&quot;;
+(my $t = $s) =~ tr/a-zA-Z//cd;     # delete everything that is not a letter
+print &quot;$t\n&quot;;</code></pre></div>
+<h2 id="数値と演算子"><a class="anchor" href="#数値と演算子" aria-hidden="true">#</a>数値と演算子</h2>
+<p>数値は JavaScript の倍精度浮動小数点数で、Perl と同じ形式 (<code>%.15g</code>) で出力されます。
+演算子は Perl の規則に従います。<code>+ - * /</code> は (文字列に対しても) 常に数値演算で、<code>.</code> は連結、
+<code>== != &lt; &gt; &lt;= &gt;=</code> は数値として比較し、<code>eq ne lt gt le ge</code> は文字列として比較します。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>print 0.1 + 0.2, &quot; &quot;, 1 / 3, &quot; &quot;, 10 / 4, &quot; &quot;, 7 % 3, &quot; &quot;, 2 ** 10, &quot; &quot;, int(7 / 2), &quot; &quot;, abs(-3), &quot; &quot;, sqrt(16), &quot;\n&quot;;
+print &quot;5&quot; + &quot;5&quot;, &quot; &quot;, &quot;5&quot; . &quot;5&quot;, &quot; &quot;, &quot;5&quot; * &quot;5&quot;, &quot; &quot;, &quot;10&quot; / &quot;4&quot;, &quot;\n&quot;;
+print &quot;numeric: &quot;, (&quot;10&quot; &lt; &quot;9&quot; ? &quot;10 is smaller&quot; : &quot;10 is not smaller&quot;), &quot;\n&quot;;
+print &quot;string : &quot;, (&quot;10&quot; lt &quot;9&quot; ? &quot;10 sorts first&quot; : &quot;9 sorts first&quot;), &quot;\n&quot;;
+print &quot;equal  : &quot;, (5 == 5.0 ? &quot;5 == 5.0&quot; : &quot;no&quot;), &quot;, &quot;, (&quot;5&quot; eq &quot;5.0&quot; ? &quot;same text&quot; : &quot;different text&quot;), &quot;\n&quot;;
+print &quot;spaceship: &quot;, join(&quot;,&quot;, 1 &lt;=&gt; 2, &quot;b&quot; cmp &quot;a&quot;, 2 &lt;=&gt; 2), &quot;\n&quot;;
+
+my $i = 5;
+$i++; $i += 10; $i *= 2; $i -= 1; $i **= 2;
+print &quot;i=$i\n&quot;;
+my ($u, $v);
+print &quot;defined-or: &quot;, $u // &quot;default&quot;, &quot; &quot;, ($v || &quot;false-ish&quot;), &quot; &quot;, (0 // &quot;zero is defined&quot;), &quot;\n&quot;;
+print &quot;logic: &quot;, (1 &amp;&amp; &quot;and&quot;), &quot; &quot;, (0 || &quot;or&quot;), &quot; &quot;, (!1 ? &quot;t&quot; : &quot;not&quot;), &quot; &quot;, (1 and 0 or &quot;low-precedence&quot;), &quot;\n&quot;;
+print &quot;range: &quot;, join(&quot;,&quot;, 1..5), &quot; &quot;, join(&quot;&quot;, &quot;a&quot;..&quot;e&quot;), &quot;\n&quot;;</code></pre></div>
+<h2 id="制御構文"><a class="anchor" href="#制御構文" aria-hidden="true">#</a>制御構文</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>for my $i (1..15) {
+    if    ($i % 15 == 0) { print &quot;FizzBuzz &quot; }
+    elsif ($i % 3  == 0) { print &quot;Fizz &quot; }
+    elsif ($i % 5  == 0) { print &quot;Buzz &quot; }
+    else                 { print &quot;$i &quot; }
+}
+print &quot;\n&quot;;
+
+my $n = 0;
+while ($n &lt; 10) { $n++; next if $n % 2; last if $n &gt; 6; print &quot;n=$n &quot;; }
+print &quot;\n&quot;;
+do { $n-- } until ($n &lt;= 3);
+print &quot;after until: $n\n&quot;;
+
+for (my $j = 0; $j &lt; 3; $j++) { print &quot;j=$j &quot;; }
+print &quot;\n&quot;;
+
+my @queue = qw(a b c);
+while (my $item = shift @queue) { print &quot;item $item &quot;; }
+print &quot;\n&quot;;
+
+print &quot;$_ &quot; foreach reverse 1..3;                # statement modifiers: if unless while until for foreach
+print &quot;\n&quot;;
+print &quot;unless works\n&quot; unless 0;
+my $size = 5;
+print &quot;size: &quot;, ($size &lt; 3 ? &quot;small&quot; : $size &lt; 10 ? &quot;medium&quot; : &quot;large&quot;), &quot;\n&quot;;</code></pre></div>
+<p><code>$_</code> は <code>for</code>、<code>map</code>、<code>grep</code>、<code>split</code> などのデフォルト変数です。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>for (qw(x y z)) { print uc, &quot; &quot; }
+print &quot;\n&quot;;
+my @lens = map { length } qw(a bb ccc);
+print &quot;@lens\n&quot;;</code></pre></div>
+<h2 id="サブルーチン"><a class="anchor" href="#サブルーチン" aria-hidden="true">#</a>サブルーチン</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use feature 'signatures';
+no warnings;
+
+sub add { my ($a, $b) = @_; return $a + $b; }
+sub greet { my $name = shift // &quot;world&quot;; &quot;Hello, $name!&quot; }        # the last value is returned
+sub minmax { my @s = sort { $a &lt;=&gt; $b } @_; return ($s[0], $s[-1]); }
+sub fact($n) { $n &lt;= 1 ? 1 : $n * fact($n - 1) }                    # signatures
+
+print add(2, 3), &quot; &quot;, greet(), &quot; &quot;, greet(&quot;Perl2JS&quot;), &quot; &quot;, fact(10), &quot;\n&quot;;
+my ($lo, $hi) = minmax(5, 3, 9, 1);
+print &quot;min=$lo max=$hi\n&quot;;
+
+my $counter = do { my $c = 0; sub { return ++$c } };               # closures
+$counter-&gt;() for 1..2;
+print &quot;counter: &quot;, $counter-&gt;(), &quot;\n&quot;;
+
+my %dispatch = (double =&gt; sub { $_[0] * 2 }, square =&gt; sub { $_[0] ** 2 });
+print join(&quot;, &quot;, map { &quot;$_(7)=&quot; . $dispatch{$_}-&gt;(7) } sort keys %dispatch), &quot;\n&quot;;
+
+my @sorted = sort { length($a) &lt;=&gt; length($b) or $a cmp $b } qw(pear fig apple kiwi);
+print &quot;@sorted\n&quot;;</code></pre></div>
+<p>sub は最後の文の値を返します。<code>@_</code> には引数が入り、<code>shift</code> で最初の引数を取り出します。
+<code>local</code> はパッケージ変数に一時的な値を与え、ブロックの終了時 (<code>die</code> で抜けた場合も含む) に元に戻します。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>our $level = 0;
+sub show { print &quot;level=$level\n&quot; }
+sub nested { local $level = $level + 1; show(); }
+show(); nested(); show();</code></pre></div>
+<h2 id="正規表現"><a class="anchor" href="#正規表現" aria-hidden="true">#</a>正規表現</h2>
+<p>Perl の正規表現は JavaScript の <code>RegExp</code> に変換されます。キャプチャは <code>$1</code>、<code>$2</code>、... です。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my $date = &quot;2026-11-24&quot;;
+if ($date =~ /^(\d+)-(\d+)-(\d+)$/) {
+    print &quot;year=$1 month=$2 day=$3\n&quot;;
+}
+(my $copy = $date) =~ s/-/\//g;                  # substitute, g = all
+print &quot;$copy\n&quot;;
+my $text = &quot;a1b22c333&quot;;
+my $count = 0;
+$count++ while $text =~ /\d+/g;                  # scalar //g walks through the matches
+print &quot;numbers found: $count\n&quot;;
+my $shout = &quot;hello world&quot;;
+$shout =~ s/(\w+)/uc($1)/ge;                     # e = evaluate the replacement
+print &quot;$shout\n&quot;;
+print join(&quot;|&quot;, split /\s*,\s*/, &quot;a , b,c ,d&quot;), &quot;\n&quot;;
+my $re = qr/(\w+)@(\w+)\.com/i;                  # compiled regex
+print &quot;user=$1 host=$2\n&quot; if 'Mail: Bob@Example.com' =~ $re;
+print &quot;no match\n&quot; if &quot;abc&quot; !~ /\d/;
+my @found = grep { /^b/ } qw(apple banana blueberry cherry);
+print &quot;@found\n&quot;;</code></pre></div>
+<p>フラグ <code>i m s x g e</code>、<code>qr//</code>、<code>m{...}</code>、<code>s{...}{...}</code>、<code>tr/a-z/A-Z/</code> (<code>c d s r</code> つき)、<code>split</code> が動作します。
+エンジンは JavaScript のものなので、Perl の正規表現の一部の特殊な機能は使えません。<a href="differences.ja.html">違い</a>を参照してください。</p>
+<h2 id="パッケージとオブジェクト"><a class="anchor" href="#パッケージとオブジェクト" aria-hidden="true">#</a>パッケージとオブジェクト</h2>
+<p><code>package</code>、<code>bless</code>、<code>use parent</code>、<code>SUPER::</code>、<code>isa</code>、<code>can</code>、<code>ref</code> が動作します。パッケージは、それを使うコードより<strong>前</strong>に定義してください。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>package Animal;
+sub new {
+    my ($class, %args) = @_;
+    my $self = { name =&gt; $args{name} || &quot;unknown&quot;, sound =&gt; &quot;...&quot; };
+    return bless $self, $class;
+}
+sub name  { $_[0]-&gt;{name} }
+sub speak { my $self = shift; return sprintf(&quot;%s the %s says %s&quot;, $self-&gt;name, lc ref($self), $self-&gt;sound); }
+sub sound { $_[0]-&gt;{sound} }
+
+package Dog;
+use parent -norequire, 'Animal';
+sub new {
+    my ($class, %args) = @_;
+    my $self = Animal::new($class, %args);
+    $self-&gt;{tricks} = [];
+    return $self;
+}
+sub sound { &quot;Woof&quot; }
+sub add_trick { my ($self, $t) = @_; push @{ $self-&gt;{tricks} }, $t; return $self; }
+sub tricks { @{ $_[0]-&gt;{tricks} } }
+
+package main;
+my $d = Dog-&gt;new(name =&gt; &quot;Rex&quot;);
+$d-&gt;add_trick(&quot;sit&quot;)-&gt;add_trick(&quot;roll&quot;);
+print $d-&gt;speak, &quot;\n&quot;;
+print &quot;tricks: &quot;, join(&quot;, &quot;, $d-&gt;tricks), &quot;\n&quot;;
+print &quot;isa Animal: &quot;, ($d-&gt;isa('Animal') ? &quot;yes&quot; : &quot;no&quot;), &quot;, can speak: &quot;, ($d-&gt;can('speak') ? &quot;yes&quot; : &quot;no&quot;), &quot;, ref: &quot;, ref($d), &quot;\n&quot;;
+my $r = eval { $d-&gt;fly; 1 };
+print &quot;error: $1\n&quot; if !$r &amp;&amp; $@ =~ /^(Can't locate object method &quot;\w+&quot; via package &quot;\w+&quot;)/;</code></pre></div>
+<p><code>$obj-&gt;name</code> と <code>$obj-&gt;{name}</code> は衝突しません。メソッドとハッシュキーは別の場所に存在するためです。</p>
+<h2 id="エラー"><a class="anchor" href="#エラー" aria-hidden="true">#</a>エラー</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>my $ok = eval { die &quot;something broke\n&quot;; 1 };
+print &quot;caught: $@&quot; unless $ok;
+
+sub risky { my $n = shift; die { code =&gt; 42, msg =&gt; &quot;negative&quot; } if $n &lt; 0; return sqrt($n); }
+for my $n (16, -1) {
+    my $r = eval { risky($n) };
+    if (ref $@) { print &quot;error $@-&gt;{code}: $@-&gt;{msg}\n&quot; } else { print &quot;sqrt($n) = $r\n&quot; }
+}</code></pre></div>
+<p>末尾に改行のない <code>die &quot;text&quot;</code> には、Perl の <code>at FILE line N.</code> と同様に <code>at line N.</code> が付加されます。
+Perl 5.34 の <code>try</code>/<code>catch</code> はモジュールなしで動作し、<code>Try::Tiny</code> も利用できます。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use feature 'try';
+no warnings;
+for my $n (4, -4) {
+    try {
+        die &quot;negative\n&quot; if $n &lt; 0;
+        print &quot;sqrt($n) = &quot;, sqrt($n), &quot;\n&quot;;
+    }
+    catch ($e) {
+        chomp $e;
+        print &quot;failed for $n: $e\n&quot;;
+    }
+    finally { print &quot;done with $n\n&quot;; }
+}</code></pre></div>
+<p>Web ページでは、捕捉されなかったエラーが、行番号、ソースの抜粋、ヒントとともにページ上に表示されます。</p>
+<h2 id="その他の機能"><a class="anchor" href="#その他の機能" aria-hidden="true">#</a>その他の機能</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use constant PI =&gt; 3.14159;
+use constant { E =&gt; 2.71828, NAME =&gt; &quot;const&quot; };
+use constant COLORS =&gt; qw(red green blue);
+my @c = (COLORS);
+print PI, &quot; &quot;, E, &quot; &quot;, NAME, &quot; &quot;, scalar(@c), &quot; &quot;, (COLORS)[1], &quot;\n&quot;;
+
+my @unsorted = (3, 11, 2);
+print join(&quot;,&quot;, sort @unsorted), &quot; vs &quot;, join(&quot;,&quot;, sort { $a &lt;=&gt; $b } @unsorted), &quot;\n&quot;;   # default sort is by string
+print join(&quot;,&quot;, map { $_ * 2 } grep { $_ % 2 } 1..9), &quot;\n&quot;;
+print &quot;last element: $unsorted[$#unsorted], via -1: $unsorted[-1]\n&quot;;
+
+my ($y, $m, $d) = (localtime(0))[5, 4, 3];     # list slice
+printf &quot;%s\n&quot;, join &quot;&quot;, map { chr(ord($_) + 1) } split //, &quot;HAL&quot;;
+print &quot;ok\n&quot; if &quot;abc&quot; =~ /b/ and not &quot;abc&quot; =~ /z/;</code></pre></div>
+<p>そのほか: <code>wantarray</code> は<strong>サポートされていません</strong>。<code>local $_</code> は動作します。<code>printf</code>/<code>sprintf</code> は <code>%s %d %f %e %g %x %o %b %c %%</code>、フラグ、幅、精度、<code>%vd</code> をサポートします。</p>
+<h2 id="perl--javascript-ハイブリッド"><a class="anchor" href="#perl--javascript-ハイブリッド" aria-hidden="true">#</a>Perl + JavaScript ハイブリッド</h2>
+<p>Perl2JS は JavaScript にコンパイルされるので、JavaScript の世界はすぐそこにあります。Perl を書き続けながら、同じプログラム内でブラウザや JS のオブジェクトを呼び出せます。よく使う JS のグローバルオブジェクトには、<code>-&gt;</code> (Perl 風) または <code>.</code> (JavaScript 風) のどちらも使えます。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>for (0..5) {
+    alert(10);                       # Perl loop, JavaScript function
+}
+
+print Math.max(1, 5, 3), &quot;\n&quot;;                       # 5   (also Math-&gt;max(...))
+print JSON.stringify({ a =&gt; 1, b =&gt; [1, 2] }), &quot;\n&quot;;  # {&quot;a&quot;:1,&quot;b&quot;:[1,2]}
+
+my $el = document.getElementById(&quot;out&quot;);             # the DOM, straight from Perl
+$el-&gt;{textContent} = &quot;Hello from Perl&quot;;              # properties are hash-style: -&gt;{name}
+console.log(&quot;sum:&quot;, 1 + 2);
+
+my $now = new Date();
+print $now-&gt;getFullYear(), &quot;\n&quot;;                     # methods on JS objects: -&gt;name(...)</code></pre></div>
+<p><code>.</code> で使える JS の名前: <code>Math JSON console document window Object Array Number String Date Promise localStorage sessionStorage navigator location Intl history performance</code>。
+それ以外の場所では <code>-&gt;</code> を使います。<code>$obj-&gt;method(...)</code> はメソッド呼び出し、<code>$obj-&gt;{prop}</code> はプロパティの読み書き、<code>$fn-&gt;(...)</code> は関数値の呼び出しで、<code>sub { ... }</code> はどの JS API にも渡せる関数です (<code>setTimeout(sub { print &quot;later&quot; }, 500)</code>)。
+Perl のコードと JS の値は自由に混在できます。配列は本物の JS 配列、ハッシュはプレーンなオブジェクト、文字列と数値は JS のものです。</p>
+<p>受け付けないもの (これは JavaScript ではなく Perl です): <code>let</code>/<code>const</code>、アロー関数 <code>x =&gt; x * 2</code>、<code>===</code>、テンプレートリテラル。<a href="differences.ja.html">違い</a>を参照してください。</p>
+<h2 id="組み込み関数"><a class="anchor" href="#組み込み関数" aria-hidden="true">#</a>組み込み関数</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>分類</th>
+<th>関数</th>
+</tr>
+</thead><tbody><tr>
+<td>出力</td>
+<td><code>print</code> <code>printf</code> <code>say</code> <code>sprintf</code></td>
+</tr>
+<tr>
+<td>配列</td>
+<td><code>push</code> <code>pop</code> <code>shift</code> <code>unshift</code> <code>splice</code> <code>reverse</code> <code>sort</code> <code>map</code> <code>grep</code> <code>join</code> <code>scalar</code></td>
+</tr>
+<tr>
+<td>ハッシュ</td>
+<td><code>keys</code> <code>values</code> <code>exists</code> <code>delete</code> <code>each</code>-style loops with <code>keys</code></td>
+</tr>
+<tr>
+<td>文字列</td>
+<td><code>length</code> <code>substr</code> <code>index</code> <code>rindex</code> <code>uc</code> <code>lc</code> <code>ucfirst</code> <code>lcfirst</code> <code>chomp</code> <code>chop</code> <code>chr</code> <code>ord</code> <code>split</code> <code>sprintf</code> <code>reverse</code> <code>tr///</code></td>
+</tr>
+<tr>
+<td>数値</td>
+<td><code>abs</code> <code>int</code> <code>sqrt</code> <code>sin</code> <code>cos</code> <code>atan2</code> <code>exp</code> <code>log</code> <code>hex</code> <code>oct</code> <code>rand</code> <code>srand</code></td>
+</tr>
+<tr>
+<td>型</td>
+<td><code>defined</code> <code>ref</code> <code>bless</code></td>
+</tr>
+<tr>
+<td>時刻</td>
+<td><code>time</code> <code>localtime</code> <code>gmtime</code></td>
+</tr>
+<tr>
+<td>制御</td>
+<td><code>die</code> <code>warn</code> <code>eval</code> <code>exit</code> <code>return</code> <code>last</code> <code>next</code></td>
+</tr>
+</tbody></table></div>
+<p>それ以外はすべて<a href="modules.ja.html">モジュール</a>から提供されます: <code>List::Util</code>、<code>POSIX</code>、<code>Data::Dumper</code>、<code>Time::Piece</code>、<code>JSON::PP</code>、<code>Encode</code>、...</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#変数">変数</a><a href="#配列ハッシュリファレンス">配列、ハッシュ、リファレンス</a><a href="#文字列">文字列</a><a href="#数値と演算子">数値と演算子</a><a href="#制御構文">制御構文</a><a href="#サブルーチン">サブルーチン</a><a href="#正規表現">正規表現</a><a href="#パッケージとオブジェクト">パッケージとオブジェクト</a><a href="#エラー">エラー</a><a href="#その他の機能">その他の機能</a><a href="#perl--javascript-ハイブリッド">Perl + JavaScript ハイブリッド</a><a href="#組み込み関数">組み込み関数</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

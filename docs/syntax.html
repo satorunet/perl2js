@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syntax guide — Perl2JS</title>
+<meta name="description" content="Perl2JS reads a practical subset of Perl 5. This page walks through what you can write.">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.html">Overview</a><a href="syntax.html" aria-current="page">Syntax</a><a href="modules.html">Modules</a><a href="cpan.html">CPAN status</a><a href="writing-modules.html">Write a module</a><a href="browser.html">Browser</a><a href="differences.html">Differences</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">Playground</a>
+  <a class="pill" href="syntax.ja.html" hreflang="ja">日本語</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>Syntax guide</h1>
+<p>Perl2JS reads a practical subset of Perl 5. This page walks through what you can write.
+Every <code>perl</code> code block on this page is run with <strong>real Perl 5.40 and with Perl2JS</strong>, and the output has to be identical
+(<code>node tools/verify-docs.js docs/syntax.md</code>).</p>
+<ul>
+<li><a href="#variables">Variables</a> · <a href="#arrays-hashes-and-references">Arrays, hashes, references</a> · <a href="#strings">Strings</a></li>
+<li><a href="#numbers-and-operators">Numbers and operators</a> · <a href="#control-flow">Control flow</a> · <a href="#subroutines">Subroutines</a></li>
+<li><a href="#regular-expressions">Regular expressions</a> · <a href="#packages-and-objects">Packages and objects</a> · <a href="#errors">Errors</a></li>
+<li><a href="#other-features">Other features</a> · <a href="#built-in-functions">Built-in functions</a></li>
+</ul>
+<h2 id="variables"><a class="anchor" href="#variables" aria-hidden="true">#</a>Variables</h2>
+<p><code>$scalar</code>, <code>@array</code>, <code>%hash</code>. Declare them with <code>my</code> (block scope), <code>our</code> (package/global) or <code>local</code> (temporary value).</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>use strict;
+use warnings;
+
+my $name  = &quot;Perl2JS&quot;;
+my @langs = (&quot;Perl&quot;, &quot;JavaScript&quot;, &quot;Raku&quot;);
+my %age   = (ann =&gt; 31, bob =&gt; 25);
+
+print &quot;$name knows &quot;, scalar(@langs), &quot; languages: @langs\n&quot;;
+print &quot;Ann is $age{ann}, the last language is $langs[-1] (index $#langs)\n&quot;;
+
+my ($first, @rest) = @langs;      # list assignment
+print &quot;first=$first rest=@rest\n&quot;;
+my ($x, $y) = (1, 2);
+($x, $y) = ($y, $x);              # swap
+print &quot;x=$x y=$y\n&quot;;</code></pre></div>
+<p><code>use strict;</code> is checked at compile time: using an undeclared variable stops the program with the line number.</p>
+<h2 id="arrays-hashes-and-references"><a class="anchor" href="#arrays-hashes-and-references" aria-hidden="true">#</a>Arrays, hashes and references</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my @a = (10, 20, 30, 40, 50);
+push @a, 60;                       # also: pop, shift, unshift, splice
+print &quot;count=&quot;, scalar(@a), &quot; last=$a[-1] slice=@a[1,2] range=@a[1..3]\n&quot;;
+print &quot;reversed: @{[ reverse @a ]}\n&quot;;
+print &quot;sorted desc: @{[ sort { $b &lt;=&gt; $a } @a ]}\n&quot;;
+
+my %h = (one =&gt; 1, two =&gt; 2, three =&gt; 3);
+$h{four} = 4;
+delete $h{one};
+for my $k (sort keys %h) {
+    print &quot;$k=$h{$k} &quot;;
+}
+print &quot;\n&quot;;
+print &quot;has two: &quot;, (exists $h{two} ? &quot;yes&quot; : &quot;no&quot;), &quot;, has one: &quot;, (exists $h{one} ? &quot;yes&quot; : &quot;no&quot;), &quot;\n&quot;;
+print &quot;values sum: &quot;, eval { my $s = 0; $s += $_ for values %h; $s }, &quot;\n&quot;;</code></pre></div>
+<p>References are plain JavaScript objects and arrays, so <code>\@a</code> and <code>\%h</code> are the array or hash itself.
+<code>[ ... ]</code> and <code>{ ... }</code> build anonymous ones, and <code>-&gt;</code> walks into them.</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my $data = {
+    name  =&gt; &quot;Ann&quot;,
+    langs =&gt; [&quot;Perl&quot;, &quot;JS&quot;],
+    pos   =&gt; { x =&gt; 3, y =&gt; 4 },
+};
+push @{ $data-&gt;{langs} }, &quot;Rust&quot;;
+$data-&gt;{pos}{x} += 10;
+
+print &quot;$data-&gt;{name} knows @{ $data-&gt;{langs} }; x=$data-&gt;{pos}{x}\n&quot;;
+print &quot;number of langs: &quot;, scalar(@{ $data-&gt;{langs} }), &quot;\n&quot;;
+print &quot;ref types: &quot;, join(&quot;,&quot;, ref($data), ref($data-&gt;{langs}), ref(sub { 1 })), &quot;\n&quot;;
+
+my @matrix = ([1, 2, 3], [4, 5, 6]);
+print &quot;matrix[1][2] = $matrix[1][2], row 0 = @{ $matrix[0] }\n&quot;;
+
+my @copy = @{ $data-&gt;{langs} };    # copy of the array
+my %by_name = map { $_ =&gt; length($_) } @copy;
+print join(&quot;, &quot;, map { &quot;$_:$by_name{$_}&quot; } sort keys %by_name), &quot;\n&quot;;</code></pre></div>
+<p>Hash order: Perl randomises it, Perl2JS keeps insertion order. Use <code>sort keys %h</code> when the order matters.</p>
+<h2 id="strings"><a class="anchor" href="#strings" aria-hidden="true">#</a>Strings</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my $n = 3;
+my @items = (&quot;a&quot;, &quot;b&quot;);
+my %h = (k =&gt; &quot;v&quot;);
+my $r = { list =&gt; [1, 2] };
+
+print &quot;Interpolation: $n $items[0] @items $h{k} $r-&gt;{list}[1] @{[ $n * 2 ]}\n&quot;;
+print 'No interpolation: $n @items\n', &quot;\n&quot;;
+print &quot;Escapes: tab[\t] unicode[\x{263A}] quote[\&quot;]\n&quot;;
+print q(single quoted with $n), &quot; | &quot;, qq{double quoted with $n}, &quot;\n&quot;;
+my @words = qw(alpha beta gamma);
+print &quot;qw: @words\n&quot;;</code></pre></div>
+<p>Here-documents (<code>&lt;&lt;&quot;EOT&quot;</code>, <code>&lt;&lt;&#39;EOT&#39;</code>, and <code>&lt;&lt;~EOT</code> which strips the indentation):</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my $who = &quot;world&quot;;
+print &lt;&lt;&quot;EOT&quot;;
+Hello, $who!
+  (interpolated)
+EOT
+print &lt;&lt;'EOT';
+Hello, $who! (not interpolated)
+EOT
+print &lt;&lt;~EOT;
+    indented text
+      keeps relative indentation
+    EOT</code></pre></div>
+<p>String functions and operators:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my $s = &quot;Hello, World&quot;;
+print length($s), &quot; &quot;, uc($s), &quot; &quot;, lc($s), &quot; &quot;, ucfirst(lc(&quot;PERL&quot;)), &quot; &quot;, lcfirst(&quot;ABC&quot;), &quot;\n&quot;;
+print substr($s, 0, 5), &quot;|&quot;, substr($s, -5), &quot;|&quot;, index($s, &quot;World&quot;), &quot;|&quot;, rindex($s, &quot;o&quot;), &quot;\n&quot;;
+print join(&quot;-&quot;, split(/,\s*/, $s)), &quot;|&quot;, scalar reverse(&quot;abc&quot;), &quot;|&quot;, &quot;ab&quot; x 3, &quot;|&quot;, &quot;-&quot; x 10, &quot;\n&quot;;
+print sprintf(&quot;%05.1f|%-6s|%6s|%x|%o|%b|%e|%3d%%&quot;, 3.14159, &quot;ab&quot;, &quot;cd&quot;, 255, 8, 5, 12345.678, 42), &quot;\n&quot;;
+print &quot;chr/ord: &quot;, chr(65), ord(&quot;a&quot;), &quot; &quot;, join(&quot;,&quot;, map { sprintf &quot;%02x&quot;, ord } split //, &quot;AB&quot;), &quot;\n&quot;;
+my $line = &quot;text\n&quot;;
+chomp $line;
+print &quot;[$line] &quot;, ($s =~ tr/a-z//), &quot; lowercase letters\n&quot;;
+(my $t = $s) =~ tr/a-zA-Z//cd;     # delete everything that is not a letter
+print &quot;$t\n&quot;;</code></pre></div>
+<h2 id="numbers-and-operators"><a class="anchor" href="#numbers-and-operators" aria-hidden="true">#</a>Numbers and operators</h2>
+<p>Numbers are JavaScript doubles, printed the way Perl prints them (<code>%.15g</code>).
+Operators follow Perl&#39;s rules: <code>+ - * /</code> are always numeric (even on strings), <code>.</code> concatenates,
+<code>== != &lt; &gt; &lt;= &gt;=</code> compare as numbers and <code>eq ne lt gt le ge</code> compare as strings.</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>print 0.1 + 0.2, &quot; &quot;, 1 / 3, &quot; &quot;, 10 / 4, &quot; &quot;, 7 % 3, &quot; &quot;, 2 ** 10, &quot; &quot;, int(7 / 2), &quot; &quot;, abs(-3), &quot; &quot;, sqrt(16), &quot;\n&quot;;
+print &quot;5&quot; + &quot;5&quot;, &quot; &quot;, &quot;5&quot; . &quot;5&quot;, &quot; &quot;, &quot;5&quot; * &quot;5&quot;, &quot; &quot;, &quot;10&quot; / &quot;4&quot;, &quot;\n&quot;;
+print &quot;numeric: &quot;, (&quot;10&quot; &lt; &quot;9&quot; ? &quot;10 is smaller&quot; : &quot;10 is not smaller&quot;), &quot;\n&quot;;
+print &quot;string : &quot;, (&quot;10&quot; lt &quot;9&quot; ? &quot;10 sorts first&quot; : &quot;9 sorts first&quot;), &quot;\n&quot;;
+print &quot;equal  : &quot;, (5 == 5.0 ? &quot;5 == 5.0&quot; : &quot;no&quot;), &quot;, &quot;, (&quot;5&quot; eq &quot;5.0&quot; ? &quot;same text&quot; : &quot;different text&quot;), &quot;\n&quot;;
+print &quot;spaceship: &quot;, join(&quot;,&quot;, 1 &lt;=&gt; 2, &quot;b&quot; cmp &quot;a&quot;, 2 &lt;=&gt; 2), &quot;\n&quot;;
+
+my $i = 5;
+$i++; $i += 10; $i *= 2; $i -= 1; $i **= 2;
+print &quot;i=$i\n&quot;;
+my ($u, $v);
+print &quot;defined-or: &quot;, $u // &quot;default&quot;, &quot; &quot;, ($v || &quot;false-ish&quot;), &quot; &quot;, (0 // &quot;zero is defined&quot;), &quot;\n&quot;;
+print &quot;logic: &quot;, (1 &amp;&amp; &quot;and&quot;), &quot; &quot;, (0 || &quot;or&quot;), &quot; &quot;, (!1 ? &quot;t&quot; : &quot;not&quot;), &quot; &quot;, (1 and 0 or &quot;low-precedence&quot;), &quot;\n&quot;;
+print &quot;range: &quot;, join(&quot;,&quot;, 1..5), &quot; &quot;, join(&quot;&quot;, &quot;a&quot;..&quot;e&quot;), &quot;\n&quot;;</code></pre></div>
+<h2 id="control-flow"><a class="anchor" href="#control-flow" aria-hidden="true">#</a>Control flow</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>for my $i (1..15) {
+    if    ($i % 15 == 0) { print &quot;FizzBuzz &quot; }
+    elsif ($i % 3  == 0) { print &quot;Fizz &quot; }
+    elsif ($i % 5  == 0) { print &quot;Buzz &quot; }
+    else                 { print &quot;$i &quot; }
+}
+print &quot;\n&quot;;
+
+my $n = 0;
+while ($n &lt; 10) { $n++; next if $n % 2; last if $n &gt; 6; print &quot;n=$n &quot;; }
+print &quot;\n&quot;;
+do { $n-- } until ($n &lt;= 3);
+print &quot;after until: $n\n&quot;;
+
+for (my $j = 0; $j &lt; 3; $j++) { print &quot;j=$j &quot;; }
+print &quot;\n&quot;;
+
+my @queue = qw(a b c);
+while (my $item = shift @queue) { print &quot;item $item &quot;; }
+print &quot;\n&quot;;
+
+print &quot;$_ &quot; foreach reverse 1..3;                # statement modifiers: if unless while until for foreach
+print &quot;\n&quot;;
+print &quot;unless works\n&quot; unless 0;
+my $size = 5;
+print &quot;size: &quot;, ($size &lt; 3 ? &quot;small&quot; : $size &lt; 10 ? &quot;medium&quot; : &quot;large&quot;), &quot;\n&quot;;</code></pre></div>
+<p><code>$_</code> is the default variable of <code>for</code>, <code>map</code>, <code>grep</code>, <code>split</code> and friends.</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>for (qw(x y z)) { print uc, &quot; &quot; }
+print &quot;\n&quot;;
+my @lens = map { length } qw(a bb ccc);
+print &quot;@lens\n&quot;;</code></pre></div>
+<h2 id="subroutines"><a class="anchor" href="#subroutines" aria-hidden="true">#</a>Subroutines</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>use feature 'signatures';
+no warnings;
+
+sub add { my ($a, $b) = @_; return $a + $b; }
+sub greet { my $name = shift // &quot;world&quot;; &quot;Hello, $name!&quot; }        # the last value is returned
+sub minmax { my @s = sort { $a &lt;=&gt; $b } @_; return ($s[0], $s[-1]); }
+sub fact($n) { $n &lt;= 1 ? 1 : $n * fact($n - 1) }                    # signatures
+
+print add(2, 3), &quot; &quot;, greet(), &quot; &quot;, greet(&quot;Perl2JS&quot;), &quot; &quot;, fact(10), &quot;\n&quot;;
+my ($lo, $hi) = minmax(5, 3, 9, 1);
+print &quot;min=$lo max=$hi\n&quot;;
+
+my $counter = do { my $c = 0; sub { return ++$c } };               # closures
+$counter-&gt;() for 1..2;
+print &quot;counter: &quot;, $counter-&gt;(), &quot;\n&quot;;
+
+my %dispatch = (double =&gt; sub { $_[0] * 2 }, square =&gt; sub { $_[0] ** 2 });
+print join(&quot;, &quot;, map { &quot;$_(7)=&quot; . $dispatch{$_}-&gt;(7) } sort keys %dispatch), &quot;\n&quot;;
+
+my @sorted = sort { length($a) &lt;=&gt; length($b) or $a cmp $b } qw(pear fig apple kiwi);
+print &quot;@sorted\n&quot;;</code></pre></div>
+<p>A sub returns the value of its last statement. <code>@_</code> holds the arguments, <code>shift</code> takes the first one.
+<code>local</code> gives a package variable a temporary value that is restored when the block ends, even through <code>die</code>:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>our $level = 0;
+sub show { print &quot;level=$level\n&quot; }
+sub nested { local $level = $level + 1; show(); }
+show(); nested(); show();</code></pre></div>
+<h2 id="regular-expressions"><a class="anchor" href="#regular-expressions" aria-hidden="true">#</a>Regular expressions</h2>
+<p>Perl regexes are translated to JavaScript <code>RegExp</code>. Captures are <code>$1</code>, <code>$2</code>, ...</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my $date = &quot;2026-11-24&quot;;
+if ($date =~ /^(\d+)-(\d+)-(\d+)$/) {
+    print &quot;year=$1 month=$2 day=$3\n&quot;;
+}
+(my $copy = $date) =~ s/-/\//g;                  # substitute, g = all
+print &quot;$copy\n&quot;;
+my $text = &quot;a1b22c333&quot;;
+my $count = 0;
+$count++ while $text =~ /\d+/g;                  # scalar //g walks through the matches
+print &quot;numbers found: $count\n&quot;;
+my $shout = &quot;hello world&quot;;
+$shout =~ s/(\w+)/uc($1)/ge;                     # e = evaluate the replacement
+print &quot;$shout\n&quot;;
+print join(&quot;|&quot;, split /\s*,\s*/, &quot;a , b,c ,d&quot;), &quot;\n&quot;;
+my $re = qr/(\w+)@(\w+)\.com/i;                  # compiled regex
+print &quot;user=$1 host=$2\n&quot; if 'Mail: Bob@Example.com' =~ $re;
+print &quot;no match\n&quot; if &quot;abc&quot; !~ /\d/;
+my @found = grep { /^b/ } qw(apple banana blueberry cherry);
+print &quot;@found\n&quot;;</code></pre></div>
+<p>Flags <code>i m s x g e</code>, <code>qr//</code>, <code>m{...}</code>, <code>s{...}{...}</code>, <code>tr/a-z/A-Z/</code> (with <code>c d s r</code>) and <code>split</code> work.
+Because the engine is JavaScript&#39;s, a few exotic Perl regex features are missing, see <a href="differences.html">differences</a>.</p>
+<h2 id="packages-and-objects"><a class="anchor" href="#packages-and-objects" aria-hidden="true">#</a>Packages and objects</h2>
+<p><code>package</code>, <code>bless</code>, <code>use parent</code>, <code>SUPER::</code>, <code>isa</code>, <code>can</code> and <code>ref</code> work. Define a package <strong>before</strong> the code that uses it.</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>package Animal;
+sub new {
+    my ($class, %args) = @_;
+    my $self = { name =&gt; $args{name} || &quot;unknown&quot;, sound =&gt; &quot;...&quot; };
+    return bless $self, $class;
+}
+sub name  { $_[0]-&gt;{name} }
+sub speak { my $self = shift; return sprintf(&quot;%s the %s says %s&quot;, $self-&gt;name, lc ref($self), $self-&gt;sound); }
+sub sound { $_[0]-&gt;{sound} }
+
+package Dog;
+use parent -norequire, 'Animal';
+sub new {
+    my ($class, %args) = @_;
+    my $self = Animal::new($class, %args);
+    $self-&gt;{tricks} = [];
+    return $self;
+}
+sub sound { &quot;Woof&quot; }
+sub add_trick { my ($self, $t) = @_; push @{ $self-&gt;{tricks} }, $t; return $self; }
+sub tricks { @{ $_[0]-&gt;{tricks} } }
+
+package main;
+my $d = Dog-&gt;new(name =&gt; &quot;Rex&quot;);
+$d-&gt;add_trick(&quot;sit&quot;)-&gt;add_trick(&quot;roll&quot;);
+print $d-&gt;speak, &quot;\n&quot;;
+print &quot;tricks: &quot;, join(&quot;, &quot;, $d-&gt;tricks), &quot;\n&quot;;
+print &quot;isa Animal: &quot;, ($d-&gt;isa('Animal') ? &quot;yes&quot; : &quot;no&quot;), &quot;, can speak: &quot;, ($d-&gt;can('speak') ? &quot;yes&quot; : &quot;no&quot;), &quot;, ref: &quot;, ref($d), &quot;\n&quot;;
+my $r = eval { $d-&gt;fly; 1 };
+print &quot;error: $1\n&quot; if !$r &amp;&amp; $@ =~ /^(Can't locate object method &quot;\w+&quot; via package &quot;\w+&quot;)/;</code></pre></div>
+<p><code>$obj-&gt;name</code> and <code>$obj-&gt;{name}</code> do not collide: methods and hash keys live in different places.</p>
+<h2 id="errors"><a class="anchor" href="#errors" aria-hidden="true">#</a>Errors</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>my $ok = eval { die &quot;something broke\n&quot;; 1 };
+print &quot;caught: $@&quot; unless $ok;
+
+sub risky { my $n = shift; die { code =&gt; 42, msg =&gt; &quot;negative&quot; } if $n &lt; 0; return sqrt($n); }
+for my $n (16, -1) {
+    my $r = eval { risky($n) };
+    if (ref $@) { print &quot;error $@-&gt;{code}: $@-&gt;{msg}\n&quot; } else { print &quot;sqrt($n) = $r\n&quot; }
+}</code></pre></div>
+<p><code>die &quot;text&quot;</code> without a trailing newline gets <code>at line N.</code> appended, like Perl&#39;s <code>at FILE line N.</code>.
+Perl 5.34&#39;s <code>try</code>/<code>catch</code> works without any module, and <code>Try::Tiny</code> is available:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>use feature 'try';
+no warnings;
+for my $n (4, -4) {
+    try {
+        die &quot;negative\n&quot; if $n &lt; 0;
+        print &quot;sqrt($n) = &quot;, sqrt($n), &quot;\n&quot;;
+    }
+    catch ($e) {
+        chomp $e;
+        print &quot;failed for $n: $e\n&quot;;
+    }
+    finally { print &quot;done with $n\n&quot;; }
+}</code></pre></div>
+<p>On a web page, uncaught errors are drawn on the page with the line number, a source excerpt and a hint.</p>
+<h2 id="other-features"><a class="anchor" href="#other-features" aria-hidden="true">#</a>Other features</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">Copy</button></div><pre><code>use constant PI =&gt; 3.14159;
+use constant { E =&gt; 2.71828, NAME =&gt; &quot;const&quot; };
+use constant COLORS =&gt; qw(red green blue);
+my @c = (COLORS);
+print PI, &quot; &quot;, E, &quot; &quot;, NAME, &quot; &quot;, scalar(@c), &quot; &quot;, (COLORS)[1], &quot;\n&quot;;
+
+my @unsorted = (3, 11, 2);
+print join(&quot;,&quot;, sort @unsorted), &quot; vs &quot;, join(&quot;,&quot;, sort { $a &lt;=&gt; $b } @unsorted), &quot;\n&quot;;   # default sort is by string
+print join(&quot;,&quot;, map { $_ * 2 } grep { $_ % 2 } 1..9), &quot;\n&quot;;
+print &quot;last element: $unsorted[$#unsorted], via -1: $unsorted[-1]\n&quot;;
+
+my ($y, $m, $d) = (localtime(0))[5, 4, 3];     # list slice
+printf &quot;%s\n&quot;, join &quot;&quot;, map { chr(ord($_) + 1) } split //, &quot;HAL&quot;;
+print &quot;ok\n&quot; if &quot;abc&quot; =~ /b/ and not &quot;abc&quot; =~ /z/;</code></pre></div>
+<p>Also available: <code>wantarray</code> is <strong>not</strong> supported; <code>local $_</code> works; <code>printf</code>/<code>sprintf</code> support <code>%s %d %f %e %g %x %o %b %c %%</code>, flags, width, precision and <code>%vd</code>.</p>
+<h2 id="perl--javascript-hybrid"><a class="anchor" href="#perl--javascript-hybrid" aria-hidden="true">#</a>Perl + JavaScript hybrid</h2>
+<p>Perl2JS compiles to JavaScript, so JavaScript&#39;s world is one step away. You can keep writing Perl and call browser or JS objects in the same program, with either <code>-&gt;</code> (Perl style) or <code>.</code> (JavaScript style) on the common JS globals:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">Copy</button></div><pre><code>for (0..5) {
+    alert(10);                       # Perl loop, JavaScript function
+}
+
+print Math.max(1, 5, 3), &quot;\n&quot;;                       # 5   (also Math-&gt;max(...))
+print JSON.stringify({ a =&gt; 1, b =&gt; [1, 2] }), &quot;\n&quot;;  # {&quot;a&quot;:1,&quot;b&quot;:[1,2]}
+
+my $el = document.getElementById(&quot;out&quot;);             # the DOM, straight from Perl
+$el-&gt;{textContent} = &quot;Hello from Perl&quot;;              # properties are hash-style: -&gt;{name}
+console.log(&quot;sum:&quot;, 1 + 2);
+
+my $now = new Date();
+print $now-&gt;getFullYear(), &quot;\n&quot;;                     # methods on JS objects: -&gt;name(...)</code></pre></div>
+<p>Which JS names work with a <code>.</code>: <code>Math JSON console document window Object Array Number String Date Promise localStorage sessionStorage navigator location Intl history performance</code>.
+Everywhere else use <code>-&gt;</code>: <code>$obj-&gt;method(...)</code> calls a method, <code>$obj-&gt;{prop}</code> reads or writes a property, <code>$fn-&gt;(...)</code> calls a function value, and <code>sub { ... }</code> is a function you can pass to any JS API (<code>setTimeout(sub { print &quot;later&quot; }, 500)</code>).
+Perl code and JS values mix freely: arrays are real JS arrays, hashes are plain objects, strings and numbers are the JS ones.</p>
+<p>Not accepted (it is Perl, not JavaScript): <code>let</code>/<code>const</code>, arrow functions <code>x =&gt; x * 2</code>, <code>===</code>, template literals. See <a href="differences.html">Differences</a>.</p>
+<h2 id="built-in-functions"><a class="anchor" href="#built-in-functions" aria-hidden="true">#</a>Built-in functions</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Group</th>
+<th>Functions</th>
+</tr>
+</thead><tbody><tr>
+<td>Output</td>
+<td><code>print</code> <code>printf</code> <code>say</code> <code>sprintf</code></td>
+</tr>
+<tr>
+<td>Arrays</td>
+<td><code>push</code> <code>pop</code> <code>shift</code> <code>unshift</code> <code>splice</code> <code>reverse</code> <code>sort</code> <code>map</code> <code>grep</code> <code>join</code> <code>scalar</code></td>
+</tr>
+<tr>
+<td>Hashes</td>
+<td><code>keys</code> <code>values</code> <code>exists</code> <code>delete</code> <code>each</code>-style loops with <code>keys</code></td>
+</tr>
+<tr>
+<td>Strings</td>
+<td><code>length</code> <code>substr</code> <code>index</code> <code>rindex</code> <code>uc</code> <code>lc</code> <code>ucfirst</code> <code>lcfirst</code> <code>chomp</code> <code>chop</code> <code>chr</code> <code>ord</code> <code>split</code> <code>sprintf</code> <code>reverse</code> <code>tr///</code></td>
+</tr>
+<tr>
+<td>Numbers</td>
+<td><code>abs</code> <code>int</code> <code>sqrt</code> <code>sin</code> <code>cos</code> <code>atan2</code> <code>exp</code> <code>log</code> <code>hex</code> <code>oct</code> <code>rand</code> <code>srand</code></td>
+</tr>
+<tr>
+<td>Types</td>
+<td><code>defined</code> <code>ref</code> <code>bless</code></td>
+</tr>
+<tr>
+<td>Time</td>
+<td><code>time</code> <code>localtime</code> <code>gmtime</code></td>
+</tr>
+<tr>
+<td>Control</td>
+<td><code>die</code> <code>warn</code> <code>eval</code> <code>exit</code> <code>return</code> <code>last</code> <code>next</code></td>
+</tr>
+</tbody></table></div>
+<p>Everything else comes from <a href="modules.html">modules</a>: <code>List::Util</code>, <code>POSIX</code>, <code>Data::Dumper</code>, <code>Time::Piece</code>, <code>JSON::PP</code>, <code>Encode</code>, ...</p>
+
+<footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#variables">Variables</a><a href="#arrays-hashes-and-references">Arrays, hashes and references</a><a href="#strings">Strings</a><a href="#numbers-and-operators">Numbers and operators</a><a href="#control-flow">Control flow</a><a href="#subroutines">Subroutines</a><a href="#regular-expressions">Regular expressions</a><a href="#packages-and-objects">Packages and objects</a><a href="#errors">Errors</a><a href="#other-features">Other features</a><a href="#perl--javascript-hybrid">Perl + JavaScript hybrid</a><a href="#built-in-functions">Built-in functions</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

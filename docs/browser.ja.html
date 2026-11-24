@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ブラウザで Perl2JS を使う — Perl2JS</title>
+<meta name="description" content="&lt;script src=&quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js&quot;&gt;&lt;/script&gt;">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html" aria-current="page">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="browser.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>ブラウザで Perl2JS を使う</h1>
+<h2 id="読み込み方"><a class="anchor" href="#読み込み方" aria-hidden="true">#</a>読み込み方</h2>
+<div class="code"><div class="code-bar"><span class="lang">HTML</span><button class="copy" type="button">コピー</button></div><pre><code>&lt;script src=&quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js&quot;&gt;&lt;/script&gt;</code></pre></div>
+<p>このタグ 1 つがコアのすべてです。モジュール (<code>List::Util</code>、<code>DateTime</code>、jQuery 風の <code>$</code> など) は、プログラムが最初に必要としたときに同じ場所から取得されるため、使わないページでは余計なものをダウンロードしません。
+リリースを公開したら、<code>@main</code> ではなくリリースを指定してください (<code>perl2js@v0.1.0</code>)。</p>
+<h2 id="ページ内の-perl"><a class="anchor" href="#ページ内の-perl" aria-hidden="true">#</a>ページ内の Perl</h2>
+<div class="code"><div class="code-bar"><span class="lang">HTML</span><button class="copy" type="button">コピー</button></div><pre><code>&lt;div id=&quot;out&quot;&gt;&lt;/div&gt;
+&lt;script type=&quot;text/perl2js&quot;&gt;
+  use List::Util qw(sum);
+  my @n = (3, 1, 4);
+  $(&quot;#out&quot;)-&gt;text(&quot;sum = &quot; . sum(@n));
+  print &quot;printed text goes to &lt;pre id=\&quot;output\&quot;&gt;\n&quot;;
+&lt;/script&gt;</code></pre></div>
+<ul>
+<li><code>print</code> は <code>id=&quot;output&quot;</code> を持つ要素に書き込みます (存在しない場合は <code>&lt;body&gt;</code> の末尾に作られます)。</li>
+<li>コードをファイルに分けるには <code>&lt;script type=&quot;text/perl2js&quot; src=&quot;main.p2j&quot;&gt;&lt;/script&gt;</code> を使います。</li>
+<li>エラーは Perl の行番号とソース行つきでページ上に表示されます (<code>Perl2JS.renderError</code>)。ブラウザのコンソールには JavaScript の完全なエラーが出力されます。</li>
+</ul>
+<h3 id="コードをファイルに分割する"><a class="anchor" href="#コードをファイルに分割する" aria-hidden="true">#</a>コードをファイルに分割する</h3>
+<p>行頭の <code>require &quot;lib/util.p2j&quot;;</code> は、別のファイルを先に読み込みます (パスは require するファイルからの相対パスです)。すべてのファイルは 1 つのトップレベルスコープを共有するので、<code>lib/util.p2j</code> で定義した <code>sub</code> は <code>main.p2j</code> から呼び出せます。<a href="https://github.com/satorunet/perl2js/blob/main/main.p2j" target="_blank" rel="noopener"><code>main.p2j</code></a>、<a href="https://github.com/satorunet/perl2js/blob/main/lib/util.p2j" target="_blank" rel="noopener"><code>lib/util.p2j</code></a>、<a href="https://github.com/satorunet/perl2js/blob/main/require-demo.html" target="_blank" rel="noopener"><code>require-demo.html</code></a> を参照してください。</p>
+<h2 id="dom-と-jquery-風の"><a class="anchor" href="#dom-と-jquery-風の" aria-hidden="true">#</a>DOM と jQuery 風の <code>$</code></h2>
+<p><code>$(&quot;#id&quot;)</code> は組み込みで、おなじみの jQuery メソッドを持つラッパーを返します。メソッドチェーンが使え、コールバックは <code>sub { ... }</code> で書きます。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>$(&quot;#stage&quot;)-&gt;html(&quot;&lt;button id='b'&gt;Click&lt;/button&gt; &lt;b id='n'&gt;0&lt;/b&gt;&quot;);
+my $count = 0;
+$(&quot;#b&quot;)-&gt;on(&quot;click&quot;, sub {
+    $count++;
+    $(&quot;#n&quot;)-&gt;text($count);
+});
+$(&quot;#stage&quot;)-&gt;fadeOut(300)-&gt;fadeIn(300);</code></pre></div>
+<div class="tablewrap"><table><thead><tr>
+<th>分類</th>
+<th>メソッド</th>
+</tr>
+</thead><tbody><tr>
+<td>選択</td>
+<td><code>$(&quot;css&quot;)  $(sub { ... })</code> (ready)  <code>find children parent closest siblings next prev eq first last filter not has is</code></td>
+</tr>
+<tr>
+<td>内容</td>
+<td><code>html text val attr prop data append prepend before after remove empty clone replaceWith wrap</code></td>
+</tr>
+<tr>
+<td>クラスとスタイル</td>
+<td><code>addClass removeClass toggleClass hasClass css show hide toggle width height</code></td>
+</tr>
+<tr>
+<td>イベント</td>
+<td><code>on off one trigger click dblclick change input submit focus blur hover keydown keyup</code></td>
+</tr>
+<tr>
+<td>エフェクト</td>
+<td><code>fadeIn fadeOut fadeToggle slideUp slideDown slideToggle animate delay stop</code></td>
+</tr>
+<tr>
+<td>反復</td>
+<td><code>each map get length</code></td>
+</tr>
+<tr>
+<td>Ajax</td>
+<td><code>$-&gt;get  $-&gt;post  $-&gt;getJSON  $-&gt;ajax({ url =&gt; ..., success =&gt; sub { ... } })</code></td>
+</tr>
+</tbody></table></div>
+<p>ページがすでに本物の jQuery を読み込んでいる場合、<code>$</code> はそちらを使います。DOM オブジェクトもそのまま扱えます。<a href="syntax.ja.html">ハイブリッド構文</a>を参照してください。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>my $el = document.getElementById(&quot;out&quot;);
+$el-&gt;{textContent} = &quot;plain DOM&quot;;</code></pre></div>
+<h2 id="javascript-api"><a class="anchor" href="#javascript-api" aria-hidden="true">#</a>JavaScript API</h2>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">コピー</button></div><pre><code>Perl2JS.run(source)                  // compile and run synchronously (modules loaded earlier or from a &lt;script&gt;)
+await Perl2JS.runAsync(source)       // loads the `use`d modules first, then runs; use this one
+Perl2JS.compile(source)              // the generated JavaScript, as a string
+await Perl2JS.use(&quot;List::Util&quot;, &quot;DateTime&quot;)   // preload modules
+Perl2JS.requires(source)             // module names a program uses
+Perl2JS.stdout = (text) =&gt; { ... }   // where print goes (default: #output / process.stdout)
+Perl2JS.libPath = &quot;/js/modules/&quot;     // where modules are loaded from (default: next to perl2js.js)
+Perl2JS.notes                        // hints from the last compile (full-width symbols that were read as half-width)
+Perl2JS.renderError(err, el, { dark: true })   // show a PerlError in an element</code></pre></div>
+<p>実行時エラーは <code>PerlError</code> オブジェクトで、<code>.kind</code> (<code>compile</code> / <code>runtime</code>)、<code>.line</code> (Perl の行番号)、メッセージ、ソースの抜粋を持ちます。<code>Perl2JS.errorText(err)</code> でプレーンテキストに整形できます。</p>
+<h2 id="プレイグラウンド"><a class="anchor" href="#プレイグラウンド" aria-hidden="true">#</a>プレイグラウンド</h2>
+<p><a href="https://satoru.net/perl2js/" target="_blank" rel="noopener">satoru.net/perl2js</a> には、行番号つきエディタ、DevTools 風のコンソール、「generated JS」タブ、コピーボタン、実行可能な約 30 個のサンプルがあります。<code>Ctrl+Enter</code> でプログラムを実行します。その下の <code>#stage</code> 領域が DOM サンプルの描画先です。</p>
+<h2 id="nodejs-で使う"><a class="anchor" href="#nodejs-で使う" aria-hidden="true">#</a>Node.js で使う</h2>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">コピー</button></div><pre><code>const Perl2JS = require(&quot;./perl2js.js&quot;);
+Perl2JS.run('print &quot;Hello from Node\\n&quot;; use List::Util qw(max); print max(1, 7, 3), &quot;\\n&quot;;');</code></pre></div>
+<p>モジュールは、ファイルと同じ場所にある <code>modules/</code> ディレクトリから <code>fs</code> で読み込まれます。DOM はないため、<code>$</code> や <code>document</code> は使えません。</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#読み込み方">読み込み方</a><a href="#ページ内の-perl">ページ内の Perl</a><a href="#dom-と-jquery-風の">DOM と jQuery 風の $</a><a href="#javascript-api">JavaScript API</a><a href="#プレイグラウンド">プレイグラウンド</a><a href="#nodejs-で使う">Node.js で使う</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

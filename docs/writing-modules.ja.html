@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自作モジュールの書き方 — Perl2JS</title>
+<meta name="description" content="モジュールは JavaScript ファイル 1 つ です。use Acme::Tools qw(greet); と書くと、プログラムが最初に要求したときに modules/Acme/Tools.js が読み込まれる (ブラウザでは fetch、Node では fs 経由) ので、コアが肥大化することはありません。">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html" aria-current="page">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="writing-modules.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>自作モジュールの書き方</h1>
+<p>モジュールは <strong>JavaScript ファイル 1 つ</strong> です。<code>use Acme::Tools qw(greet);</code> と書くと、プログラムが最初に要求したときに <code>modules/Acme/Tools.js</code> が読み込まれる (ブラウザでは <code>fetch</code>、Node では <code>fs</code> 経由) ので、コアが肥大化することはありません。</p>
+<h2 id="1-ファイルを作る"><a class="anchor" href="#1-ファイルを作る" aria-hidden="true">#</a>1. ファイルを作る</h2>
+<p><code>modules/Acme/Tools.js</code> (パスはモジュール名の <code>::</code> を <code>/</code> にしたものです):</p>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">コピー</button></div><pre><code>Perl2JS.module({
+  name: 'Acme::Tools',
+  init(api) {
+    const { mk } = api;                       // mk(array) makes a Perl list
+    return {
+      exports: {
+        greet:    (name) =&gt; 'Hello, ' + name + '!',
+        clamp:    (x, lo, hi) =&gt; Math.min(hi, Math.max(lo, x)),
+        PI:       3.14159,
+        count_if: (code, ...list) =&gt; list.flat().filter((x) =&gt; code(x)).length,
+        evens:    (...list) =&gt; mk(list.flat().filter((x) =&gt; x % 2 === 0)),
+      },
+      default:  ['greet'],                    // what a plain `use Acme::Tools;` imports
+      unary:    ['greet'],                    // may be called without parentheses: greet &quot;x&quot;
+      blockfns: { count_if: '$_' },           // takes a block:  count_if { $_ &gt; 2 } @list
+    };
+  },
+});</code></pre></div>
+<h2 id="2-使う"><a class="anchor" href="#2-使う" aria-hidden="true">#</a>2. 使う</h2>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>use Acme::Tools qw(greet clamp count_if evens PI);
+print greet(&quot;Perl&quot;), &quot;\n&quot;;                      # Hello, Perl!
+print clamp(15, 0, 10), &quot; &quot;, PI, &quot;\n&quot;;          # 10 3.14159
+my @n = (1, 2, 3, 4);
+print count_if { $_ &gt; 2 } @n;                   # 2
+print &quot;\n&quot;;
+my @e = evens(1..8);
+print &quot;@e\n&quot;;                                   # 2 4 6 8</code></pre></div>
+<p>次の表は、<code>init</code> が返せるすべての項目の一覧です。</p>
+<div class="tablewrap"><table><thead><tr>
+<th>キー</th>
+<th>意味</th>
+</tr>
+</thead><tbody><tr>
+<td><code>exports</code></td>
+<td><code>{ name: value }</code>。<code>use Mod qw(name)</code> でインポートできる関数と定数です。完全修飾名での呼び出し (<code>Acme::Tools::clamp(...)</code>) も動作します。</td>
+</tr>
+<tr>
+<td><code>default</code></td>
+<td>リストなしの <code>use Mod;</code> でインポートされる名前です。</td>
+</tr>
+<tr>
+<td><code>unary</code></td>
+<td>かっこなしで、ちょうど 1 つの引数を取る名前です (<code>greet &quot;x&quot; . &quot;y&quot;</code>)。</td>
+</tr>
+<tr>
+<td><code>noarg</code></td>
+<td>引数を取らない名前です (<code>PI</code> のような定数)。</td>
+</tr>
+<tr>
+<td><code>listops</code></td>
+<td>かっこなしでリスト全体を引数に取る名前です (<code>push</code> のようなもの)。</td>
+</tr>
+<tr>
+<td><code>blockfns</code></td>
+<td><code>{ name: &#39;$_&#39; }</code> または <code>{ name: &#39;$a, $b&#39; }</code>。最初の引数がブロックである関数 (<code>name { ... } @list</code>) です。文字列はブロックの変数を表します。</td>
+</tr>
+<tr>
+<td><code>classes</code></td>
+<td><code>{ &#39;Foo::Bar&#39;: JsClass }</code>。<code>Foo::Bar-&gt;new(...)</code> や <code>Foo::Bar-&gt;method</code> を動作させます。</td>
+</tr>
+<tr>
+<td><code>deps</code> (<code>name</code> と同じ階層)</td>
+<td>先に読み込む他のモジュールです (例: <code>deps: [&#39;List::Util&#39;]</code>)。<code>api.use(&#39;List::Util&#39;)</code> でそれらを取得できます。</td>
+</tr>
+<tr>
+<td><code>finish()</code></td>
+<td>プログラムの終了後に呼び出されます (バッファのフラッシュなど)。</td>
+</tr>
+</tbody></table></div>
+<p><code>api</code> からは次のものが使えます: <code>G</code> (<code>G.$Data_Dumper_Indent</code> のような Perl のグローバル変数)、<code>mk</code> (リストを作る関数)、<code>Lst</code>、<code>RT</code> (ランタイムのヘルパー)、<code>_s</code> (Perl の値から文字列への変換)、<code>hide</code>、<code>pkg</code> (Perl のパッケージを作成)、<code>use(name)</code>。</p>
+<h2 id="3-検索される場所"><a class="anchor" href="#3-検索される場所" aria-hidden="true">#</a>3. 検索される場所</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>場所</th>
+<th>方法</th>
+</tr>
+</thead><tbody><tr>
+<td><code>perl2js.js</code> と同じ場所</td>
+<td><code>modules/Acme/Tools.js</code> (自動。jsDelivr CDN からでも動作します)</td>
+</tr>
+<tr>
+<td>それ以外の場所</td>
+<td>実行前に <code>Perl2JS.libPath = &quot;/my/js/&quot;</code> を設定します (ディレクトリで終わる任意の URL)</td>
+</tr>
+<tr>
+<td>読み込み済み</td>
+<td><code>Perl2JS.module({...})</code> を呼ぶ <code>&lt;script&gt;</code> がモジュールを登録します。fetch は行われません</td>
+</tr>
+</tbody></table></div>
+<p>モジュールは単なるスクリプトです。ビルド手順も <code>import</code> も不要です。Perl の値 (文字列、数値、配列、プレーンなオブジェクト) を返してください。関数から返された JS の配列は、Perl のリスト/配列リファレンスになります。</p>
+<h2 id="4-perl-コードをライブラリにする"><a class="anchor" href="#4-perl-コードをライブラリにする" aria-hidden="true">#</a>4. Perl コードをライブラリにする</h2>
+<p><code>.p2j</code> ファイルから、別の Perl ファイルを <code>require</code> することもできます。<a href="browser.ja.html">browser.md</a> を参照してください。</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#1-ファイルを作る">1. ファイルを作る</a><a href="#2-使う">2. 使う</a><a href="#3-検索される場所">3. 検索される場所</a><a href="#4-perl-コードをライブラリにする">4. Perl コードをライブラリにする</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

@@ -73,6 +73,10 @@ year 2026, month 11, day 24
 - The CDN snippet above follows `main`; for production pin a release tag, e.g. `perl2js@v0.1.0/perl2js.min.js`. jsDelivr minifies automatically when you ask for `.min.js`.
 - Needs a modern browser (ES2021).
 
+## Documentation
+
+Full guides (every `perl` example is checked against real Perl): **[Syntax](docs/syntax.md)** · **[Bundled modules](docs/modules.md)** · **[Popular CPAN modules: status](docs/cpan.md)** · **[Write your own module](docs/writing-modules.md)** · [Browser use](docs/browser.md) · [Differences from Perl](docs/differences.md). Web version: <https://satoru.net/perl2js/docs/README.html>
+
 ## Modules are loaded on demand
 
 The core stays small (~100 KB, ~29 KB gzipped). `use List::Util qw(sum);` fetches `modules/List/Util.js` only when a program asks for it.

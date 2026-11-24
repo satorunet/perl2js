@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perl2JS ドキュメント — Perl2JS</title>
+<meta name="description" content="Perl2JS は、Perl 風の言語を ブラウザ上で JavaScript にコンパイルします。サーバーも WebAssembly も不要です。">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html" aria-current="page">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="README.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>Perl2JS ドキュメント</h1>
+<p>Perl2JS は、Perl 風の言語を <strong>ブラウザ上で</strong> JavaScript にコンパイルします。サーバーも WebAssembly も不要です。
+これらのページにあるすべての <code>perl</code> コードブロックは、本物の Perl 5.40 と Perl2JS の両方で CI 風のチェック (<code>node tools/verify-docs.js docs/*.md</code>) にかけられ、出力が一致する必要があります。</p>
+<div class="tablewrap"><table><thead><tr>
+<th>やりたいこと</th>
+<th>読むページ</th>
+</tr>
+</thead><tbody><tr>
+<td>使える Perl の構文を例つきで知りたい</td>
+<td><strong><a href="syntax.ja.html">対応している構文</a></strong></td>
+</tr>
+<tr>
+<td>Perl と JavaScript を混ぜて使いたい (<code>Math.max</code>、<code>document.getElementById</code>、<code>alert</code>)</td>
+<td><a href="syntax.ja.html">Perl + JavaScript ハイブリッド</a></td>
+</tr>
+<tr>
+<td><code>List::Util</code>、<code>JSON::PP</code>、<code>POSIX</code>、<code>DateTime</code>... を使いたい</td>
+<td><strong><a href="modules.ja.html">同梱モジュール</a></strong></td>
+</tr>
+<tr>
+<td>有名な CPAN モジュールが使えるか確認したい</td>
+<td><strong><a href="cpan.ja.html">主要な CPAN モジュールの対応状況</a></strong></td>
+</tr>
+<tr>
+<td>自分のモジュール (<code>use Foo::Bar</code>) を書きたい</td>
+<td><strong><a href="writing-modules.ja.html">自作モジュールの書き方</a></strong></td>
+</tr>
+<tr>
+<td>Web ページに組み込み、DOM や jQuery 風の <code>$</code> を使いたい</td>
+<td><a href="browser.ja.html">ブラウザでの使い方</a></td>
+</tr>
+<tr>
+<td>本物の Perl と挙動が違う点を知りたい</td>
+<td><a href="differences.ja.html">Perl との違い</a></td>
+</tr>
+</tbody></table></div>
+<h2 id="30-秒でわかる使い方"><a class="anchor" href="#30-秒でわかる使い方" aria-hidden="true">#</a>30 秒でわかる使い方</h2>
+<div class="code"><div class="code-bar"><span class="lang">HTML</span><button class="copy" type="button">コピー</button></div><pre><code>&lt;script src=&quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/perl2js&quot;&gt;
+  my @langs = qw(Perl JavaScript);
+  for my $l (@langs) { print &quot;Hello, $l!\n&quot;; }
+  $(&quot;#out&quot;)-&gt;text(&quot;done&quot;);            # jQuery-style DOM, built in
+&lt;/script&gt;</code></pre></div>
+<p>コア (<code>perl2js.js</code>) は意図的に小さく作られています。それ以外の機能 (<code>List::Util</code>、<code>DateTime</code>、jQuery 風の <code>$</code> など) は <a href="https://github.com/satorunet/perl2js/blob/main/modules" target="_blank" rel="noopener"><code>modules/</code></a> にある別ファイルで、プログラムが最初に <code>use ...</code> と書いたときにダウンロードされます。</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

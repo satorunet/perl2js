@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>モジュール — Perl2JS</title>
+<meta name="description" content="モジュールは modules/(../modules) にある別ファイルです。use List::Util qw(sum); と書くと、プログラムが最初に要求したときに modules/List/Util.js が読み込まれるので、">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <nav class="main"><a href="README.ja.html">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html" aria-current="page">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="modules.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<main>
+<h1>モジュール</h1>
+<p>モジュールは <a href="https://github.com/satorunet/perl2js/blob/main/modules" target="_blank" rel="noopener"><code>modules/</code></a> にある別ファイルです。<code>use List::Util qw(sum);</code> と書くと、プログラムが最初に要求したときに <code>modules/List/Util.js</code> が読み込まれるので、
+コアは小さいままです。以下はすべて、本物の Perl モジュール (<code>perl 5.40</code>) がインストールされている場合はそれと比較済みです。
+このページのすべての <code>perl</code> ブロックは、本物の Perl と Perl2JS で同一に動作します (<code>node tools/verify-docs.js docs/modules.md</code>)。</p>
+<div class="tablewrap"><table><thead><tr>
+<th>グループ</th>
+<th>モジュール</th>
+</tr>
+</thead><tbody><tr>
+<td><a href="#リストと型">リストと型</a></td>
+<td><code>List::Util</code> <code>List::MoreUtils</code> <code>Scalar::Util</code></td>
+</tr>
+<tr>
+<td><a href="#データとテキスト">データとテキスト</a></td>
+<td><code>Data::Dumper</code> <code>JSON::PP</code> <code>JSON</code> <code>Storable</code> <code>Text::Wrap</code> <code>Term::ANSIColor</code></td>
+</tr>
+<tr>
+<td><a href="#エンコーディングとハッシュ">エンコーディングとハッシュ</a></td>
+<td><code>Encode</code> <code>MIME::Base64</code> <code>URI::Escape</code> <code>Digest::MD5</code> <code>Digest::SHA</code></td>
+</tr>
+<tr>
+<td><a href="#時刻">時刻</a></td>
+<td><code>POSIX</code> <code>Time::Local</code> <code>Time::Piece</code> <code>Time::Seconds</code> <code>Time::HiRes</code> <code>DateTime</code></td>
+</tr>
+<tr>
+<td><a href="#制御とテスト">制御とテスト</a></td>
+<td><code>Carp</code> <code>Try::Tiny</code> <code>Test::More</code> <code>constant</code></td>
+</tr>
+<tr>
+<td><a href="#ファイルと数学">ファイルと数学</a></td>
+<td><code>File::Basename</code> <code>File::Spec</code> <code>Math::Trig</code></td>
+</tr>
+<tr>
+<td>ブラウザ</td>
+<td><a href="browser.ja.html">jQuery 風の <code>$</code></a></td>
+</tr>
+</tbody></table></div>
+<p>ブラウザでは利用できないもの (ファイル、プロセス、ソケットがないため): <code>Getopt::Long</code>、<code>Cwd</code>、<code>File::Temp</code>、<code>IO::File</code>、<code>Socket</code>、<code>DBI</code>、<code>LWP::UserAgent</code> (代わりに <code>$-&gt;get/post/ajax</code> を使ってください)。
+未実装: <code>Moose</code>/<code>Moo</code>、<code>Text::CSV</code>、<code>YAML</code>、<code>Benchmark</code>。</p>
+<p>インポートの仕組み: <code>use Module qw(a b);</code> は <code>a</code> と <code>b</code> をインポートし、<code>use Module;</code> はモジュールのデフォルトリストをインポートし、<code>use Module ();</code> は何もインポートしません。
+完全修飾名での呼び出し (<code>POSIX::floor(2.5)</code>) は、読み込まれたモジュールが提供するすべての関数で動作します。</p>
+<h2 id="リストと型"><a class="anchor" href="#リストと型" aria-hidden="true">#</a>リストと型</h2>
+<h3 id="listutil"><a class="anchor" href="#listutil" aria-hidden="true">#</a>List::Util</h3>
+<p><code>sum sum0 product min max minstr maxstr first any all none notall reduce reductions shuffle sample uniq uniqnum uniqint pairs unpairs pairkeys pairvalues pairmap pairgrep pairfirst head tail zip mesh</code></p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use List::Util qw(sum sum0 product min max first any all none reduce uniq pairs pairkeys pairvalues pairmap head tail);
+
+my @n = (3, 1, 4, 1, 5, 9, 2, 6);
+print &quot;sum=&quot;, sum(@n), &quot; sum0()=&quot;, sum0(), &quot; product=&quot;, product(1..5), &quot; min=&quot;, min(@n), &quot; max=&quot;, max(@n), &quot;\n&quot;;
+print &quot;first &gt; 4: &quot;, (first { $_ &gt; 4 } @n), &quot;\n&quot;;
+print &quot;any 9: &quot;, ((any { $_ == 9 } @n) ? &quot;yes&quot; : &quot;no&quot;), &quot;, all &gt; 0: &quot;, ((all { $_ &gt; 0 } @n) ? &quot;yes&quot; : &quot;no&quot;), &quot;, none &gt; 10: &quot;, ((none { $_ &gt; 10 } @n) ? &quot;yes&quot; : &quot;no&quot;), &quot;\n&quot;;
+print &quot;reduce: &quot;, (reduce { $a * $b } 1..6), &quot;, longest: &quot;, (reduce { length($a) &gt;= length($b) ? $a : $b } qw(aa bbbb cc dddd)), &quot;\n&quot;;
+print &quot;uniq: @{[ uniq @n ]}, count: &quot;, scalar(uniq @n), &quot;\n&quot;;
+print &quot;pairs: &quot;, join(&quot;;&quot;, map { $_-&gt;key . &quot;=&quot; . $_-&gt;value } pairs(a =&gt; 1, b =&gt; 2)), &quot;\n&quot;;
+my @joined = pairmap { &quot;$a-$b&quot; } (x =&gt; 1, y =&gt; 2);
+print &quot;pairkeys: @{[ pairkeys(a =&gt; 1, b =&gt; 2) ]}, pairvalues: @{[ pairvalues(a =&gt; 1, b =&gt; 2) ]}, pairmap: @joined\n&quot;;
+print &quot;head/tail: @{[ head(3, @n) ]} | @{[ tail(2, @n) ]}\n&quot;;
+print &quot;0.1+0.2+0.3 = &quot;, sum(0.1, 0.2, 0.3), &quot;\n&quot;;</code></pre></div>
+<p><code>sum</code> などは空リストに対して <code>undef</code> を返します (<code>sum0</code> は 0 を返します)。<code>first any all none notall</code> のブロックは <code>$_</code> を使い、<code>reduce reductions pairmap pairgrep pairfirst</code> のブロックは <code>$a</code> と <code>$b</code> を使います。</p>
+<h3 id="listmoreutils-一部"><a class="anchor" href="#listmoreutils-一部" aria-hidden="true">#</a>List::MoreUtils (一部)</h3>
+<p><code>uniq distinct any all none notall firstidx first_index lastidx last_index indexes firstval first_value lastval last_value true false minmax part apply after before</code>。
+<code>zip</code>、<code>natatime</code>、<code>pairwise</code> は未実装です。(本物の Perl との照合は未実施です。ここにはこのモジュールがインストールされていません。)</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>use List::MoreUtils qw(firstidx indexes minmax uniq);
+my @a = (5, 3, 9, 3, 7);
+print firstidx { $_ == 9 } @a;                 # 2
+print join(&quot;,&quot;, indexes { $_ == 3 } @a), &quot;\n&quot;; # 1,3
+my ($lo, $hi) = minmax @a;</code></pre></div>
+<h3 id="scalarutil"><a class="anchor" href="#scalarutil" aria-hidden="true">#</a>Scalar::Util</h3>
+<p><code>blessed reftype looks_like_number refaddr weaken</code> (<code>weaken</code> は何もしません。JavaScript にはガベージコレクタがあるためです)。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Scalar::Util qw(blessed reftype looks_like_number);
+my $obj = bless {}, 'Foo';
+print &quot;blessed: &quot;, blessed($obj), &quot;, of a plain hash: &quot;, (defined blessed({}) ? &quot;?&quot; : &quot;undef&quot;), &quot;\n&quot;;
+print &quot;reftype: &quot;, join(&quot;,&quot;, reftype($obj), reftype([]), reftype(sub {})), &quot;\n&quot;;
+print join(&quot;,&quot;, map { looks_like_number($_) ? &quot;num&quot; : &quot;str&quot; } (1, &quot;2.5&quot;, &quot;abc&quot;, &quot;1e3&quot;, &quot; 3 &quot;, &quot;&quot;, &quot;-7&quot;, &quot;.5&quot;)), &quot;\n&quot;;</code></pre></div>
+<h2 id="データとテキスト"><a class="anchor" href="#データとテキスト" aria-hidden="true">#</a>データとテキスト</h2>
+<h3 id="datadumper"><a class="anchor" href="#datadumper" aria-hidden="true">#</a>Data::Dumper</h3>
+<p>本物のモジュールと同じレイアウトで、<code>bless( {...}, &#39;Class&#39; )</code> も含みます。設定: <code>$Data::Dumper::Indent</code> (0、1、2)、<code>Sortkeys</code>、<code>Terse</code>。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
+print Dumper({ name =&gt; &quot;Ann&quot;, langs =&gt; [&quot;Perl&quot;, &quot;JS&quot;], pos =&gt; { x =&gt; 3 }, memo =&gt; undef, score =&gt; 3.5 });
+{
+    local $Data::Dumper::Indent = 1;
+    local $Data::Dumper::Terse  = 1;
+    print Dumper([1, &quot;two&quot;, { three =&gt; 3 }]);
+}</code></pre></div>
+<p>1 つ違う点があります。JavaScript には整数と浮動小数点数の区別がないため、Perl が <code>&#39;3&#39;</code> と書く <code>3.0</code> は <code>3</code> としてダンプされます。</p>
+<h3 id="jsonpp-json"><a class="anchor" href="#jsonpp-json" aria-hidden="true">#</a>JSON::PP, JSON</h3>
+<p><code>encode_json decode_json</code> と、オブジェクトインターフェース <code>JSON::PP-&gt;new-&gt;pretty-&gt;canonical-&gt;encode(...)</code> (オプション: <code>pretty indent space_before space_after canonical ascii utf8 allow_blessed convert_blessed</code>)。
+<code>JSON</code> は <code>to_json</code>/<code>from_json</code> を追加します。<code>JSON::XS</code> と <code>JSON::MaybeXS</code> はエイリアスです。<code>pretty</code> は本物のモジュールと同様に 3 スペースでインデントします。
+JSON の <code>true</code>/<code>false</code> は <code>1</code>/<code>0</code> にデコードされます。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use JSON::PP;
+my $json = JSON::PP-&gt;new-&gt;canonical-&gt;pretty;
+print $json-&gt;encode({ name =&gt; &quot;Ann&quot;, langs =&gt; [&quot;Perl&quot;, &quot;JS&quot;], pos =&gt; { x =&gt; 3, y =&gt; 4 }, memo =&gt; undef, score =&gt; 3.5 });
+print encode_json([1, &quot;two&quot;, { three =&gt; 3 }]), &quot;\n&quot;;
+my $back = decode_json('{&quot;list&quot;:[1,2,{&quot;k&quot;:&quot;v&quot;}],&quot;ok&quot;:true,&quot;n&quot;:null,&quot;pi&quot;:3.14}');
+print &quot;list[2]{k}=$back-&gt;{list}[2]{k} ok=$back-&gt;{ok} pi=$back-&gt;{pi} n=&quot;, (defined $back-&gt;{n} ? &quot;def&quot; : &quot;undef&quot;), &quot;\n&quot;;</code></pre></div>
+<h3 id="storable"><a class="anchor" href="#storable" aria-hidden="true">#</a>Storable</h3>
+<p><code>dclone</code> (ディープコピー。<code>bless</code> と循環参照を保持します)、<code>freeze</code>、<code>thaw</code>。<code>store</code>/<code>retrieve</code> (ファイル) は使えません。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Storable qw(dclone);
+my $orig = { a =&gt; [1, 2, { b =&gt; 3 }], c =&gt; &quot;x&quot; };
+my $copy = dclone($orig);
+$copy-&gt;{a}[2]{b} = 99;
+push @{ $copy-&gt;{a} }, 4;
+print &quot;orig: $orig-&gt;{a}[2]{b} (&quot;, scalar(@{ $orig-&gt;{a} }), &quot; items), copy: $copy-&gt;{a}[2]{b} (&quot;, scalar(@{ $copy-&gt;{a} }), &quot; items)\n&quot;;</code></pre></div>
+<h3 id="textwrap"><a class="anchor" href="#textwrap" aria-hidden="true">#</a>Text::Wrap</h3>
+<p><code>wrap</code> と <code>fill</code>。本物のアルゴリズムの移植です: <code>$Text::Wrap::columns</code>、<code>huge</code> (<code>wrap</code>、<code>overflow</code>、<code>die</code>)、<code>unexpand</code>、<code>tabstop</code>、<code>separator</code>、<code>break</code>。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Text::Wrap qw(wrap fill);
+$Text::Wrap::columns = 36;
+print wrap(&quot;* &quot;, &quot;  &quot;, &quot;The quick brown fox jumps over the lazy dog and keeps running through the forest.&quot;), &quot;\n&quot;;
+$Text::Wrap::huge = 'overflow';
+print wrap(&quot;&gt; &quot;, &quot;&gt; &quot;, &quot;short words and aVeryLongWordThatCannotFitOnOneLine end&quot;), &quot;\n&quot;;</code></pre></div>
+<h3 id="termansicolor"><a class="anchor" href="#termansicolor" aria-hidden="true">#</a>Term::ANSIColor</h3>
+<p><code>color colored colorstrip uncolor colorvalid</code> と定数 (<code>use Term::ANSIColor qw(:constants);</code> で <code>RED</code>、<code>BOLD</code>、<code>RESET</code>、... が使えます)。プレイグラウンドの出力ペインはエスケープコードを解釈しません。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Term::ANSIColor qw(color colored colorstrip uncolor);
+print join(&quot;|&quot;, map { sprintf &quot;%vd&quot;, $_ } color(&quot;bold red&quot;), colored(&quot;hi&quot;, &quot;green&quot;)), &quot;\n&quot;;
+print colorstrip(&quot;\e[1mbold\e[0m plain&quot;), &quot; &quot;, join(&quot;,&quot;, uncolor(&quot;1;31&quot;)), &quot;\n&quot;;</code></pre></div>
+<h2 id="エンコーディングとハッシュ"><a class="anchor" href="#エンコーディングとハッシュ" aria-hidden="true">#</a>エンコーディングとハッシュ</h2>
+<h3 id="encode"><a class="anchor" href="#encode" aria-hidden="true">#</a>Encode</h3>
+<p><code>encode decode encode_utf8 decode_utf8 find_encoding is_utf8</code>。対応エンコーディング: UTF-8、latin1/ISO-8859-1、ASCII、UTF-16 (LE/BE)、<strong>Shift_JIS</strong> (<code>shiftjis</code>、<code>sjis</code>、<code>cp932</code>)、<strong>EUC-JP</strong>。ISO-2022-JP はデコードのみ可能です。
+「バイト文字列」とは、Perl と同様、すべての文字が 256 未満である文字列のことです。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use utf8;
+use Encode qw(encode decode);
+my $bytes = encode(&quot;UTF-8&quot;, &quot;日本語&quot;);
+print length($bytes), &quot; bytes: &quot;, join(&quot; &quot;, map { sprintf &quot;%02x&quot;, ord } split //, $bytes), &quot;\n&quot;;
+print &quot;round trip: &quot;, (decode(&quot;UTF-8&quot;, $bytes) eq &quot;日本語&quot; ? &quot;ok&quot; : &quot;bad&quot;), &quot;\n&quot;;
+print &quot;Shift_JIS: &quot;, join(&quot; &quot;, map { sprintf &quot;%02x&quot;, ord } split //, encode(&quot;shiftjis&quot;, &quot;あいう&quot;)), &quot;\n&quot;;
+print &quot;EUC-JP: &quot;, join(&quot; &quot;, map { sprintf &quot;%02x&quot;, ord } split //, encode(&quot;euc-jp&quot;, &quot;あいう&quot;)), &quot;\n&quot;;
+print &quot;decoded: &quot;, decode(&quot;shiftjis&quot;, encode(&quot;shiftjis&quot;, &quot;漢字&quot;)), &quot;\n&quot;;</code></pre></div>
+<h3 id="mimebase64-uriescape"><a class="anchor" href="#mimebase64-uriescape" aria-hidden="true">#</a>MIME::Base64, URI::Escape</h3>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use MIME::Base64 qw(encode_base64 decode_base64);
+use URI::Escape qw(uri_escape uri_unescape);
+print encode_base64(&quot;Hello, World!&quot;), encode_base64(&quot;Hello&quot;, &quot;&quot;), &quot;|&quot;, decode_base64(&quot;SGVsbG8sIFdvcmxkIQ==&quot;), &quot;\n&quot;;
+print uri_escape(&quot;a b&amp;c=d/?~&quot;), &quot; | &quot;, uri_unescape(&quot;a%20b%2Bc%41&quot;), &quot;\n&quot;;</code></pre></div>
+<p><code>uri_unescape</code> は (本物のモジュールと同様に) バイト列を返します。UTF-8 のテキストの場合は、結果を <code>Encode::decode_utf8</code> に通してください。</p>
+<h3 id="digestmd5-digestsha"><a class="anchor" href="#digestmd5-digestsha" aria-hidden="true">#</a>Digest::MD5, Digest::SHA</h3>
+<p><code>md5 md5_hex md5_base64</code>、<code>sha1 sha256</code> (それぞれ <code>_hex</code> と <code>_base64</code> つき)、<code>hmac_sha1 hmac_sha256</code> (同じ接尾辞)、およびオブジェクトインターフェース <code>Digest::MD5-&gt;new-&gt;add(...)-&gt;hexdigest</code>。SHA-512 は未実装です。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Digest::MD5 qw(md5_hex);
+use Digest::SHA qw(sha1_hex sha256_hex hmac_sha256_hex);
+print md5_hex(&quot;hello&quot;), &quot;\n&quot;, sha1_hex(&quot;hello&quot;), &quot;\n&quot;, sha256_hex(&quot;hello&quot;), &quot;\n&quot;;
+print hmac_sha256_hex(&quot;data&quot;, &quot;key&quot;), &quot;\n&quot;;
+print Digest::MD5-&gt;new-&gt;add(&quot;hel&quot;, &quot;lo&quot;)-&gt;hexdigest, &quot;\n&quot;;</code></pre></div>
+<h2 id="時刻"><a class="anchor" href="#時刻" aria-hidden="true">#</a>時刻</h2>
+<p>すべて <code>Asia/Tokyo</code> タイムゾーンの本物の Perl と比較しています。自分で実行する場合は、ブラウザのタイムゾーンが使われます。</p>
+<h3 id="組み込み関数posixtimelocal"><a class="anchor" href="#組み込み関数posixtimelocal" aria-hidden="true">#</a>組み込み関数、POSIX、Time::Local</h3>
+<p><code>localtime</code>/<code>gmtime</code> は、リストコンテキストでは 9 要素のリストを、スカラーコンテキストでは <code>Thu Jan  1 09:00:00 1970</code> のような文字列を返します。
+POSIX は <code>strftime mktime difftime floor ceil fmod pow round trunc</code> と、<code>INT_MAX</code> <code>DBL_MAX</code> などの定数を提供します。
+Time::Local は <code>timelocal</code> と <code>timegm</code> を提供します。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use POSIX qw(strftime floor ceil fmod);
+use Time::Local;
+
+my $t = 1795000000;
+my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday) = localtime($t);
+printf &quot;%04d-%02d-%02d %02d:%02d:%02d wday=%d yday=%d\n&quot;, $year + 1900, $mon + 1, $mday, $hour, $min, $sec, $wday, $yday;
+print scalar(localtime($t)), &quot; | &quot;, scalar(gmtime(0)), &quot;\n&quot;;
+print strftime(&quot;%Y-%m-%d %H:%M:%S %a %A %b %B %j&quot;, localtime($t)), &quot;\n&quot;;
+print timelocal(0, 30, 12, 24, 10, 2026), &quot; &quot;, timegm(0, 0, 0, 1, 0, 100), &quot;\n&quot;;
+print floor(-3.5), &quot; &quot;, ceil(3.2), &quot; &quot;, fmod(10, 3), &quot; &quot;, POSIX::floor(2.7), &quot;\n&quot;;
+print &quot;year: &quot;, (localtime($t))[5] + 1900, &quot;\n&quot;;</code></pre></div>
+<h3 id="timepiece-timeseconds"><a class="anchor" href="#timepiece-timeseconds" aria-hidden="true">#</a>Time::Piece, Time::Seconds</h3>
+<p><code>localtime</code>/<code>gmtime</code> はオブジェクトを返します。メソッド: <code>ymd hms datetime date time year mon monname month fullmonth mday hour min sec wday wdayname day fullday yday week epoch strftime add_months add_years truncate julian_day mjd is_leap_year month_last_day tzoffset</code> と <code>Time::Piece-&gt;strptime</code>。
+<code>$t + ONE_DAY</code> と <code>$t2 - $t1</code> が使えます。差分には <code>-&gt;days -&gt;hours -&gt;minutes -&gt;pretty</code> があります。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Time::Piece;
+use Time::Seconds;
+
+my $t = gmtime(1795000000);
+print $t-&gt;ymd, &quot; &quot;, $t-&gt;hms, &quot; &quot;, $t-&gt;monname, &quot; &quot;, $t-&gt;fullday, &quot; week &quot;, $t-&gt;week, &quot; epoch &quot;, $t-&gt;epoch, &quot;\n&quot;;
+print $t-&gt;strftime(&quot;%Y/%m/%d %H:%M&quot;), &quot; | &quot;, ($t + ONE_DAY * 3)-&gt;ymd, &quot;\n&quot;;
+my $p = Time::Piece-&gt;strptime(&quot;2026-03-15 13:45:10&quot;, &quot;%Y-%m-%d %H:%M:%S&quot;);
+my $d = ($t + ONE_DAY * 3) - $t;
+print $p-&gt;epoch, &quot; &quot;, $p-&gt;mdy(&quot;/&quot;), &quot; &quot;, ($p-&gt;is_leap_year ? &quot;leap&quot; : &quot;common&quot;), &quot; &quot;, $p-&gt;month_last_day, &quot; | &quot;, $d-&gt;days, &quot; days = &quot;, $d-&gt;pretty, &quot;\n&quot;;
+print $p-&gt;add_months(11)-&gt;ymd, &quot; &quot;, $p-&gt;add_years(-1)-&gt;ymd, &quot;\n&quot;;</code></pre></div>
+<h3 id="timehires"><a class="anchor" href="#timehires" aria-hidden="true">#</a>Time::HiRes</h3>
+<p><code>time</code> (小数秒)、<code>gettimeofday</code>、<code>tv_interval</code>。<code>sleep</code>/<code>usleep</code> はブラウザではブロックできないため、提供されていません。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Time::HiRes qw(time gettimeofday tv_interval);
+my $t0 = [gettimeofday];
+my $start = time;
+my $sum = 0;
+$sum += $_ for 1..1000;
+my $elapsed = tv_interval($t0);
+print &quot;elapsed ok: &quot;, ($elapsed &gt;= 0 &amp;&amp; $elapsed &lt; 5 ? 1 : 0), &quot;, fractional: &quot;, ($start =~ /\./ ? &quot;yes&quot; : &quot;no&quot;), &quot;, sum=$sum\n&quot;;</code></pre></div>
+<h3 id="datetime"><a class="anchor" href="#datetime" aria-hidden="true">#</a>DateTime</h3>
+<p><code>new now today from_epoch last_day_of_month</code>、アクセサ (<code>year month day hour minute second day_of_week day_of_year month_name day_name week ...</code>)、<code>ymd hms datetime iso8601 strftime epoch</code>、
+<code>add subtract add_duration subtract_duration subtract_datetime delta_days truncate set set_time_zone clone compare</code>、<code>in_units</code> を持つ <code>DateTime::Duration</code>、そして実際のタイムゾーン (<code>time_zone =&gt; &#39;Asia/Tokyo&#39;</code>、任意の IANA 名) に対応します。
+2 つの DateTime オブジェクトへの <code>==</code> は同一性を比較します。<code>$a-&gt;epoch == $b-&gt;epoch</code> または <code>DateTime-&gt;compare($a, $b)</code> を使ってください (<code>&lt;</code>、<code>&gt;</code>、<code>&lt;=&gt;</code> は動作します)。本物の Perl との照合は未実施です (ここにはこのモジュールがインストールされていません)。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>use DateTime;
+my $dt = DateTime-&gt;new(year =&gt; 2026, month =&gt; 11, day =&gt; 24, hour =&gt; 9, minute =&gt; 30, time_zone =&gt; 'Asia/Tokyo');
+print &quot;$dt  (&quot;, $dt-&gt;day_name, &quot;)\n&quot;;                                  # 2026-11-24T09:30:00  (Tuesday)
+print $dt-&gt;clone-&gt;set_time_zone('America/New_York')-&gt;datetime, &quot;\n&quot;;   # 2026-11-23T19:30:00
+print $dt-&gt;clone-&gt;add(months =&gt; 3, years =&gt; 1)-&gt;ymd, &quot;\n&quot;;             # 2028-02-24
+my $diff = $dt-&gt;clone-&gt;add(days =&gt; 10, hours =&gt; 5)-&gt;subtract_datetime($dt);
+my ($days, $hours) = $diff-&gt;in_units('days', 'hours');                  # 10, 5</code></pre></div>
+<h2 id="制御とテスト"><a class="anchor" href="#制御とテスト" aria-hidden="true">#</a>制御とテスト</h2>
+<h3 id="carp"><a class="anchor" href="#carp" aria-hidden="true">#</a>Carp</h3>
+<p><code>croak carp confess cluck</code>。メッセージには <code>die</code> と同様に <code> at line N.</code> が付きます。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Carp qw(croak);
+sub positive { my $n = shift; croak &quot;need a positive number&quot; if $n &lt;= 0; return $n; }
+eval { positive(-1) };
+print &quot;caught: &quot;, ($@ =~ /^(need a positive number) at / ? $1 : &quot;?&quot;), &quot;\n&quot;;</code></pre></div>
+<h3 id="trytiny"><a class="anchor" href="#trytiny" aria-hidden="true">#</a>Try::Tiny</h3>
+<p><code>try { ... } catch { ... } finally { ... };</code> エラーは <code>catch</code> 内の <code>$_</code> (および <code>$_[0]</code>) に入ります。<code>return</code> は、本物のモジュールと同様、ブロックから抜けるだけです。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Try::Tiny;
+my $r = try { die &quot;boom\n&quot;; 1 } catch { &quot;caught: $_&quot; };
+print $r;
+try { die { code =&gt; 404 } } catch { print &quot;error code $_-&gt;{code}\n&quot; } finally { print &quot;finally runs\n&quot; };
+my @res = map { my $n = $_; try { die &quot;odd\n&quot; if $n % 2; &quot;even$n&quot; } catch { &quot;ERR$n&quot; } } 1..4;
+print join(&quot;,&quot;, @res), &quot;\n&quot;;</code></pre></div>
+<h3 id="testmore"><a class="anchor" href="#testmore" aria-hidden="true">#</a>Test::More</h3>
+<p><code>ok is isnt like unlike cmp_ok is_deeply can_ok isa_ok pass fail diag note explain plan done_testing subtest BAIL_OUT</code>。出力は TAP 形式です (<code>ok 1 - name</code>)。
+失敗の詳細 (<code>#   Failed test ...</code>) も出力に表示されるので、ページ上で確認できます。本物の Perl では STDERR に出力されます。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Test::More tests =&gt; 6;
+ok(1 + 1 == 2, &quot;addition&quot;);
+is(uc(&quot;perl&quot;), &quot;PERL&quot;, &quot;uc&quot;);
+like(&quot;hello world&quot;, qr/wor/, &quot;like&quot;);
+is_deeply([1, { a =&gt; [2, 3] }], [1, { a =&gt; [2, 3] }], &quot;same structure&quot;);
+cmp_ok(10, '&gt;', 3, &quot;cmp_ok&quot;);
+subtest 'inner' =&gt; sub { ok(1, &quot;in subtest&quot;); is(1, 1, &quot;also&quot;); };</code></pre></div>
+<h3 id="constant"><a class="anchor" href="#constant" aria-hidden="true">#</a>constant</h3>
+<p><code>use constant</code> は言語の一部です (モジュールファイルはありません)。スカラー、リスト、<code>{ A =&gt; 1, B =&gt; 2 }</code> 形式に対応します。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use constant PI =&gt; 3.14159;
+use constant { E =&gt; 2.71828, NAME =&gt; &quot;const&quot; };
+use constant COLORS =&gt; qw(red green blue);
+my @c = (COLORS);
+print PI, &quot; &quot;, E, &quot; &quot;, NAME, &quot; &quot;, scalar(@c), &quot; &quot;, (COLORS)[1], &quot;\n&quot;;</code></pre></div>
+<h2 id="ファイルと数学"><a class="anchor" href="#ファイルと数学" aria-hidden="true">#</a>ファイルと数学</h2>
+<h3 id="filebasename-filespec"><a class="anchor" href="#filebasename-filespec" aria-hidden="true">#</a>File::Basename, File::Spec</h3>
+<p>文字列処理のみです (ファイルシステムへのアクセスはありません): <code>basename dirname fileparse</code>、および <code>File::Spec-&gt;catfile catdir splitdir canonpath file_name_is_absolute curdir updir rootdir splitpath catpath</code>。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use File::Basename;
+use File::Spec;
+for my $p (&quot;/usr/local/lib/Foo.pm&quot;, &quot;foo.txt&quot;, &quot;/a/b/&quot;, &quot;a/b&quot;, &quot;../x/y.tar.gz&quot;) {
+    my ($n, $d, $s) = fileparse($p, qr/\.[^.]*/);
+    printf &quot;%-24s base=%-10s dir=%-16s name=%s suffix=%s\n&quot;, $p, basename($p), dirname($p), $n, $s;
+}
+print File::Spec-&gt;catfile(&quot;a&quot;, &quot;b&quot;, &quot;c.txt&quot;), &quot; &quot;, File::Spec-&gt;catdir(&quot;/a/&quot;, &quot;/b//&quot;), &quot; &quot;, File::Spec-&gt;canonpath(&quot;/a/./b//c/&quot;), &quot;\n&quot;;
+print join(&quot;|&quot;, File::Spec-&gt;splitdir(&quot;/a/b//c&quot;)), &quot;\n&quot;;</code></pre></div>
+<h3 id="mathtrig"><a class="anchor" href="#mathtrig" aria-hidden="true">#</a>Math::Trig</h3>
+<p><code>pi tan asin acos atan sinh cosh tanh sec csc cot asinh acosh atanh deg2rad rad2deg deg2grad grad2deg</code> (<code>:pi</code> を指定すると <code>pi2 pi4 pip2 pip4</code> も使えます)。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl</span><button class="copy" type="button">コピー</button></div><pre><code>use Math::Trig;
+use Math::Trig ':pi';
+printf &quot;pi=%.10f pi2=%.6f tan(1)=%.8f asin(.5)=%.8f atan(1)=%.8f\n&quot;, pi, pi2, tan(1), asin(0.5), atan(1);
+printf &quot;deg2rad(90)=%.8f deg2rad(450)=%.8f rad2deg(pi)=%.4f\n&quot;, deg2rad(90), deg2rad(450), rad2deg(pi);</code></pre></div>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#リストと型">リストと型</a><a href="#データとテキスト">データとテキスト</a><a href="#エンコーディングとハッシュ">エンコーディングとハッシュ</a><a href="#時刻">時刻</a><a href="#制御とテスト">制御とテスト</a><a href="#ファイルと数学">ファイルと数学</a></nav>
+</div>
+<script>
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>
