@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl構文の言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124r" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124r">
+<link rel="icon" href="assets/icon.svg?v=20261124s" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124s">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124r">
+<meta property="og:image" content="assets/social-preview.png?v=20261124s">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -59,7 +59,19 @@
   .editor pre.gutter { width:auto; min-width:3.4em; margin:0; padding:12px 10px 12px 8px; border:0; border-right:1px solid #21262d; border-radius:0; background:#0d1117; color:#6e7681;
     text-align:right; white-space:pre; overflow:hidden; user-select:none; font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .editor pre.gutter .bad { color:#fff; background:#da3633; border-radius:3px; padding:0 3px; margin-right:-3px; }
-  .editor textarea { flex:1; min-width:0; width:auto; height:100%; margin:0; padding:12px 14px; border:0; border-radius:0; outline:0; resize:none; background:transparent; color:#e6edf3; caret-color:#58a6ff;
+  .edbox { position:relative; flex:1; min-width:0; height:100%; }
+  .edbox pre.ws { position:absolute; inset:0; margin:0; padding:12px 14px; border:0; border-radius:0; background:none; color:transparent; overflow:hidden; pointer-events:none; user-select:none;
+    font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size:4; white-space:pre; }
+  .edbox.off pre.ws { display:none; }
+  .ws i { font-style:normal; position:relative; }
+  .ws i::after { position:absolute; left:0; right:0; top:0; text-align:center; font-weight:400; }
+  .ws i.h::after { content:'·'; color:#58606b; }                              /* half-width space */
+  .ws i.f { background:rgba(240,136,62,.18); box-shadow:inset 0 0 0 1px rgba(240,136,62,.55); border-radius:2px; }
+  .ws i.f::after { content:'□'; color:#f0883e; }                              /* full-width space */
+  .ws i.t::after { content:'→'; color:#58606b; text-align:left; }             /* tab */
+  .ws i.n::after { content:'°'; color:#d29922; }                              /* no-break space */
+  .win button.mini[aria-pressed=true] { border-color:#58a6ff; color:#fff; }
+  .editor textarea { flex:1; min-width:0; width:100%; height:100%; position:relative; margin:0; padding:12px 14px; border:0; border-radius:0; outline:0; resize:none; background:transparent; color:#e6edf3; caret-color:#58a6ff;
     font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size:4; white-space:pre; overflow:auto; }
   .editor textarea::selection { background:#264f78; }
   /* ---- console: Chrome DevTools look ---- */
@@ -125,7 +137,7 @@
 <main>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124r"><img src="assets/logo-light.svg?v=20261124r" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124s"><img src="assets/logo-light.svg?v=20261124s" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <section class="why" aria-labelledby="why-h">
@@ -152,12 +164,16 @@
         <div class="win-bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="win-title" id="fileName">main.p2j</span>
+          <button class="mini" id="wsBtn" aria-pressed="true" title="空白を記号で表示: 半角スペース · / 全角スペース □ / タブ →">空白 ·□→</button>
           <button class="mini" id="copyCode" title="Perlのコードをコピー">コピー</button>
           <button class="mini" id="copyHtml" title="CDNのscriptタグ付きのHTMLとしてコピー">HTMLでコピー</button>
         </div>
         <div class="editor">
           <pre class="gutter" id="gutter" aria-hidden="true">1</pre>
-          <textarea id="src" spellcheck="false" wrap="off" autocomplete="off" autocapitalize="off" aria-label="Perl2JS のコード"></textarea>
+          <div class="edbox" id="edbox">
+            <pre class="ws" id="ws" aria-hidden="true"></pre>
+            <textarea id="src" spellcheck="false" wrap="off" autocomplete="off" autocapitalize="off" aria-label="Perl2JS のコード"></textarea>
+          </div>
         </div>
         <div class="win-status"><span id="edPos">Ln 1, Col 1</span><span id="edInfo">1 行</span></div>
       </div>
@@ -789,6 +805,7 @@ function renderGutter(errLine) {
   for (let i = 1; i <= n; i++) html += (i === errLine ? '<span class="bad">' + i + '</span>' : i) + (i < n ? '\n' : '');
   gutter.innerHTML = html;
   gutter.scrollTop = src.scrollTop;
+  renderWs();
   byId('edInfo').textContent = n + ' 行 · ' + src.value.length + ' 文字';
 }
 function renderPos() {
@@ -798,7 +815,18 @@ function renderPos() {
 /* the #stage box is only shown for programs that touch the page (jQuery-style $, document, #stage); otherwise the panes get taller */
 function updateLayout() { document.body.classList.toggle('tall', !/\$\(|\$->|\bdocument\b|\bwindow\b|#stage|\balert\b/.test(src.value)); }
 src.addEventListener('input', () => { renderGutter(0); renderPos(); updateLayout(); });
-src.addEventListener('scroll', () => { gutter.scrollTop = src.scrollTop; });
+/* show whitespace as symbols: half-width space ·  full-width space □  tab →  no-break space °  (an overlay under the transparent-background textarea) */
+const wsEl = byId('ws'), edbox = byId('edbox'), wsBtn = byId('wsBtn');
+function renderWs() {
+  if (edbox.classList.contains('off')) return;
+  const esc = (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c);
+  wsEl.innerHTML = src.value.replace(/[ \u3000\t\u00a0&<>]/g, (c) => (c === ' ' ? '<i class="h"> </i>' : c === '\u3000' ? '<i class="f">\u3000</i>' : c === '\t' ? '<i class="t">\t</i>' : c === '\u00a0' ? '<i class="n">\u00a0</i>' : esc(c))) + '\n';
+  wsEl.scrollTop = src.scrollTop; wsEl.scrollLeft = src.scrollLeft;
+}
+function setWs(on) { edbox.classList.toggle('off', !on); wsBtn.setAttribute('aria-pressed', on); try { localStorage.setItem('p2j-ws', on ? '1' : '0'); } catch (e) { /* ignore */ } if (on) renderWs(); }
+wsBtn.onclick = () => setWs(edbox.classList.contains('off'));
+let wsPref = '1'; try { wsPref = localStorage.getItem('p2j-ws') || '1'; } catch (e) { /* ignore */ }
+src.addEventListener('scroll', () => { gutter.scrollTop = src.scrollTop; wsEl.scrollTop = src.scrollTop; wsEl.scrollLeft = src.scrollLeft; });
 ['keyup', 'click', 'select'].forEach((ev) => src.addEventListener(ev, renderPos));
 
 /* ---- console: numbered output lines ---- */
@@ -893,6 +921,7 @@ byId('clearOut').onclick = () => { outBuf = ''; outErr.textContent = ''; renderO
 byId('filter').addEventListener('input', () => renderOut(outBuf));
 byId('tOut').onclick = () => setTab(false);
 byId('tJs').onclick = () => setTab(true);
+setWs(wsPref !== '0');
 { const n = nameOf(location.hash); load(n || sel.value, true); }          // opening the page without a #name leaves the URL alone
 </script>
 </body>
