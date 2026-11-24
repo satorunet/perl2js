@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl構文の言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124w" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124w">
+<link rel="icon" href="assets/icon.svg?v=20261124x" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124x">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124w">
+<meta property="og:image" content="assets/social-preview.png?v=20261124x">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -62,11 +62,10 @@
   .edbox { position:relative; flex:1; min-width:0; height:100%; }
   .edbox pre.ws { position:absolute; inset:0; margin:0; padding:12px 14px; border:0; border-radius:0; background:none; color:transparent; overflow:hidden; pointer-events:none; user-select:none;
     font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size:4; white-space:pre; }
-  /* Hidemaru-style marks: half-width space ･  full-width space □  tab »  line break ↓  end of file [EOF] */
+  /* Hidemaru-style marks: half-width space = dotted half box, full-width space = dotted square, tab »  line break ↓  end of file [EOF] */
   .ws i { font-style:normal; position:relative; }
   .ws i::after { position:absolute; left:0; right:0; top:0; text-align:center; font-weight:400; color:#454c56; }          /* faint gray, like Hidemaru's marks */
-  .ws i.h::after { content:'･'; }
-  .ws i.f::after { content:'□'; }
+  .ws i.h::after, .ws i.f::after { content:''; top:14%; bottom:10%; left:1px; right:1px; border:1px dotted #5a626d; }      /* a dotted box: half a cell wide for a half-width space, a square for a full-width one */
   .ws i.t::after { content:'»'; text-align:left; }
   .ws i.n::after { content:'°'; }
   .ws i.e::after, .ws i.z::after { text-align:left; right:auto; white-space:pre; }
@@ -140,7 +139,7 @@
 <main>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124w"><img src="assets/logo-light.svg?v=20261124w" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124x"><img src="assets/logo-light.svg?v=20261124x" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <section class="why" aria-labelledby="why-h">
