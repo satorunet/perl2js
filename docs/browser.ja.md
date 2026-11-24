@@ -80,7 +80,7 @@ Perl2JS.renderError(err, el, { dark: true })   // show a PerlError in an element
 
 ## プレイグラウンド
 
-[satoru.net/perl2js](https://satoru.net/perl2js/) には、行番号つきエディタ、DevTools 風のコンソール、「generated JS」タブ、コピーボタン、実行可能な約 30 個のサンプルがあります。`Ctrl+Enter` でプログラムを実行します。どのサンプルにも固定のリンクがあります(例: `https://satoru.net/perl2js/#fizzbuzz`、🔗 ボタンで現在のサンプルのURLをコピーできます): `hello fizzbuzz word-count closures nested-data regex hybrid jquery-counter jquery-todo jquery-dom jquery-effects jquery-ajax heredoc oop strict-tr data-dumper local error-demo datetime time-piece datetime-module list-util json-pp try-tiny test-more text-encode error-handling`。その下の `#stage` 領域が DOM サンプルの描画先です。
+[satoru.net/perl2js](https://satoru.net/perl2js/) には、行番号つきエディタ、DevTools 風のコンソール、「generated JS」タブ、コピーボタン、実行可能な約 30 個のサンプルがあります。`Ctrl+Enter` でプログラムを実行します。どのサンプルにも固定のリンクがあります(例: `https://satoru.net/perl2js/#fizzbuzz`、🔗 ボタンで現在のサンプルのURLをコピーできます): `hello fizzbuzz while-loop word-count closures nested-data regex hybrid jquery-counter jquery-todo jquery-dom jquery-effects jquery-ajax heredoc oop strict-tr data-dumper local error-demo datetime time-piece datetime-module list-util json-pp try-tiny test-more text-encode error-handling`。その下の `#stage` 領域が DOM サンプルの描画先です。
 
 ## Node.js で使う
 
