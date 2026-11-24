@@ -1779,7 +1779,7 @@ function errorText(err) {
 function renderError(err, target, opts) {
   const e = err instanceof PerlError ? err : toPerlError('runtime', err);
   if (typeof document === 'undefined') { console.error(errorText(e)); return null; }
-  const dark = !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: dark)').matches);
+  const dark = opts && typeof opts.dark === 'boolean' ? opts.dark : !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: dark)').matches);
   const C = dark ? { bg: '#2a1412', bd: '#ff8a80', fg: '#ffd9d4', mut: '#e0a9a2', hi: '#5a2420', line: '#7a3a34' }
                  : { bg: '#fff1f0', bd: '#d93025', fg: '#3c0b08', mut: '#8a3a33', hi: '#ffd6d2', line: '#f0b4ae' };
   const el = (tag, css, text) => { const n = document.createElement(tag); if (css) n.style.cssText = css; if (text !== undefined) n.textContent = text; return n; };
