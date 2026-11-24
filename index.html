@@ -16,7 +16,11 @@
   }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
-  main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; position: relative; }
+  a.gh { position: absolute; top: 30px; right: 20px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--fg); text-decoration: none; font-size: 13px; font-weight: 600; }
+  a.gh:hover { border-color: var(--acc); color: var(--acc); }
+  footer.site { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--mut); font-size: 13px; }
+  footer.site a { color: var(--acc); }
   h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -.01em; }
   h1.brand { margin: 0 0 8px; line-height: 0; } h1.brand img { max-width: 100%; height: auto; max-height: 72px; }
   h1 span { color: var(--acc); }
@@ -54,6 +58,7 @@
 </head>
 <body>
 <main>
+  <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
   <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg"><img src="assets/logo-light.svg" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
@@ -189,6 +194,7 @@
   },
 });</pre>
   </section>
+  <footer class="site">ソースコード: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a> &nbsp;·&nbsp; Issue・プルリクエスト歓迎です。</footer>
 </main>
 
 <!-- cache buster: 毎回 ?t=<時刻> を付けて常に最新の perl2js.js を読む(同期読み込みなので下の text/perl2js も従来通り動く) -->
