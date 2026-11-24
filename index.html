@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl構文の言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124p" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124p">
+<link rel="icon" href="assets/icon.svg?v=20261124q" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124q">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124p">
+<meta property="og:image" content="assets/social-preview.png?v=20261124q">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -116,7 +116,7 @@
 <main>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124p"><img src="assets/logo-light.svg?v=20261124p" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124q"><img src="assets/logo-light.svg?v=20261124q" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <section class="why" aria-labelledby="why-h">
@@ -873,7 +873,7 @@ byId('clearOut').onclick = () => { outBuf = ''; outErr.textContent = ''; renderO
 byId('filter').addEventListener('input', () => renderOut(outBuf));
 byId('tOut').onclick = () => setTab(false);
 byId('tJs').onclick = () => setTab(true);
-{ const n = nameOf(location.hash); load(n || sel.value, !!n); }
+{ const n = nameOf(location.hash); load(n || sel.value, true); }          // opening the page without a #name leaves the URL alone
 </script>
 </body>
 </html>
