@@ -13,26 +13,26 @@
     <linearGradient id="camel" gradientUnits="userSpaceOnUse" x1="14" y1="26" x2="120" y2="118">
       <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
     </linearGradient>
+    <linearGradient id="jsneck" gradientUnits="userSpaceOnUse" x1="82" y1="38" x2="104" y2="78">
+      <stop offset="0" stop-color="#fde047"/><stop offset="1" stop-color="#f7d51d"/>
+    </linearGradient>
     <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
     </linearGradient>
   </defs>
   <g transform="translate(0 0) scale(1.0)"><rect x="0" y="0" width="128" height="128" rx="30" fill="url(#bg)"/><rect x="1.5" y="1.5" width="125" height="125" rx="28.5" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="3"/><g transform="translate(-1 17) scale(.74)">
+    <defs><clipPath id="neckclip"><polygon points="78,66 87,35 114,45 108,54 99,79"/></clipPath></defs>
     <g fill="url(#camel)">
-      <!-- one continuous outline: rump, hump, back, neck, head, throat, chest, belly -->
-      <path d="M24 70 C24 62 30 58 36 56 C38 46 46 36 55 35 C64 35 69 46 72 56 C76 58 80 60 84 58
-               C90 54 92 42 94 34 C95 28 99 24 105 24 C111 24 117 30 122 36 C125 39 125 43 121 44
-               C115 46 110 42 105 40 C102 48 102 58 98 68 C96 78 90 86 84 90 C70 96 50 96 36 90 C28 88 24 80 24 70 Z"/>
+      <path d="M24 70 C24 62 30 58 36 56 C38 46 46 36 55 35 C64 35 69 46 72 56 C76 58 80 60 84 58 C90 54 92 42 94 34 C95 28 99 24 105 24 C111 24 117 30 122 36 C125 39 125 43 121 44 C115 46 110 42 105 40 C102 48 102 58 98 68 C96 78 90 86 84 90 C70 96 50 96 36 90 C28 88 24 80 24 70 Z"/>
       <ellipse cx="99.5" cy="22" rx="3.3" ry="6.2" transform="rotate(-22 99.5 22)"/>
-      <!-- legs, walking: tapered, with a knee and a hoof -->
       <path d="M79 86 L89 86 L89 98 L96 113 L89 115 L82 100 Z"/>
       <path d="M69 88 L79 88 L77 102 L78 114 L71 115 L69 102 Z"/>
       <path d="M33 86 L43 86 L39 100 L31 113 L24 111 L31 99 Z"/>
       <path d="M48 88 L58 88 L56 102 L58 114 L51 115 L49 102 Z"/>
-      <!-- tail -->
       <path d="M25 66 C17 70 14 82 18 93" fill="none" stroke="url(#camel)" stroke-width="3.6" stroke-linecap="round"/>
       <ellipse cx="18.6" cy="96" rx="3.4" ry="5.2" transform="rotate(10 18.6 96)"/>
     </g>
+    <g clip-path="url(#neckclip)"><path d="M24 70 C24 62 30 58 36 56 C38 46 46 36 55 35 C64 35 69 46 72 56 C76 58 80 60 84 58 C90 54 92 42 94 34 C95 28 99 24 105 24 C111 24 117 30 122 36 C125 39 125 43 121 44 C115 46 110 42 105 40 C102 48 102 58 98 68 C96 78 90 86 84 90 C70 96 50 96 36 90 C28 88 24 80 24 70 Z" fill="url(#jsneck)"/></g>
     <circle cx="109" cy="30.5" r="2.1" fill="#0f1330"/>
 <g transform="translate(47.47 57.5)"><path d="M8.47 -6.45V-2.76Q9.24 -2.87 9.67 -3.35Q10.1 -3.83 10.1 -4.58Q10.1 -5.33 9.67 -5.82Q9.25 -6.3 8.47 -6.45ZM6.75 -9.97V-13.43Q5.99 -13.33 5.61 -12.92Q5.22 -12.51 5.22 -11.8Q5.22 -11.11 5.61 -10.64Q5.99 -10.18 6.75 -9.97ZM8.47 3.67H6.75L6.74 0Q5.68 -0.04 4.52 -0.32Q3.36 -0.6 2.1 -1.12V-4.32Q3.36 -3.58 4.53 -3.17Q5.71 -2.77 6.75 -2.76V-6.77Q4.35 -7.25 3.17 -8.42Q2 -9.58 2 -11.5Q2 -13.54 3.25 -14.75Q4.49 -15.95 6.75 -16.1V-18.99H8.47L8.48 -16.1Q9.35 -16.05 10.28 -15.88Q11.22 -15.71 12.19 -15.41V-12.28Q11.44 -12.77 10.51 -13.06Q9.58 -13.35 8.47 -13.43V-9.68Q10.88 -9.3 12.1 -8.04Q13.33 -6.77 13.33 -4.68Q13.33 -2.67 12.01 -1.39Q10.68 -0.11 8.48 0Z" fill="#0f1330"/></g></g><g fill="none" stroke="url(#js)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"><path d="M98 40 L108 51 L98 62"/></g><path d="M109 40 L119 51 L109 62" fill="none" stroke="#fde047" stroke-opacity=".5" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="88" y="88" width="30" height="30" rx="6" fill="url(#js)"/><g transform="translate(92.77 109.2)"><path d="M0.9 -0.61V-3.45Q1.62 -2.72 2.43 -2.34Q3.24 -1.96 4.06 -1.96Q5.02 -1.96 5.47 -2.44Q5.92 -2.92 5.92 -3.98V-10.23H2.92V-12.39H8.37V-3.98Q8.37 -1.71 7.42 -0.73Q6.47 0.24 4.28 0.24Q3.49 0.24 2.64 0.02Q1.78 -0.19 0.9 -0.61Z" fill="#1b1446"/><path d="M14.47 -5.44Q12.62 -6.14 11.96 -6.92Q11.31 -7.69 11.31 -9.01Q11.31 -10.69 12.38 -11.65Q13.46 -12.62 15.35 -12.62Q16.2 -12.62 17.06 -12.42Q17.91 -12.23 18.75 -11.85V-9.45Q17.96 -10.01 17.15 -10.3Q16.34 -10.59 15.54 -10.59Q14.65 -10.59 14.18 -10.23Q13.7 -9.88 13.7 -9.21Q13.7 -8.7 14.05 -8.36Q14.39 -8.03 15.49 -7.62L16.54 -7.22Q18.04 -6.67 18.74 -5.77Q19.45 -4.86 19.45 -3.49Q19.45 -1.61 18.34 -0.68Q17.23 0.24 14.99 0.24Q14.07 0.24 13.14 0.02Q12.22 -0.2 11.36 -0.63V-3.16Q12.33 -2.47 13.25 -2.12Q14.17 -1.78 15.07 -1.78Q15.97 -1.78 16.47 -2.2Q16.97 -2.61 16.97 -3.35Q16.97 -3.9 16.63 -4.32Q16.3 -4.74 15.67 -4.98Z" fill="#1b1446"/></g></g>
 </svg>
