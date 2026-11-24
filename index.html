@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl構文の言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124zzzzzzz" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124zzzzzzz">
+<link rel="icon" href="assets/icon.svg?v=20261124zzzzzzzz" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124zzzzzzzz">
 <meta name="description" content="Perl で書いたコードを、そのままブラウザで動かせます。サーバー不要・ビルド不要。Perl構文をブラウザ内でJavaScriptにコンパイルして実行するPerl2JS。">
 <link rel="canonical" href="https://satoru.net/perl2js/">
 <meta property="og:type" content="website">
@@ -183,7 +183,7 @@
   </div>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124zzzzzzz"><img src="assets/logo-light.svg?v=20261124zzzzzzz" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124zzzzzzzz"><img src="assets/logo-light.svg?v=20261124zzzzzzzz" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <section class="why" aria-labelledby="why-h">
@@ -211,8 +211,8 @@
         <div class="win-bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="win-title" id="fileName">main.p2j</span>
-          <button class="mini" id="copyCode" title="Perlのコードをコピー">コピー</button>
-          <button class="mini" id="copyHtml" title="CDNのscriptタグ付きのHTMLとしてコピー">HTMLでコピー</button>
+          <button class="mini" id="copyCode" title="表示しているHTMLをそのままコピー(ページに貼れば動きます)">コピー</button>
+          <button class="mini" id="copyHtml" title="scriptタグを除いたPerlのコードだけをコピー">Perlのみ</button>
         </div>
         <div class="editor">
           <pre class="gutter" id="gutter" aria-hidden="true">1</pre>
@@ -921,6 +921,16 @@ const sel = byId('ex'), src = byId('src'), stage = byId('stage');
 for (const k of Object.keys(EXAMPLES)) sel.add(new Option(k, k));
 let showJs = false, outBuf = '', pending = false;
 const CDN = 'https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js';
+/* Every sample is shown as the HTML you would paste into a page: the CDN script tag, then a text/perl2js script tag around the Perl.
+   Only the Perl between the two tags is run; error line numbers are shifted back to the editor's numbering. */
+const HEAD = '<script src="' + CDN + '"><\/script>\n<script type="text/perl2js">\n', TAIL = '<\/script>\n';
+const wrapSample = (code) => HEAD + code + (code.endsWith('\n') ? '' : '\n') + TAIL;
+function unwrap(text) {
+  const open = /<script\b[^>]*\btype=["']text\/perl2js["'][^>]*>\n?/i.exec(text);
+  if (!open) return { code: text, offset: 0 };
+  const start = open.index + open[0].length, end = text.lastIndexOf('</script');
+  return { code: text.slice(start, end > start ? end : text.length), offset: text.slice(0, start).split('\n').length - 1 };
+}
 
 /* ---- notepad: line numbers, cursor position ---- */
 const gutter = byId('gutter');
@@ -973,7 +983,7 @@ async function copyText(text, btn) {
   const old = btn.textContent; btn.textContent = 'コピーしました ✓'; setTimeout(() => { btn.textContent = old; }, 1400);
 }
 byId('copyCode').onclick = (e) => copyText(src.value, e.currentTarget);
-byId('copyHtml').onclick = (e) => copyText('<script src="' + CDN + '"><\/script>\n<pre id="output"></pre>\n<script type="text/perl2js">\n' + src.value.replace(/<\/script/gi, '<\\/script') + (src.value.endsWith('\n') ? '' : '\n') + '<\/script>\n', e.currentTarget);
+byId('copyHtml').onclick = (e) => copyText(unwrap(src.value).code, e.currentTarget);
 byId('copyOut').onclick = (e) => copyText(outBuf, e.currentTarget);
 for (const pre of document.querySelectorAll('section.doc pre')) {          // every code block in the documentation gets a copy button
   const wrap = document.createElement('div'); wrap.className = 'prewrap';
@@ -993,7 +1003,7 @@ const slugOf = (name) => SLUGS[name] || encodeURIComponent(name);
 const ALIAS = { 'while-loop': 'loops' };                                  // links that were published earlier keep working
 const nameOf = (hash) => { const h0 = decodeURIComponent(hash.replace(/^#/, '')), h = ALIAS[h0] || h0; return Object.keys(EXAMPLES).find((k) => slugOf(k) === h || k === h); };
 function load(name, keepHash) {
-  src.value = EXAMPLES[name]; sel.value = name; byId('fileName').textContent = 'main.p2j';
+  src.value = wrapSample(EXAMPLES[name]); sel.value = name; byId('fileName').textContent = 'main.p2j';
   if (!keepHash) { try { history.replaceState(null, '', '#' + slugOf(name)); } catch (e) { /* file:// */ } }
   renderGutter(0); renderPos(); run();
 }
@@ -1006,12 +1016,13 @@ async function run() {
   setStatus('', '実行中…');
   const t0 = performance.now();
   try {
-    await Perl2JS.use(Perl2JS.requires(src.value));      // load the modules the program "use"s (List::Util, DateTime ...)
+    const { code, offset } = unwrap(src.value);
+    await Perl2JS.use(Perl2JS.requires(code));      // load the modules the program "use"s (List::Util, DateTime ...)
     if (my !== runSeq) return;
-    const js = Perl2JS.compile(src.value);
+    const js = Perl2JS.compile(code);
     if (showJs) { outBuf = js.replace(/;(?=[a-zA-Z_$}\`])/g, ';\n'); renderOut(outBuf); setStatus('', '生成されたJS'); return; }
     Perl2JS.stdout = (s) => { outBuf += s; scheduleRender(); };
-    const ret = Perl2JS.run(src.value, { globals: { stage }, exclusive: true });
+    const ret = Perl2JS.run(code, { globals: { stage }, exclusive: true });
     renderOut(outBuf);
     let stopped = false;
     if (ret && typeof ret.then === 'function') {                         // the program sleeps: it keeps running without freezing the page
@@ -1029,6 +1040,7 @@ async function run() {
     } else byId('conInfo').textContent = '';
   } catch (e) {
     if (my !== runSeq) return;
+    { const off = unwrap(src.value).offset; if (e && e.line != null && off) { e.line += off; e.src = src.value; } }      // line numbers of the editor, not of the inner script
     byId('stop').hidden = true;
     if (phone()) setPane('con');
     renderOut(outBuf);
