@@ -1,0 +1,9 @@
+# hello.p2j — 外部ファイルに書いた Perl2JS
+my @names = ("Ann", "Bob", "Carol");
+
+$(sub {
+    my $html = join "", map { "<li>Hello, $_!</li>" } @names;
+    $("#names")->html($html);
+    $("#names li")->on("click", sub { $($this)->toggleClass("picked") });
+    print "hello.p2j loaded: ", scalar(@names), " names\n";
+});

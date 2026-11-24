@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><title>Perl2JS — require のデモ</title>
+<style>body{font-family:system-ui,sans-serif;margin:24px} pre{background:#f3f0e8;padding:8px}</style></head>
+<body>
+<h1>require のデモ</h1>
+<ul id="items"></ul>
+<p id="total"></p>
+<pre id="output"></pre>
+
+<script>document.write('<script src="perl2js.js?t=' + Date.now() + '"><\/script>');</script>
+<!-- main.p2j の中の  require "lib/util.p2j";  が先に読み込まれます -->
+<script type="text/perl2js" src="main.p2j"></script>
+</body>
+</html>

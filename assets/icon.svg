@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Perl2JS">
+  <title>Perl2JS</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1446"/><stop offset="1" stop-color="#0b1022"/>
+    </linearGradient>
+    <linearGradient id="sig" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="js" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fde047"/><stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 0) scale(1.0)"><rect x="0" y="0" width="128" height="128" rx="30" fill="url(#bg)"/><rect x="1.5" y="1.5" width="125" height="125" rx="28.5" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="3"/><g transform="translate(14 96)"><path d="M35.24 -26.81V-11.48Q38.44 -11.93 40.22 -13.94Q42 -15.95 42 -19.04Q42 -22.19 40.24 -24.2Q38.49 -26.2 35.24 -26.81ZM28.08 -41.49V-55.86Q24.93 -55.45 23.33 -53.75Q21.73 -52.05 21.73 -49.11Q21.73 -46.21 23.33 -44.28Q24.93 -42.35 28.08 -41.49ZM35.24 15.29H28.08L28.03 0Q23.61 -0.15 18.79 -1.32Q13.96 -2.49 8.73 -4.67V-17.98Q13.96 -14.88 18.87 -13.2Q23.77 -11.53 28.08 -11.48V-28.18Q18.08 -30.16 13.2 -35.01Q8.33 -39.86 8.33 -47.84Q8.33 -56.32 13.51 -61.34Q18.69 -66.37 28.08 -66.98V-79.02H35.24L35.29 -66.98Q38.9 -66.78 42.78 -66.07Q46.67 -65.36 50.73 -64.09V-51.09Q47.58 -53.12 43.72 -54.34Q39.86 -55.55 35.24 -55.86V-40.27Q45.25 -38.7 50.35 -33.44Q55.45 -28.18 55.45 -19.45Q55.45 -11.12 49.94 -5.79Q44.43 -0.46 35.29 0Z" fill="url(#sig)"/></g><g fill="none" stroke="url(#js)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M78 42 L98 64 L78 86"/></g><path d="M96 42 L116 64 L96 86" fill="none" stroke="#fde047" stroke-opacity=".38" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>

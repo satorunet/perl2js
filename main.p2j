@@ -1,0 +1,10 @@
+# main.p2j — lib/util.p2j を取り込んで使う
+require "lib/util.p2j";
+
+my @prices = (120, 80, 300);
+
+$(sub {
+    render_list("#items", map { greet($_) } ("Ann", "Bob"));
+    $("#total")->text("合計: " . total(@prices) . " 円");
+    print "require ok: total=", total(@prices), "\n";
+});

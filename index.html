@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perl2JS — ブラウザで動くPerl風言語</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:title" content="Perl2JS">
+<meta property="og:description" content="Perl風の構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
+<meta property="og:image" content="assets/social-preview.png">
+<style>
+  :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14130f; --fg:#ece8dd; --mut:#9a9486; --card:#1c1b16; --line:#34312a; --acc:#4cc2b8; --accfg:#06201e; --code:#0f0e0b; --err:#ff8a80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -.01em; }
+  h1.brand { margin: 0 0 8px; line-height: 0; } h1.brand img { max-width: 100%; height: auto; max-height: 72px; }
+  h1 span { color: var(--acc); }
+  p.lead { color: var(--mut); margin: 0 0 20px; }
+  .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  select, button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+  button.run { background: var(--acc); color: var(--accfg); border-color: var(--acc); font-weight: 600; cursor: pointer; }
+  button.tab { cursor:pointer; padding:4px 10px; font-size:13px; }
+  button.tab[aria-pressed=true] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .hint { color: var(--mut); font-size: 13px; margin-left:auto; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  textarea, pre, .stage { width:100%; margin:0; border:1px solid var(--line); border-radius: 10px; background: var(--code); color: var(--fg);
+    font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 12px 14px; }
+  textarea { height: 440px; resize: vertical; tab-size: 4; white-space: pre; }
+  pre { height: 250px; overflow:auto; white-space: pre-wrap; word-break: break-word; }
+  pre.err { color: var(--err); }
+  .stage { background: var(--card); font-family: inherit; min-height: 120px; margin-top: 10px; }
+  .stage:empty::before { content: "#stage  — DOM を操作するサンプルはここに描画されます"; color: var(--mut); font-size: 13px; }
+  h2 { font-size: 15px; margin: 0 0 6px; color: var(--mut); font-weight: 600; }
+  .col { min-width: 0; }
+  section.doc { margin-top: 36px; border-top: 1px solid var(--line); padding-top: 20px; }
+  section.doc h2 { color: var(--fg); font-size: 18px; }
+  table { border-collapse: collapse; width:100%; font-size: 14px; }
+  td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align:left; vertical-align: top; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  h3 { font-size: 15px; margin: 22px 0 6px; }
+  .ok { color: #1b7f3b; font-weight: 700; } .part { color: #a15c00; font-weight: 700; } .todo { color: var(--mut); font-weight: 700; } .na { color: var(--mut); font-weight: 700; opacity: .7; }
+  table.libs td:first-child, table.libs th:first-child { width: 2.2em; text-align: right; color: var(--mut); }
+  table.libs td:nth-child(3), table.libs th:nth-child(3) { width: 3.2em; text-align: center; white-space: nowrap; }
+  table.libs td:nth-child(2) { width: 16em; }
+  p.note { color: var(--mut); font-size: 13px; margin: 6px 0 0; }
+  .demo { background: var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg"><img src="assets/logo-light.svg" alt="Perl2JS" height="72"></picture></h1>
+  <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
+
+  <div class="bar">
+    <select id="ex" aria-label="サンプル"></select>
+    <button class="run" id="run">▶ 実行</button>
+    <span class="hint">Ctrl/⌘ + Enter で実行</span>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <h2>Perl2JS</h2>
+      <textarea id="src" spellcheck="false"></textarea>
+    </div>
+    <div class="col">
+      <div class="bar" style="margin-bottom:6px">
+        <h2 style="margin:0">出力</h2>
+        <button class="tab" id="tOut" aria-pressed="true">実行結果</button>
+        <button class="tab" id="tJs" aria-pressed="false">生成されたJS</button>
+      </div>
+      <pre id="out"></pre>
+      <div class="stage" id="stage"></div>
+    </div>
+  </div>
+
+  <section class="doc">
+    <h2>HTMLに直接書く</h2>
+    <p class="note" style="margin:0 0 8px">旧名「PerlScript」の <code>perlscript.js</code> / <code>window.PerlScript</code> / <code>type="text/perlscript"</code> も、別名としてそのまま動きます。拡張子は何でも構いません(サンプルは <code>.p2j</code>)。</p>
+    <pre style="height:auto">&lt;script src="perl2js.js"&gt;&lt;/script&gt;
+&lt;script type="text/perl2js"&gt;
+  my $n = 0;
+  $("#hello")-&gt;on("click", sub {
+      $n++;
+      $("#hello-n")-&gt;text(" ← ${n}回クリックされました");
+  });
+&lt;/script&gt;</pre>
+    <p class="note" style="margin:0 0 8px"><code>$("#id")</code> のjQuery風の書き方は、使った時に自動で読み込まれます(<code>modules/jQuery.js</code>)。</p>
+    <div class="demo">
+      <button id="hello">このボタンは下の &lt;script type="text/perl2js"&gt; で動いています</button>
+      <span id="hello-n"></span>
+    </div>
+
+    <h2 style="margin-top:28px">対応している構文</h2>
+    <table>
+      <tr><th>Perl風</th><th>変換先</th></tr>
+      <tr><td><code>my $x</code> <code>my @a</code> <code>my %h</code> <code>local</code></td><td><code>let</code> + 変数名にシジルを保持。<code>local</code> はブロックを抜けると(<code>die</code> で抜けても)元の値に戻る</td></tr>
+      <tr><td><code>$a[0]</code> <code>$h{key}</code> <code>$r-&gt;{k}[1]</code> <code>$a[-1]</code> <code>$#a</code> <code>@a[1,2]</code> <code>(list)[0]</code></td><td>配列・ハッシュ(オブジェクト)アクセスとスライス</td></tr>
+      <tr><td><code>foreach</code> <code>for(;;)</code> <code>while</code> <code>unless</code> <code>until</code>、後置 <code>if/unless/for/while</code></td><td>制御構文(<code>$_</code> も可)</td></tr>
+      <tr><td><code>sub</code> / <code>sub ($x,$y) {}</code> / 無名sub</td><td><code>function</code>、最後の式が戻り値</td></tr>
+      <tr><td><code>"... $x @a $h{k} @{[ expr ]}"</code> <code>qq{}</code> <code>q{}</code> <code>qw()</code></td><td>テンプレートリテラル</td></tr>
+      <tr><td><code>&lt;&lt;"EOT"</code> <code>&lt;&lt;'EOT'</code> <code>&lt;&lt;~EOT</code></td><td>ヒアドキュメント(複数同時もOK)</td></tr>
+      <tr><td><code>=~ /re/</code> <code>s/a/b/g</code> <code>$1</code> <code>split</code> <code>tr/a-z/A-Z/</code></td><td><code>RegExp</code>(<code>tr</code> は <code>c d s r</code> に対応)</td></tr>
+      <tr><td><code>eq ne lt gt . x .. &lt;=&gt; // and or not</code></td><td>対応するJS演算子/メソッド</td></tr>
+      <tr><td><code>package</code> <code>bless</code> <code>$obj-&gt;method</code> <code>use parent</code> <code>@ISA</code> <code>SUPER::</code> <code>isa</code> <code>can</code> <code>ref</code></td><td>プロトタイプチェーン(メソッドは先頭引数が <code>$self</code>)。<code>package</code> は使う前に書いてください</td></tr>
+      <tr><td><code>eval { }</code> / <code>die</code> / <code>$@</code></td><td><code>try/catch</code>(<code>die</code> は <code>at line N.</code> 付き)</td></tr>
+      <tr><td><code>Foo-&gt;new(..)</code> <code>obj-&gt;method(..)</code> <code>$el-&gt;{textContent}</code></td><td>JSのクラス/メソッド/プロパティにそのままアクセス</td></tr>
+      <tr><td><code>require "lib/util.p2j";</code> / <code>&lt;script type="text/perl2js" src="x.p2j"&gt;</code></td><td>別ファイルの読み込み(依存を先に取得して連結)</td></tr>
+      <tr><td><code>￥n</code> <code>￥t</code></td><td>全角の <code>￥</code>/<code>¥</code> は <code>\</code> として扱います</td></tr>
+    </table>
+    <p style="color:var(--mut);font-size:13px">未対応: <code>AUTOLOAD</code>/<code>DESTROY</code>、<code>use overload</code>、ファイルI/O、<code>wantarray</code>、リスト/スカラーコンテキストの完全な区別 など。数値の足し算は JS の <code>+</code> なので、文字列の数値は <code>num($x)</code> で変換してください。</p>
+  </section>
+
+  <section class="doc" id="libs">
+    <h2>Perl人気モジュールの対応状況</h2>
+    <p style="color:var(--mut);margin:0 0 6px">よく使われる順の目安です(公式のランキングではありません)。
+      <span class="ok">○ 対応</span> / <span class="part">△ 一部</span> / <span class="todo">… 未対応(予定)</span> / <span class="na">✕ ブラウザでは対象外</span>。</p>
+    <div class="demo" style="margin:10px 0 4px">
+      <b>モジュールは「パッケージ」として別ファイルです。</b> <code>use List::Util qw(sum);</code> と書くと、その時だけ
+      <code>modules/List/Util.js</code> を読み込みます(コアには入っていないので、使わなければ読み込まれません)。<br>
+      コア <b>約29KB</b>(gzip)+ 使うモジュールだけ(例: List::Util は +1.3KB、DateTime は +3.0KB、jQuery互換は +7.6KB)。
+      <code>perl2js.js</code> と同じ場所の <code>modules/</code> を一緒に置いてください(場所は <code>Perl2JS.libPath = "/path/"</code> で変更できます)。
+    </div>
+
+    <h3>定番(Perl標準添付)</h3>
+    <table class="libs">
+      <tr><th>#</th><th>モジュール</th><th>状態</th><th>できること / 備考</th></tr>
+      <tr><td>1</td><td><b>strict</b></td><td class="ok">○</td><td>未宣言の変数をコンパイル時に行番号付きでエラーにします。</td></tr>
+      <tr><td>2</td><td><b>warnings</b></td><td class="part">△</td><td>読み飛ばし(警告は出しません)。</td></tr>
+      <tr><td>3</td><td><b>Data::Dumper</b></td><td class="ok">○</td><td>本物と同じ形式(<code>bless( {...}, 'Class' )</code> も)。<code>$Data::Dumper::Indent</code> / <code>Sortkeys</code> / <code>Terse</code>。</td></tr>
+      <tr><td>4</td><td><b>List::Util</b></td><td class="ok">○</td><td><code>sum</code> <code>sum0</code> <code>product</code> <code>min</code> <code>max</code> <code>minstr</code> <code>maxstr</code> <code>first</code> <code>any</code> <code>all</code> <code>none</code> <code>notall</code> <code>reduce</code> <code>reductions</code> <code>shuffle</code> <code>uniq</code> <code>uniqnum</code> <code>pairs</code> <code>pairkeys</code> <code>pairvalues</code> <code>pairmap</code> <code>head</code> <code>tail</code> <code>zip</code> <code>mesh</code>。<code>first { $_ &gt; 3 } @list</code> のブロック形式もOK。</td></tr>
+      <tr><td>5</td><td><b>Scalar::Util</b></td><td class="ok">○</td><td><code>blessed</code> <code>reftype</code> <code>looks_like_number</code> <code>refaddr</code>(<code>weaken</code> は何もしません)</td></tr>
+      <tr><td>6</td><td><b>POSIX</b></td><td class="part">△</td><td><code>strftime</code> <code>mktime</code> <code>floor</code> <code>ceil</code> <code>fmod</code> <code>pow</code> <code>round</code> <code>trunc</code> と <code>INT_MAX</code> などの定数。<code>POSIX::floor(..)</code> の形もOK。</td></tr>
+      <tr><td>7</td><td><b>Carp</b></td><td class="ok">○</td><td><code>croak</code> <code>carp</code> <code>confess</code> <code>cluck</code>(<code>at line N.</code> 付き)</td></tr>
+      <tr><td>8</td><td><b>constant</b></td><td class="ok">○</td><td><code>use constant PI =&gt; 3.14;</code> / <code>use constant { A =&gt; 1, B =&gt; 2 };</code> / リスト定数(言語機能としてコアに内蔵)</td></tr>
+      <tr><td>9</td><td><b>parent</b> / <b>base</b></td><td class="ok">○</td><td><code>use parent -norequire, 'Animal';</code>、<code>@ISA</code>、<code>SUPER::</code>、<code>isa</code> / <code>can</code> / <code>ref</code></td></tr>
+      <tr><td>10</td><td><b>Time::Local</b></td><td class="ok">○</td><td><code>timelocal</code> <code>timegm</code>(<code>_nocheck</code> / <code>_modern</code> / <code>_posix</code> 付きも)</td></tr>
+      <tr><td>11</td><td><b>Time::Piece</b> / <b>Time::Seconds</b></td><td class="ok">○</td><td><code>localtime-&gt;ymd</code> <code>-&gt;strftime</code> <code>-&gt;add_months</code> <code>-&gt;week</code> など、<code>Time::Piece-&gt;strptime</code>、<code>$t + ONE_DAY</code>、<code>($t2-$t1)-&gt;days / -&gt;pretty</code></td></tr>
+      <tr><td>12</td><td><b>Time::HiRes</b></td><td class="part">△</td><td><code>time</code>(小数秒) <code>gettimeofday</code> <code>tv_interval</code>。<code>sleep</code> / <code>usleep</code> はブラウザでは待てないため非対応。</td></tr>
+      <tr><td>13</td><td><b>Storable</b></td><td class="part">△</td><td><code>dclone</code>(ディープコピー。bless と循環参照も保持)<code>freeze</code> <code>thaw</code>。<code>store</code> / <code>retrieve</code>(ファイル)は対象外。</td></tr>
+      <tr><td>14</td><td><b>JSON::PP</b> / <b>JSON</b> / <b>JSON::XS</b></td><td class="ok">○</td><td><code>encode_json</code> <code>decode_json</code> <code>to_json</code> <code>from_json</code>、<code>JSON::PP-&gt;new-&gt;pretty-&gt;canonical-&gt;encode($data)</code>(<code>pretty</code> は本物と同じ3スペース)。JSONの true/false は <code>1</code>/<code>0</code> になります。<code>JSON-&gt;stringify</code> / <code>parse</code>(JS側のJSON)も使えます。</td></tr>
+      <tr><td>15</td><td><b>Encode</b></td><td class="ok">○</td><td><code>encode</code> <code>decode</code> <code>encode_utf8</code> <code>decode_utf8</code>。<b>UTF-8 / latin1 / UTF-16 / Shift_JIS / EUC-JP</b>(ISO-2022-JP は decode のみ)。</td></tr>
+      <tr><td>16</td><td><b>MIME::Base64</b> / <b>URI::Escape</b></td><td class="ok">○</td><td><code>encode_base64</code> <code>decode_base64</code>(url-safe 版も)、<code>uri_escape</code> <code>uri_unescape</code> <code>uri_escape_utf8</code></td></tr>
+      <tr><td>17</td><td><b>File::Basename</b> / <b>File::Spec</b></td><td class="ok">○</td><td><code>basename</code> <code>dirname</code> <code>fileparse</code>、<code>File::Spec-&gt;catfile / catdir / splitdir / canonpath</code>(文字列処理のみ。<code>rel2abs</code> などカレントディレクトリが要るものは対象外)</td></tr>
+      <tr><td>18</td><td><b>Digest::MD5</b> / <b>Digest::SHA</b></td><td class="part">△</td><td><code>md5_hex</code> <code>md5_base64</code>、<code>sha1_hex</code> <code>sha256_hex</code> <code>hmac_sha256_hex</code> ほか、<code>Digest::MD5-&gt;new-&gt;add(..)-&gt;hexdigest</code>。SHA-512 は未対応。</td></tr>
+      <tr><td>19</td><td><b>Text::Wrap</b></td><td class="ok">○</td><td><code>wrap</code> <code>fill</code>(<code>$Text::Wrap::columns</code> / <code>huge</code> / <code>unexpand</code> など。本物のアルゴリズムの移植)</td></tr>
+      <tr><td>20</td><td><b>Term::ANSIColor</b></td><td class="ok">○</td><td><code>color</code> <code>colored</code> <code>colorstrip</code> <code>uncolor</code>、<code>:constants</code>(<code>RED</code> <code>BOLD</code> <code>RESET</code> ...)。出力欄は色を解釈しません。</td></tr>
+      <tr><td>21</td><td><b>Math::Trig</b></td><td class="ok">○</td><td><code>pi</code> <code>tan</code> <code>asin</code> <code>acos</code> <code>atan</code> <code>sinh</code>... <code>deg2rad</code> <code>rad2deg</code> <code>great_circle_distance</code></td></tr>
+      <tr><td>22</td><td><b>Test::More</b></td><td class="ok">○</td><td><code>ok</code> <code>is</code> <code>isnt</code> <code>like</code> <code>cmp_ok</code> <code>is_deeply</code> <code>can_ok</code> <code>isa_ok</code> <code>subtest</code> <code>plan</code> <code>done_testing</code>。TAP形式で出力(失敗の詳細も本物と同じ文面)。</td></tr>
+      <tr><td>23</td><td><b>Benchmark</b></td><td class="todo">…</td><td>未対応(<code>Time::HiRes</code> で計測できます)</td></tr>
+      <tr><td>24</td><td><b>Getopt::Long</b> / <b>Cwd</b> / <b>File::Temp</b> / <b>IO::File</b> / <b>Socket</b> / <b>Sys::Hostname</b></td><td class="na">✕</td><td>コマンドライン・ファイル・ネットワークに依存するため、ブラウザでは対象外です。</td></tr>
+    </table>
+
+    <h3>人気のCPANモジュール</h3>
+    <table class="libs">
+      <tr><th>#</th><th>モジュール</th><th>状態</th><th>できること / 備考</th></tr>
+      <tr><td>1</td><td><b>DateTime</b> / <b>DateTime::Duration</b></td><td class="ok">○</td><td><code>now</code> <code>today</code> <code>new</code> <code>from_epoch</code> <code>add</code> <code>subtract</code> <code>subtract_datetime</code> <code>delta_days</code> <code>truncate</code> <code>set</code> <code>strftime</code> <code>week</code> <code>compare</code>、<code>time_zone =&gt; 'Asia/Tokyo'</code>(IANAゾーン)、<code>in_units</code>。<br>日付の <code>==</code> は同一オブジェクト判定になるため、<code>-&gt;epoch ==</code> か <code>DateTime-&gt;compare</code> を使ってください(<code>&lt;</code> <code>&gt;</code> <code>&lt;=&gt;</code> は使えます)。</td></tr>
+      <tr><td>2</td><td><b>Try::Tiny</b></td><td class="ok">○</td><td><code>try { } catch { } finally { };</code>(<code>$_</code> がエラー、戻り値も返せます)。Perl 5.34 の <code>try { } catch ($e) { }</code> はモジュール無しで使えます。</td></tr>
+      <tr><td>3</td><td><b>List::MoreUtils</b></td><td class="part">△</td><td><code>uniq</code> <code>any</code> <code>all</code> <code>none</code> <code>firstidx</code> <code>lastidx</code> <code>indexes</code> <code>firstval</code> <code>minmax</code> <code>part</code> <code>apply</code> <code>after</code> <code>before</code>。<code>zip</code> / <code>natatime</code> / <code>pairwise</code> は未対応。</td></tr>
+      <tr><td>4</td><td><b>Moose</b> / <b>Moo</b> / <b>Mouse</b></td><td class="todo">…</td><td><code>has</code> / <code>extends</code> は未対応。<code>package</code> + <code>bless</code> + <code>use parent</code> で代用できます。</td></tr>
+      <tr><td>5</td><td><b>LWP::UserAgent</b> / <b>HTTP::Tiny</b></td><td class="part">△</td><td>ブラウザは同期通信できないため、代わりに <code>$-&gt;get / post / getJSON / ajax</code>(非同期)を使います。</td></tr>
+      <tr><td>6</td><td><b>Text::CSV</b> / <b>YAML</b> / <b>XML::Simple</b></td><td class="todo">…</td><td>需要に応じて対応予定。</td></tr>
+      <tr><td>7</td><td><b>DBI</b> / <b>Mojolicious</b> / <b>Dancer</b> / <b>Catalyst</b> / <b>Path::Tiny</b></td><td class="na">✕</td><td>データベース・サーバ・ファイルに依存するため、ブラウザでは対象外です。</td></tr>
+    </table>
+
+    <h3>Perl2JS独自(ブラウザ向け)</h3>
+    <table class="libs">
+      <tr><th>#</th><th>機能</th><th>状態</th><th>できること / 備考</th></tr>
+      <tr><td>1</td><td><b>jQuery互換 <code>$</code></b>(<code>modules/jQuery.js</code>)</td><td class="ok">○</td><td>セレクタ・チェーン・<code>on</code>(委譲/名前空間)・<code>css</code> <code>attr</code> <code>val</code> <code>data</code>・DOM操作・<code>fadeIn/Out</code> <code>slide*</code> <code>animate</code>・<code>$-&gt;ajax/get/post/getJSON</code>。<code>$(</code> を使うと自動で読み込まれます。本物のjQueryを読み込めばそちらを優先します。</td></tr>
+      <tr><td>2</td><td><b>JSオブジェクト直接</b></td><td class="ok">○</td><td><code>document</code> <code>console</code> <code>JSON</code> <code>Math</code> <code>Date</code> などを <code>-&gt;</code> でそのまま呼べます。例: <code>document-&gt;getElementById("x")-&gt;{value}</code></td></tr>
+    </table>
+
+    <h3>自分でモジュールを作る</h3>
+    <p style="margin:4px 0">1ファイル = 1モジュールです。<code>modules/Foo/Bar.js</code> を置けば、<code>use Foo::Bar qw(hello);</code> で使えます。</p>
+    <pre style="height:auto">Perl2JS.module({
+  name: 'Foo::Bar',
+  init(api) {                                   // api: hide, mk(リスト), RT, G(グローバル), use('他モジュール') ...
+    return {
+      exports:  { hello: (name) =&gt; 'Hello, ' + name, PI: 3.14159 },   // 関数 / 定数
+      default:  [],                              // use Foo::Bar; だけで取り込む名前
+      unary:    ['hello'],                       // 括弧なしで1引数だけ取る  (hello "x" . "y")
+      blockfns: { each_pair: '$a, $b' },        // first { ... } @list のようにブロックを取る関数
+      classes:  { 'Foo::Bar': SomeClass },      // Foo::Bar-&gt;new のような静的呼び出し
+    };
+  },
+});</pre>
+  </section>
+</main>
+
+<!-- cache buster: 毎回 ?t=<時刻> を付けて常に最新の perl2js.js を読む(同期読み込みなので下の text/perl2js も従来通り動く) -->
+<script>document.write('<script src="perl2js.js?t=' + Date.now() + '"><\/script>');</script>
+
+<!-- 実際にHTMLへ直書きした例 -->
+<script type="text/perl2js">
+  my $n = 0;
+  $("#hello")->on("click", sub {
+      $n++;
+      $("#hello-n")->text(" ← ${n}回クリックされました");
+  });
+</script>
+
+<script>
+const EXAMPLES = {
+"Hello, world": `print "Hello, world!\\n";
+`,
+"FizzBuzz": `for my $i (1..20) {
+    if    ($i % 15 == 0) { print "FizzBuzz\\n" }
+    elsif ($i % 3  == 0) { print "Fizz\\n" }
+    elsif ($i % 5  == 0) { print "Buzz\\n" }
+    else                 { print $i, "\\n" }
+}
+`,
+"ハッシュと単語カウント": `my $text = "the quick brown fox jumps over the lazy dog the end";
+my %count;
+$count{$_}++ for split / /, $text;
+
+for my $w (sort { $count{$b} <=> $count{$a} || $a cmp $b } keys %count) {
+    printf("%-6s %s\\n", $w, "#" x $count{$w});
+}
+`,
+"サブルーチンとクロージャ": `sub fact($n) { $n <= 1 ? 1 : $n * fact($n - 1) }
+print "10! = ", fact(10), "\\n";
+
+sub make_counter {
+    my $n = shift // 0;
+    return sub { return ++$n };
+}
+my $c = make_counter(100);
+$c->(); $c->();
+print "counter: ", $c->(), "\\n";
+
+my @sq = map { $_ ** 2 } grep { $_ % 2 } 1..9;
+print "odd squares: @sq\\n";
+`,
+"ネストしたデータ": `my $data = {
+    name  => "Ann",
+    langs => ["Perl", "JS"],
+    pos   => { x => 3, y => 4 },
+};
+$data->{age} = 31;
+push @{ $data->{langs} }, "Rust";
+
+print "$data->{name} ($data->{age}) knows @{ $data->{langs} }\\n";
+print "distance: ", sqrt($data->{pos}{x} ** 2 + $data->{pos}{y} ** 2), "\\n";
+print "keys: ", join(",", sort keys %$data), "\\n";
+print JSON->stringify($data), "\\n";
+`,
+"正規表現": `my $log = "2026-11-24 ERROR disk full; 2026-11-25 WARN cpu hot";
+if ($log =~ /(\\d{4})-(\\d\\d)-(\\d\\d) (\\w+)/) {
+    print "first: year=$1 month=$2 day=$3 level=$4\\n";
+}
+my $n = 0;
+$n++ while $log =~ /\\d{4}-\\d\\d-\\d\\d/g;
+print "dates found: $n\\n";
+
+my $masked = $log;
+$masked =~ s/(\\d{4})-(\\d\\d)-(\\d\\d)/$3\\/$2\\/$1/g;
+print $masked, "\\n";
+`,
+"jQuery風: カウンター": `$("#stage")->html("<button id='b'>押してね</button> <b id='n'>0</b>");
+
+my $count = 0;
+$("#b")->on("click", sub {
+    $count++;
+    $("#n")->text($count);
+});
+print "stage に button を作りました\\n";
+`,
+"jQuery風: ToDoリスト": `$("#stage")->html("<input id='t' placeholder='やること'> <button id='add'>追加</button><ul id='list'></ul>");
+
+$("#add")->on("click", sub {
+    my $v = $("#t")->val();
+    return unless length $v;
+    $("#list")->append("<li>$v <a href='#' class='del'>[x]</a></li>");
+    $("#t")->val("")->focus();
+});
+# イベント委譲: あとから増えた li の削除リンクにも効く
+$("#list")->on("click", ".del", sub {
+    $($this)->parent()->fadeOut(200, sub { $($this)->remove() });
+    return false;
+});
+print "入力して「追加」を押してください\\n";
+`,
+"jQuery風: 操作いろいろ": `$("#stage")->html("<ul><li>apple</li><li>banana</li><li>cherry</li></ul>");
+
+$("#stage li")->each(sub {
+    my ($i, $el) = @_;
+    $($el)->attr("data-no", $i + 1)->css({ color => $i % 2 ? "teal" : "crimson", cursor => "pointer" });
+});
+$("#stage li")->hover(
+    sub { $($this)->css("font-weight", "bold") },
+    sub { $($this)->css("font-weight", "normal") },
+);
+$("#stage li")->last()->addClass("last")->slideUp(600)->slideDown(600);
+
+my @names = @{ $("#stage li")->map(sub { $($this)->text() }) };
+print "items: @names\\n";
+print "count: ", $("#stage li")->length, "\\n";
+`,
+"jQuery風: フェード/スライド": `$("#stage")->html(
+    "<button id='fo'>fadeOut</button> <button id='fi'>fadeIn</button> " .
+    "<button id='ft'>fadeToggle</button> <button id='st'>slideToggle</button> " .
+    "<button id='an'>animate</button> <button id='seq'>順番に実行</button>" .
+    "<div id='box' style='margin-top:10px;padding:14px;background:#0b6e69;color:#fff;border-radius:8px;width:200px'>" .
+    "Hello, Perl2JS!</div>"
+);
+
+$("#fo")->on("click", sub { $("#box")->fadeOut(500) });
+$("#fi")->on("click", sub { $("#box")->fadeIn("slow") });
+$("#ft")->on("click", sub { $("#box")->fadeToggle(400) });
+$("#st")->on("click", sub { $("#box")->slideToggle(500) });
+$("#an")->on("click", sub {
+    $("#box")->animate({ width => 360, opacity => 0.6 }, 600, sub {
+        $($this)->animate({ width => 200, opacity => 1 }, 600);
+    });
+});
+# 連鎖(キューは未実装)は完了コールバックでつなぐ
+$("#seq")->on("click", sub {
+    $("#box")->fadeOut(300, sub {
+        $($this)->fadeIn(300, sub {
+            $($this)->slideUp(300, sub { $($this)->slideDown(300) });
+        });
+    });
+});
+print "ボタンを押してください\\n";
+`,
+"jQuery風: Ajax": `# 実際にこのページを取得してタイトルを表示
+$->get("index.html", sub {
+    my ($html) = @_;
+    print "loaded ", length($html), " bytes\\n";
+    print "title: $1\\n" if $html =~ /<title>(.*?)<\\/title>/;
+})->fail(sub { print "failed\\n" });
+`,
+"ヒアドキュメント": `my $name = "Perl2JS";
+my %user = (id => 7, role => "admin");
+my @tags = qw(perl js dom);
+
+print <<"EOT";
+Hello, $name!
+user #$user{id} ($user{role}) tags: @tags
+1 + 2 = @{[ 1 + 2 ]}
+EOT
+
+# 'EOT' なら展開しない / <<~ なら字下げを除去
+print <<'RAW';
+raw: $name は展開されません\\n
+RAW
+
+my $html = <<~HTML;
+    <ul>
+      <li>$name</li>
+    </ul>
+    HTML
+print $html;
+`,
+"オブジェクト指向 (package / bless)": `use strict;
+use warnings;
+
+package Animal;
+sub new {
+    my ($class, %args) = @_;
+    my $self = { name => $args{name} || "unknown", sound => "..." };
+    return bless $self, $class;
+}
+sub name  { my $self = shift; return $self->{name}; }
+sub speak {
+    my $self = shift;
+    return sprintf("%s the %s says %s", $self->name, lc ref($self), $self->sound);
+}
+sub sound { my $self = shift; return $self->{sound}; }
+
+package Dog;
+our @ISA = ('Animal');
+sub new {
+    my ($class, %args) = @_;
+    my $self = Animal::new($class, %args);
+    $self->{tricks} = [];
+    return $self;
+}
+sub sound { "Woof" }
+sub add_trick { my ($self, $t) = @_; push @{ $self->{tricks} }, $t; return $self; }
+sub tricks { my $self = shift; return @{ $self->{tricks} }; }
+
+package Cat;
+use parent -norequire, 'Animal';
+sub new {
+    my ($class, %args) = @_;
+    my $self = $class->SUPER::new(%args);
+    $self->{lives} = 9;
+    return $self;
+}
+sub sound { "Meow" }
+
+package main;
+
+my $d = Dog->new(name => "Rex");
+$d->add_trick("sit")->add_trick("roll");
+print $d->speak, "\\n";
+print "tricks: ", join(", ", $d->tricks), "\\n";
+my $c = Cat->new(name => "Tom");
+print $c->speak, " (lives: $c->{lives})\\n";
+print "ref: ", ref($d), " ", ref($c), "\\n";
+print "isa: ", ($d->isa("Animal") ? "yes" : "no"), " ", ($c->isa("Dog") ? "yes" : "no"), "\\n";
+print "can: ", ($c->can("speak") ? "yes" : "no"), " ", ($c->can("fly") ? "yes" : "no"), "\\n";
+my $unknown = Animal->new();
+print $unknown->speak, "\\n";
+for my $a (Dog->new(name => "A"), Cat->new(name => "B")) { print $a->name, ": ", $a->sound, "\\n"; }
+print "name key still works: $d->{name}\\n";
+my $r = eval { $d->fly; 1 };
+print "err: $@\\n" unless $r;
+`,
+"use strict と tr///": `use strict;
+my $s = "Hello, Perl2JS";
+
+my $t = $s;
+$t =~ tr/a-z/A-Z/;                       # 大文字化
+print "$t\\n";
+
+my $vowels = ($s =~ tr/aeiouAEIOU//);   # 数えるだけ
+print "vowels: $vowels\\n";
+
+my $rot13 = $s;
+$rot13 =~ tr/A-Za-z/N-ZA-Mn-za-m/;      # ROT13
+print "rot13: $rot13\\n";
+
+print "￥n全角の￥nでも改行できます￥n";
+`,
+"Data::Dumper": `use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;          # キーを並べ替え
+
+my $data = {
+    name  => "Ann",
+    langs => ["Perl", "JS"],
+    pos   => { x => 3, y => 4 },
+    score => 3.5,
+    memo  => undef,
+};
+print Dumper($data);
+
+{
+    local $Data::Dumper::Indent = 1;   # 字下げを浅く
+    local $Data::Dumper::Terse  = 1;   # $VAR1 = を省略
+    print Dumper([1, "two", { three => 3 }]);
+}
+print Dumper("scalar", 42);
+`,
+"local (動的スコープ)": `our $level = 0;
+our %cfg = (mode => "prod");
+
+sub show { print "level=$level mode=$cfg{mode}\\n"; }
+
+sub nested {
+    local $level = $level + 1;          # このブロックの間だけ変更
+    local $cfg{mode} = "debug";          # ハッシュ要素もOK
+    show();
+    nested() if $level < 2;
+}
+
+show();
+nested();
+show();                                  # すべて元に戻っている
+
+sub boom { local $level = 99; die "oops\\n"; }
+eval { boom() };                         # die で抜けても元に戻る
+print "after die: level=$level err=$@";
+`,
+"エラー表示を試す": `# わざとエラーを起こして、表示を確認するサンプル
+# (下の行頭の # を外すと各エラーが出ます)
+print "start\\n";
+
+my $user;
+# print $user->{name}{first};        # undef の要素アクセス(実行時エラー)
+# undefined_function(1, 2);          # 未定義の関数
+# $user->speak();                    # undef に対するメソッド呼び出し
+# die "something went wrong";        # die(行番号付きで表示)
+# use strict; print $typo;           # 宣言していない変数(コンパイルエラー)
+
+print $user->{name}{first};
+print "ここは実行されません\\n";
+`,
+"日付と時刻 (localtime / POSIX / Time::Local)": `use POSIX qw(strftime floor);
+use Time::Local;
+
+my $now = time;
+my @t = localtime($now);
+printf("%04d-%02d-%02d %02d:%02d:%02d\\n", $t[5] + 1900, $t[4] + 1, $t[3], $t[2], $t[1], $t[0]);
+print "scalar: ", scalar(localtime($now)), "\\n";
+print strftime("%Y年%m月%d日 (%a) %H:%M", localtime($now)), "\\n";
+
+# 日付 -> 秒 (Time::Local)
+my $e = timegm(0, 0, 0, 1, 0, 2000);              # 2000-01-01 00:00:00 UTC
+print "2000-01-01 UTC = $e\\n";
+print "曜日: ", (gmtime($e))[6], " (0=日)  通算日: ", floor($e / 86400), "\\n";
+
+# 経過時間
+my $t0 = time;
+print "elapsed: ", time - $t0, " sec\\n";
+`,
+"日付: Time::Piece": `use Time::Piece;
+use Time::Seconds;
+
+my $t = localtime;
+print "今日: ", $t->ymd, " (", $t->wdayname, ") ", $t->hms, "\\n";
+print "月: ", $t->fullmonth, "  年内の日数: ", $t->yday, "  週番号: ", $t->week, "\\n";
+print "書式: ", $t->strftime("%Y/%m/%d %H:%M"), "\\n";
+
+my $next = $t + ONE_DAY * 7;                     # 1週間後
+print "1週間後: ", $next->ymd, "\\n";
+print "3か月後: ", $t->add_months(3)->ymd, "\\n";
+
+my $p = Time::Piece->strptime("2026-12-25 18:30:00", "%Y-%m-%d %H:%M:%S");
+my $d = $p - $t;                                  # Time::Seconds
+printf("クリスマスまで %.1f 日 (%s)\\n", $d->days, $d->pretty);
+`,
+"日付: DateTime": `use DateTime;
+
+my $dt = DateTime->new(year => 2026, month => 11, day => 24, hour => 9, minute => 30,
+                       time_zone => 'Asia/Tokyo');
+print "$dt  (", $dt->day_name, ")\\n";
+print "NY: ", $dt->clone->set_time_zone('America/New_York')->datetime, "\\n";
+
+my $later = $dt->clone->add(days => 10, hours => 5);
+print "10日5時間後: ", $later->datetime, "\\n";
+print "1か月後(1/31): ", DateTime->new(year => 2026, month => 1, day => 31)->add(months => 1)->ymd, "\\n";
+
+my $diff = $later->subtract_datetime($dt);
+my ($days, $hours) = $diff->in_units('days', 'hours');
+print "差: $days 日 $hours 時間\\n";
+
+my $birth = DateTime->new(year => 1990, month => 5, day => 17);
+my $age = $dt->subtract_datetime($birth)->in_units('years');
+print "年齢: $age 歳\\n";
+print "比較: ", DateTime->compare($dt, $later), " / ", ($dt < $later ? "前" : "後"), "\\n";
+print "今: ", DateTime->now(time_zone => 'Asia/Tokyo')->strftime("%Y-%m-%d %H:%M:%S %Z"), "\\n";
+`,
+"List::Util / Scalar::Util": `use List::Util qw(sum max min first reduce shuffle uniq any all pairs);
+use Scalar::Util qw(blessed looks_like_number);
+
+my @n = (3, 1, 4, 1, 5, 9, 2, 6);
+print "sum=", sum(@n), " max=", max(@n), " min=", min(@n), "\\n";
+print "first > 4: ", (first { $_ > 4 } @n), "\\n";
+print "reduce: ", (reduce { $a * $b } 1..6), "\\n";
+print "uniq: @{[ uniq @n ]}\\n";
+print "any 9: ", ((any { $_ == 9 } @n) ? "yes" : "no"), "  all > 0: ", ((all { $_ > 0 } @n) ? "yes" : "no"), "\\n";
+print "0.1 + 0.2 + 0.3 = ", sum(0.1, 0.2, 0.3), "\\n";
+
+for my $p (pairs(apple => 3, banana => 5)) { print $p->key, " => ", $p->value, "\\n"; }
+
+my $obj = bless {}, 'Foo';
+print "blessed: ", blessed($obj), "   not blessed: ", (defined blessed([]) ? "?" : "undef"), "\\n";
+print join(",", map { looks_like_number($_) ? "num" : "str" } (1, "2.5", "abc", "1e3", "")), "\\n";
+`,
+"JSON::PP": `use JSON::PP;
+
+my $data = { name => "Ann", langs => ["Perl", "JS"], pos => { x => 3, y => 4 }, admin => 1, memo => undef, score => 3.5 };
+
+my $json = JSON::PP->new->canonical->pretty;
+print $json->encode($data);
+
+my $text = encode_json([1, "two", { three => 3 }]);
+print "$text\\n";
+
+my $back = decode_json('{"list":[1,2,{"k":"v"}],"ok":true,"n":null,"pi":3.14}');
+print "list[2]{k} = $back->{list}[2]{k}   ok = $back->{ok}   pi = $back->{pi}\\n";
+print "keys: ", join(",", sort keys %$back), "\\n";
+`,
+"Try::Tiny と try/catch": `use Try::Tiny;
+
+my $r = try { die "boom\\n"; 1 } catch { "caught: $_" };
+print $r;
+
+try {
+    die { code => 404, msg => "not found" };
+} catch {
+    print "error $_->{code}: $_->{msg}\\n";
+} finally {
+    print "finally runs either way\\n";
+};
+
+my $v = try { 42 } catch { -1 };
+print "value: $v\\n";
+
+# Perl 5.34 の標準構文 (モジュール不要)
+use feature 'try';
+sub risky { my $n = shift; die "negative\\n" if $n < 0; return sqrt($n); }
+for my $n (16, -4) {
+    try { print "sqrt($n) = ", risky($n), "\\n"; }
+    catch ($e) { chomp $e; print "failed for $n: $e\\n"; }
+}
+`,
+"Test::More": `use Test::More tests => 7;
+
+ok(1 + 1 == 2, "足し算");
+is(uc("perl"), "PERL", "uc");
+like("hello world", qr/wor/, "like");
+is_deeply([1, { a => [2, 3] }], [1, { a => [2, 3] }], "構造が同じ");
+cmp_ok(10, '>', 3, "cmp_ok");
+is(0.1 + 0.2, 0.3, "浮動小数点の表示は Perl と同じ");
+is("abc", "abd", "わざと失敗させる");
+`,
+"文字列: Text::Wrap・Base64・URI・Digest・Encode": `use Text::Wrap qw(wrap);
+use MIME::Base64;
+use URI::Escape;
+use Digest::MD5 qw(md5_hex);
+use Digest::SHA qw(sha256_hex);
+use Encode qw(encode decode);
+use File::Basename;
+
+$Text::Wrap::columns = 36;
+print wrap("* ", "  ", "The quick brown fox jumps over the lazy dog and keeps running through the forest."), "\\n\\n";
+
+print "base64: ", encode_base64("Hello, Perl2JS!", ""), "\\n";
+print "decode: ", decode_base64("SGVsbG8sIFBlcmwySlMh"), "\\n";
+print "uri   : ", uri_escape("a b&c=日本語"), "\\n";
+print "md5   : ", md5_hex("hello"), "\\n";
+print "sha256: ", sha256_hex("hello"), "\\n";
+
+my $bytes = encode("shiftjis", "あいう");
+print "Shift_JIS bytes: ", join(" ", map { sprintf "%02x", ord } split //, $bytes), "\\n";
+print "decoded: ", decode("shiftjis", $bytes), "\\n";
+
+my ($name, $dir, $suffix) = fileparse("/usr/local/lib/Foo.pm", qr/\\.[^.]*/);
+print "fileparse: $name | $dir | $suffix   basename: ", basename("/a/b/c.txt"), "\\n";
+`,
+"エラー処理": `my $r = eval {
+    die "boom\\n" if 1;
+    "not reached";
+};
+print "caught: $@" if $@;
+
+sub safe_div($a, $b) {
+    die "division by zero\\n" unless $b;
+    return $a / $b;
+}
+for my $d (2, 0) {
+    my $res = eval { safe_div(10, $d) };
+    print defined($res) ? "10/$d = $res\\n" : "error: $@";
+}
+`,
+};
+
+const byId = (id) => document.getElementById(id);
+const sel = byId('ex'), src = byId('src'), out = byId('out'), stage = byId('stage');
+for (const k of Object.keys(EXAMPLES)) sel.add(new Option(k, k));
+let showJs = false;
+
+function load(name) { src.value = EXAMPLES[name]; run(); }
+let runSeq = 0;
+async function run() {
+  const my = ++runSeq;                       // ignore results of an older, slower run
+  stage.innerHTML = '';
+  out.className = ''; out.textContent = '';
+  try {
+    await Perl2JS.use(Perl2JS.requires(src.value));      // load the modules the program "use"s (List::Util, DateTime ...)
+    if (my !== runSeq) return;
+    const js = Perl2JS.compile(src.value);
+    if (showJs) { out.textContent = js.replace(/;(?=[a-zA-Z_$}\`])/g, ';\n'); return; }
+    Perl2JS.stdout = (s) => { out.textContent += s; };
+    Perl2JS.run(src.value, { globals: { stage } });
+  } catch (e) {
+    if (my === runSeq) Perl2JS.renderError(e, out, { append: true });   // 行番号・該当行の抜粋・ヒント付きで表示
+  }
+}
+byId('run').onclick = run;
+sel.onchange = () => load(sel.value);
+src.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+  if (e.key === 'Tab') { e.preventDefault(); const s = src.selectionStart; src.setRangeText('    ', s, src.selectionEnd, 'end'); }
+});
+function setTab(js) {
+  showJs = js;
+  byId('tOut').setAttribute('aria-pressed', !js); byId('tJs').setAttribute('aria-pressed', js);
+  run();
+}
+byId('tOut').onclick = () => setTab(false);
+byId('tJs').onclick = () => setTab(true);
+load(sel.value);
+</script>
+</body>
+</html>

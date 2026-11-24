@@ -1,0 +1,15 @@
+# lib/util.p2j — 共有したい関数をまとめたライブラリ
+sub greet($name) {
+    return "Hello, $name!";
+}
+
+sub total(@nums) {
+    my $sum = 0;
+    $sum += $_ for @nums;
+    return $sum;
+}
+
+sub render_list($selector, @items) {
+    my $html = join "", map { "<li>$_</li>" } @items;
+    $($selector)->html($html);
+}

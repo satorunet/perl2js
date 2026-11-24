@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><title>Perl2JS 外部ファイル (.p2j) のデモ</title>
+<style>li.picked { color: #0b6e69; font-weight: bold; } pre { background:#f3f0e8; padding:8px; }</style></head>
+<body>
+<h1>外部ファイル (.p2j)</h1>
+<ul id="names"></ul>
+<pre id="output"></pre>
+
+<script>document.write('<script src="perl2js.js?t=' + Date.now() + '"><\/script>');</script>
+<!-- src に .p2j を指定すると fetch して実行します -->
+<script type="text/perl2js" src="hello.p2j"></script>
+</body>
+</html>
