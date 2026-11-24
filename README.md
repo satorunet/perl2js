@@ -7,7 +7,7 @@
 
 <p align="center"><b>English</b> | <a href="README.ja.md">日本語</a></p>
 
-**Perl2JS** compiles Perl-flavoured source to JavaScript **in the browser** — no server, no WebAssembly.
+**Perl2JS** compiles Perl syntax to JavaScript **in the browser** — no server, no WebAssembly.
 Write `my $x`, `@list`, `%hash`, `->{}`, `=~ s///`, `sub`, `package`/`bless`, heredocs … and call the DOM, `console`, or the built-in jQuery-style `$("#id")` directly.
 
 **▶ Try it:** <https://satoru.net/perl2js/> (playground with 26 examples)

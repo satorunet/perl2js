@@ -380,15 +380,4 @@ Not accepted (it is Perl, not JavaScript): `let`/`const`, arrow functions `x => 
 
 ## Built-in functions
 
-| Group | Functions |
-|---|---|
-| Output | `print` `printf` `say` `sprintf` |
-| Arrays | `push` `pop` `shift` `unshift` `splice` `reverse` `sort` `map` `grep` `join` `scalar` |
-| Hashes | `keys` `values` `exists` `delete` `each`-style loops with `keys` |
-| Strings | `length` `substr` `index` `rindex` `uc` `lc` `ucfirst` `lcfirst` `chomp` `chop` `chr` `ord` `split` `sprintf` `reverse` `tr///` |
-| Numbers | `abs` `int` `sqrt` `sin` `cos` `atan2` `exp` `log` `hex` `oct` `rand` `srand` |
-| Types | `defined` `ref` `bless` |
-| Time | `time` `localtime` `gmtime` |
-| Control | `die` `warn` `eval` `exit` `return` `last` `next` |
-
-Everything else comes from [modules](modules.md): `List::Util`, `POSIX`, `Data::Dumper`, `Time::Piece`, `JSON::PP`, `Encode`, ...
+The full list, with what works like Perl and what does not, is on its own page: **[Built-in functions](functions.md)**. Everything beyond the built-ins comes from [modules](modules.md): `List::Util`, `POSIX`, `Data::Dumper`, `Time::Piece`, `JSON::PP`, `Encode`, ...

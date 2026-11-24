@@ -354,7 +354,7 @@ print "ok\n" if "abc" =~ /b/ and not "abc" =~ /z/;
 
 ## Perl + JavaScript ハイブリッド
 
-Perl2JS は JavaScript にコンパイルされるので、JavaScript の世界はすぐそこにあります。Perl を書き続けながら、同じプログラム内でブラウザや JS のオブジェクトを呼び出せます。よく使う JS のグローバルオブジェクトには、`->` (Perl 風) または `.` (JavaScript 風) のどちらも使えます。
+Perl2JS は JavaScript にコンパイルされるので、JavaScript の世界はすぐそこにあります。Perl を書き続けながら、同じプログラム内でブラウザや JS のオブジェクトを呼び出せます。よく使う JS のグローバルオブジェクトには、`->` (Perl 構文) または `.` (JavaScript 風) のどちらも使えます。
 
 ```perl2js
 for (0..5) {
@@ -380,15 +380,4 @@ Perl のコードと JS の値は自由に混在できます。配列は本物�
 
 ## 組み込み関数
 
-| 分類 | 関数 |
-|---|---|
-| 出力 | `print` `printf` `say` `sprintf` |
-| 配列 | `push` `pop` `shift` `unshift` `splice` `reverse` `sort` `map` `grep` `join` `scalar` |
-| ハッシュ | `keys` `values` `exists` `delete` `each`-style loops with `keys` |
-| 文字列 | `length` `substr` `index` `rindex` `uc` `lc` `ucfirst` `lcfirst` `chomp` `chop` `chr` `ord` `split` `sprintf` `reverse` `tr///` |
-| 数値 | `abs` `int` `sqrt` `sin` `cos` `atan2` `exp` `log` `hex` `oct` `rand` `srand` |
-| 型 | `defined` `ref` `bless` |
-| 時刻 | `time` `localtime` `gmtime` |
-| 制御 | `die` `warn` `eval` `exit` `return` `last` `next` |
-
-それ以外はすべて[モジュール](modules.ja.md)から提供されます: `List::Util`、`POSIX`、`Data::Dumper`、`Time::Piece`、`JSON::PP`、`Encode`、...
+Perl と同じに動くもの・動かないものの一覧は、専用のページにまとめています: **[組み込み関数](functions.ja.md)**。組み込み以外の機能は [モジュール](modules.ja.md) (`List::Util`、`POSIX`、`Data::Dumper`、`Time::Piece`、`JSON::PP`、`Encode` など) で提供されます。

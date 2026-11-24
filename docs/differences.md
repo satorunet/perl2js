@@ -2,7 +2,7 @@
 
 **English** | [日本語](differences.ja.md) · [Docs index](README.md)
 
-Perl2JS is a Perl-flavoured language that runs on JavaScript, not a full `perl`. It is checked against real Perl with the programs in these docs, and these are the places where it still differs.
+Perl2JS is a language with Perl syntax that runs on JavaScript, not a full `perl`. It is checked against real Perl with the programs in these docs, and these are the places where it still differs.
 
 ## Numbers and strings
 

@@ -2,7 +2,7 @@
 
 [English](README.md) | **日本語** · [Playground](https://satoru.net/perl2js/) · [GitHub](https://github.com/satorunet/perl2js)
 
-Perl2JS は、Perl 風の言語を **ブラウザ上で** JavaScript にコンパイルします。サーバーも WebAssembly も不要です。
+Perl2JS は、Perl 構文で書いたコードを **ブラウザ上で** JavaScript にコンパイルします。サーバーも WebAssembly も不要です。
 これらのページにあるすべての `perl` コードブロックは、本物の Perl 5.40 と Perl2JS の両方で CI 風のチェック (`node tools/verify-docs.js docs/*.md`) にかけられ、出力が一致する必要があります。
 
 | やりたいこと | 読むページ |

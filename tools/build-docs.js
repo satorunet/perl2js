@@ -7,7 +7,7 @@ const path = require('path');
 const { marked } = require('marked');
 
 const DOCS = path.join(__dirname, '..', 'docs');
-const V = '20261124f';                                   // cache-buster for assets, same as index.html
+const V = '20261124n';                                   // cache-buster for assets, same as index.html
 
 // side menu: groups of pages (file name without .md)
 const GROUPS = {
@@ -86,6 +86,7 @@ function sidebar(name, lang) {
       h += '</details>';
     }
   }
+  h += `<div class="side-links"><a href="../">${t.home}</a><a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a></div>`;
   return h + '</nav>';
 }
 
@@ -117,9 +118,9 @@ function page(name, lang) {
   <a class="brand" href="./${lang === 'ja' ? 'README.ja.html' : 'README.html'}"><picture><source srcset="../assets/logo.svg?v=${V}" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=${V}" alt="Perl2JS" height="34"></picture></a>
   <button class="menu" type="button" aria-label="${t.menu}" aria-expanded="false">☰ ${t.menu}</button>
   <span class="sp"></span>
-  <a class="pill" href="../">${t.home}</a>
+  <a class="pill opt" href="../">${t.home}</a>
   ${otherExists ? `<a class="pill" href="${other}" hreflang="${lang === 'en' ? 'ja' : 'en'}">${t.lang}</a>` : ''}
-  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+  <a class="pill opt" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
 </header>
 <div class="layout">
 ${side}

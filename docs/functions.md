@@ -37,7 +37,6 @@ Every row was run through real Perl 5.40 and Perl2JS side by side (the test is a
 | `exists` `delete` on arrays, `$#a`, `$#{$r}`, `$#a = 3`, slices `@a[1,2]`, `(list)[i]`, `@$r[0,1]` | ✅ | |
 | `keys @array`, `foreach` aliasing (`$_ *= 2 for @a`), `wantarray`-free list assignment `($a, $b) = ($b, $a)` | ✅ | |
 | `sort by_name LIST` (a named sub as comparator) | ➖ | write the comparison in a block: `sort { $a <=> $b } @list` |
-| `each @array` | ➖ | use `for my $i (0..$#a)` |
 | `wantarray` | ➖ | |
 | `my $x = f();` where `f` returns a list | 🟡 | gets the whole list, Perl gets the last element |
 
@@ -45,7 +44,7 @@ Every row was run through real Perl 5.40 and Perl2JS side by side (the test is a
 
 | Function | | Note |
 |---|---|---|
-| `keys` `values` `each` `exists` `delete` `defined`, slices `@h{...}`, `delete @h{...}`, `%h = ()`, nested data, `%$ref`, `@{$h}{...}` | ✅ | |
+| `keys` `values` `each` (`while (my ($k, $v) = each %h)`, `each %$ref`, `each @array`, `while (my $k = each %h)`; one pair per call, reset by `keys`) `exists` `delete` `defined`, slices `@h{...}`, `delete @h{...}`, `%h = ()`, nested data, `%$ref`, `@{$h}{...}` | ✅ | |
 | `local $h{key}` | ✅ | |
 | `exists $h{a}{b}` creating `$h{a}` (autovivification) | 🟡 | does not create `$h{a}` |
 | `%r = reverse %h` | ➖ | |

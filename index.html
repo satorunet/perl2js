@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Perl2JS — ブラウザで動くPerl風言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124j" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124j">
+<title>Perl2JS — ブラウザで動くPerl構文の言語</title>
+<link rel="icon" href="assets/icon.svg?v=20261124l" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124l">
 <meta property="og:title" content="Perl2JS">
-<meta property="og:description" content="Perl風の構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124j">
+<meta property="og:description" content="Perl構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
+<meta property="og:image" content="assets/social-preview.png?v=20261124l">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -108,8 +108,8 @@
 <main>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124j"><img src="assets/logo-light.svg?v=20261124j" alt="Perl2JS" height="72"></picture></h1>
-  <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124l"><img src="assets/logo-light.svg?v=20261124l" alt="Perl2JS" height="72"></picture></h1>
+  <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <div class="bar">
     <select id="ex" aria-label="サンプル"></select>
@@ -178,7 +178,7 @@
 
     <h2 style="margin-top:28px">対応している構文</h2>
     <table>
-      <tr><th>Perl風</th><th>変換先</th></tr>
+      <tr><th>Perl構文</th><th>変換先</th></tr>
       <tr><td><code>my $x</code> <code>my @a</code> <code>my %h</code> <code>local</code></td><td><code>let</code> + 変数名にシジルを保持。<code>local</code> はブロックを抜けると(<code>die</code> で抜けても)元の値に戻る</td></tr>
       <tr><td><code>$a[0]</code> <code>$h{key}</code> <code>$r-&gt;{k}[1]</code> <code>$a[-1]</code> <code>$#a</code> <code>@a[1,2]</code> <code>(list)[0]</code></td><td>配列・ハッシュ(オブジェクト)アクセスとスライス</td></tr>
       <tr><td><code>foreach</code> <code>for(;;)</code> <code>while</code> <code>unless</code> <code>until</code>、後置 <code>if/unless/for/while</code></td><td>制御構文(<code>$_</code> も可)</td></tr>

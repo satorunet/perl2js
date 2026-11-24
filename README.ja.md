@@ -7,7 +7,7 @@
 
 <p align="center"><a href="README.md">English</a> | <b>日本語</b></p>
 
-**Perl2JS** は、Perl風の構文で書いたコードを、**ブラウザの中でJavaScriptにコンパイルして実行**します(サーバー不要・WebAssembly不要)。
+**Perl2JS** は、Perl構文で書いたコードを、**ブラウザの中でJavaScriptにコンパイルして実行**します(サーバー不要・WebAssembly不要)。
 `my $x`、`@list`、`%hash`、`->{}`、`=~ s///`、`sub`、`package` / `bless`、ヒアドキュメントなどが書けて、DOMや `console`、内蔵のjQuery風 `$("#id")` もそのまま呼べます。
 
 **▶ 試す:** <https://satoru.net/perl2js/>(サンプル26本入りのプレイグラウンド)

@@ -1,5 +1,5 @@
 /*!
- * Perl2JS — Perl-flavoured syntax that compiles to JavaScript, in the browser.
+ * Perl2JS — Perl syntax that compiles to JavaScript, in the browser.
  *
  *   <script src="perl2js.js"></script>
  *   <script type="text/perl2js"> my $x = 1; say "hi $x"; </script>
@@ -28,7 +28,7 @@ const QDELIM = '/|!#([{<\'"~@,%^:;*+';
 const TERMBEFORE = new Set(['and', 'or', 'not', 'xor', 'if', 'unless', 'while', 'until', 'return', 'split',
   'grep', 'map', 'join', 'push', 'unshift', 'print', 'say', 'x', 'eq', 'ne', 'lt', 'gt', 'le', 'ge', 'cmp',
   'elsif', 'foreach', 'for', 'die', 'warn', 'when', 'my', 'our', 'local', 'sort', 'reverse', 'keys', 'values',
-  'scalar', 'defined', 'ref', 'lc', 'uc', 'length', 'else', 'do', 'eval', 'each', 'undef', 'delete', 'exists', 'wantarray']);
+  'scalar', 'defined', 'ref', 'lc', 'uc', 'length', 'else', 'do', 'eval', 'each', 'undef', 'delete', 'exists', 'wantarray', 'eachkey']);
 const OPS3 = ['<=>', '**=', '||=', '&&=', '//=', '...'];
 const OPS2 = ['=~', '!~', '==', '!=', '<=', '>=', '&&', '||', '//', '++', '--', '+=', '-=', '*=', '/=', '.=',
   '%=', '->', '=>', '..', '**', '<<', '>>'];
@@ -793,28 +793,50 @@ function rewriteSlices(T) {
   return false;
 }
 
+let eachSeq = 0;
 function rewriteEach(T) {
-  const isO = (t, v) => t && t.t === 'op' && t.v === v;
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
   for (let i = 0; i < T.length; i++) {
-    if (!(T[i].t === 'id' && T[i].v === 'while' && isO(T[i + 1], '(') && T[i + 2] && T[i + 2].t === 'id' && T[i + 2].v === 'my' && isO(T[i + 3], '('))) continue;
-    const k = T[i + 4], v = T[i + 6];
-    if (!(k && k.t === 'var' && k.sig === '$' && isO(T[i + 5], ',') && v && v.t === 'var' && v.sig === '$' && isO(T[i + 7], ')') && isO(T[i + 8], '=') && T[i + 9] && T[i + 9].t === 'id' && T[i + 9].v === 'each')) continue;
-    // the hash: %name   or   %$name
-    let j = i + 10, hashToks, valToks;
-    const h = T[j];
-    if (h && h.t === 'var' && h.sig === '%') {
-      hashToks = [Object.assign({}, h)];
-      valToks = [{ t: 'var', sig: '$', name: h.name, elem: '{', sp: true }, { t: 'op', v: '{', sp: false }, Object.assign({}, k, { sp: false }), { t: 'op', v: '}', sp: false }];
-      j += 1;
-    } else if (h && h.t === 'deref' && h.sig === '%' && T[j + 1] && T[j + 1].t === 'var' && T[j + 1].sig === '$') {
-      hashToks = [Object.assign({}, h), Object.assign({}, T[j + 1])];
-      valToks = [Object.assign({}, T[j + 1], { sp: true }), tok.op('->'), { t: 'op', v: '{', sp: false }, Object.assign({}, k, { sp: false }), { t: 'op', v: '}', sp: false }];
-      j += 2;
-    } else continue;
-    if (!(isO(T[j], ')') && isO(T[j + 1], '{'))) continue;
-    const decl = [tok.id('my'), Object.assign({}, v), tok.op('='), ...valToks, tok.op(';')];
-    T.splice(i, j + 2 - i, tok.id('foreach'), tok.id('my'), Object.assign({}, k), tok.op('('), tok.id('keys'), ...hashToks, tok.op(')'), tok.op('{'), ...decl);
-    return true;
+    const t = T[i];
+    // 1. while (my ($k, $v) = LIST) {...}   ==>   while (1) { my @tmp = LIST; last unless @tmp; my ($k, $v) = @tmp; ... }
+    if (t.t === 'id' && (t.v === 'while') && O(T[i + 1], '(') && T[i + 2] && T[i + 2].t === 'id' && T[i + 2].v === 'my' && O(T[i + 3], '(')) {
+      const lc = matching(T, i + 3);
+      const pc = matching(T, i + 1);
+      if (lc > 0 && O(T[lc + 1], '=') && pc > lc && O(T[pc + 1], '{')) {
+        const tmp = { t: 'var', sig: '@', name: '__e' + (eachSeq++), sp: true };
+        const lhs = T.slice(i + 2, lc + 1), rhs = T.slice(lc + 2, pc);
+        const tmpv = (extra) => Object.assign({}, tmp, extra || {});
+        T.splice(i, pc + 2 - i, tok.id('while'), tok.op('('), { t: 'num', v: '1', sp: true }, tok.op(')'), tok.op('{'),
+          tok.id('my'), tmpv(), tok.op('='), ...rhs, tok.op(';'),
+          tok.id('last'), tok.id('unless'), tmpv(), tok.op(';'),
+          ...lhs, tok.op('='), tmpv(), tok.op(';'));
+        return true;
+      }
+    }
+    // 2. while (my $k = each %h) {...}   ==>   while (defined(my $k = eachkey(%h))) -> same loop shape
+    if (t.t === 'id' && t.v === 'while' && O(T[i + 1], '(') && T[i + 2] && T[i + 2].t === 'id' && T[i + 2].v === 'my' && T[i + 3] && T[i + 3].t === 'var' && T[i + 3].sig === '$' && O(T[i + 4], '=') && T[i + 5] && T[i + 5].t === 'id' && T[i + 5].v === 'each') {
+      const pc = matching(T, i + 1);
+      if (pc > 0 && O(T[pc + 1], '{')) {
+        const v = T[i + 3], rhs = T.slice(i + 6, pc);
+        T.splice(i, pc + 2 - i, tok.id('while'), tok.op('('), { t: 'num', v: '1', sp: true }, tok.op(')'), tok.op('{'),
+          tok.id('my'), Object.assign({}, v), tok.op('='), tok.id('eachkey'), ...rhs, tok.op(';'),
+          tok.id('last'), tok.id('unless'), tok.id('defined'), tok.op('('), Object.assign({}, v), tok.op(')'), tok.op(';'));
+        return true;
+      }
+    }
+    // 3. each %h / each %$r / each %{EXPR} / each @a / each @$r   ==>   each(\%h) / each($r) / each(EXPR) ...
+    if (t.t === 'id' && (t.v === 'each' || t.v === 'eachkey') && !(T[i - 1] && O(T[i - 1], '->'))) {
+      const a = T[i + 1];
+      let base, end;
+      if (a && a.t === 'var' && (a.sig === '%' || a.sig === '@')) { base = [tok.op('\\'), Object.assign({}, a, { sp: false })]; end = i + 1; }
+      else if (a && a.t === 'deref' && (a.sig === '%' || a.sig === '@')) {
+        if (T[i + 2] && T[i + 2].t === 'var' && T[i + 2].sig === '$') { base = [Object.assign({}, T[i + 2], { elem: null })]; end = i + 2; }
+        else if (O(T[i + 2], '{')) { const c = matching(T, i + 2); base = [tok.op('('), ...T.slice(i + 3, c), tok.op(')')]; end = c; }
+        else continue;
+      } else continue;
+      T.splice(i, end + 1 - i, tok.id(t.v + '_'), tok.op('('), ...base, tok.op(')'));
+      return true;
+    }
   }
   return false;
 }
@@ -1964,6 +1986,15 @@ function blockMs(ms) {
   const end = Date.now() + ms;
   while (Date.now() < end) { /* the browser cannot sleep synchronously */ }
 }
+const EACH = new WeakMap();                                   // iterator state of each(): object -> { keys, i }
+function eachNext(h, keyOnly) {
+  if (h == null || typeof h !== 'object') return keyOnly ? undefined : mk([]);
+  let st = EACH.get(h);
+  if (!st) { st = { keys: Array.isArray(h) ? [...h.keys()] : Object.keys(h), i: 0 }; EACH.set(h, st); }
+  if (st.i >= st.keys.length) { EACH.delete(h); return keyOnly ? undefined : mk([]); }
+  const k = st.keys[st.i++];
+  return keyOnly ? k : mk([k, h[k]]);
+}
 const RT = {
   _pkg: pkg,
   _def: (pk, name, fn) => { const P = pkg(pk); P.$f[name] = fn; const w = function (...a) { return fn.apply(this, [this, ...a]); }; P[name] = w; P.proto[name] = w; },
@@ -1996,7 +2027,7 @@ const RT = {
   $0: 'main.p2j', _a$ARGV: [], _h$ENV: {},
   aset_: (a, v) => { v = Array.isArray(v) ? Array.from(v) : v === undefined ? [] : [v]; a.splice(0, a.length, ...v); return a; },
   asetl_: (a, v) => { a.splice(0, a.length, ...v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])); return a; },
-  hset_: (h, v) => { const src = Array.isArray(v) ? v : v && typeof v === 'object' ? Object.assign({}, v) : []; for (const k of Object.keys(h)) delete h[k]; if (Array.isArray(src)) for (let n = 0; n < src.length; n += 2) h[_s(src[n])] = src[n + 1]; else Object.assign(h, src); return h; },
+  hset_: (h, v) => { EACH.delete(h); const src = Array.isArray(v) ? v : v && typeof v === 'object' ? Object.assign({}, v) : []; for (const k of Object.keys(h)) delete h[k]; if (Array.isArray(src)) for (let n = 0; n < src.length; n += 2) h[_s(src[n])] = src[n + 1]; else Object.assign(h, src); return h; },
   hsetl_: (h, v) => RT.hset_(h, v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])),
   hexists_: (h, k) => h != null && typeof h === 'object' && _s(k) in h,
   hdel_: (h, k) => { const r = h[k]; delete h[k]; return r; },
@@ -2027,7 +2058,9 @@ const RT = {
   grep_: (fn, ...l) => mk(l.flat(1).filter(fn)),
   sort_: (fn, ...l) => mk(l.flat(1).sort(fn || undefined)),
   reverse_: (...l) => (l.length === 1 && typeof l[0] === 'string') ? [...l[0]].reverse().join('') : mk(l.flat(1).slice().reverse()),
-  keys_: (h) => mk(Array.isArray(h) ? [...h.keys()] : Object.keys(h || {})),
+  keys_: (h) => { if (h && typeof h === 'object') EACH.delete(h); return mk(Array.isArray(h) ? [...h.keys()] : Object.keys(h || {})); },
+  each_: (h) => eachNext(h, false),
+  eachkey_: (h) => eachNext(h, true),
   values_: (h) => mk(Array.isArray(h) ? h.slice() : Object.values(h || {})),
   exists_: (x) => x !== undefined,
   defined_: (x) => x !== undefined && x !== null,

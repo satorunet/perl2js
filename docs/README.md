@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md) · [Playground](https://satoru.net/perl2js/) · [GitHub](https://github.com/satorunet/perl2js)
 
-Perl2JS compiles a Perl-flavoured language to JavaScript **in the browser**. No server, no WebAssembly.
+Perl2JS compiles Perl syntax to JavaScript **in the browser**. No server, no WebAssembly.
 Every `perl` code block in these pages is run through real Perl 5.40 and Perl2JS in CI-style checks (`node tools/verify-docs.js docs/*.md`), and the output must be identical.
 
 | I want to... | Read |

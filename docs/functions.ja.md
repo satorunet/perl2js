@@ -37,7 +37,6 @@
 | 配列への `exists` `delete`、`$#a`、`$#{$r}`、`$#a = 3`、スライス `@a[1,2]`、`(list)[i]`、`@$r[0,1]` | ✅ | |
 | `keys @array`、`foreach` のエイリアス(`$_ *= 2 for @a`)、リスト代入 `($a, $b) = ($b, $a)` | ✅ | |
 | `sort by_name LIST` (名前付きサブを比較関数にする形) | ➖ | 比較をブロックに書いてください: `sort { $a <=> $b } @list` |
-| `each @array` | ➖ | `for my $i (0..$#a)` を使ってください |
 | `wantarray` | ➖ | |
 | リストを返すサブの `my $x = f();` | 🟡 | リスト全体になります(Perl は最後の要素) |
 
@@ -45,7 +44,7 @@
 
 | 関数 | | 備考 |
 |---|---|---|
-| `keys` `values` `each` `exists` `delete` `defined`、スライス `@h{...}`、`delete @h{...}`、`%h = ()`、入れ子のデータ、`%$ref`、`@{$h}{...}` | ✅ | |
+| `keys` `values` `each`(`while (my ($k, $v) = each %h)`、`each %$ref`、`each @array`、`while (my $k = each %h)`。呼ぶたびに1組ずつ返し、`keys` でリセット) `exists` `delete` `defined`、スライス `@h{...}`、`delete @h{...}`、`%h = ()`、入れ子のデータ、`%$ref`、`@{$h}{...}` | ✅ | |
 | `local $h{key}` | ✅ | |
 | `exists $h{a}{b}` が `$h{a}` を作る動作(autovivification) | 🟡 | `$h{a}` は作られません |
 | `%r = reverse %h` | ➖ | |

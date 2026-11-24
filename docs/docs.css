@@ -15,16 +15,24 @@ nav.main a { padding:5px 10px; border-radius:8px; color:var(--mut); text-decorat
 nav.main a:hover { background:var(--code); color:var(--fg); }
 nav.main a[aria-current=page] { background:var(--acc); color:var(--accfg); }
 .sp { flex:1; }
-.pill { padding:4px 11px; border:1px solid var(--line); border-radius:999px; color:var(--fg); text-decoration:none; font-size:13px; }
+.pill { white-space:nowrap; flex:none; padding:4px 11px; border:1px solid var(--line); border-radius:999px; color:var(--fg); text-decoration:none; font-size:13px; }
 .pill:hover { border-color:var(--acc); color:var(--acc); }
 
 .layout { display:grid; grid-template-columns:260px minmax(0, 1fr); gap:40px; max-width:1180px; margin:0 auto; padding:24px 20px 60px; }
 @media (max-width: 900px) {
-  .layout { grid-template-columns:1fr; }
-  nav.side { display:none; position:fixed; top:52px; left:0; right:0; bottom:0; z-index:4; background:var(--bg); padding:14px 18px 40px; max-height:none; border:0; }
+  .layout { grid-template-columns:1fr; padding-top:16px; }
+  header.top { flex-wrap:nowrap; gap:10px; padding:8px 12px; height:54px; }
+  header.top .brand img { height:auto; width:150px; max-width:40vw; }
+  header.top .sp { flex:1 1 0; min-width:0; }
+  .pill.opt { display:none; }
+  nav.side { display:none; position:fixed; top:54px; left:0; right:0; bottom:0; z-index:4; background:var(--bg); padding:14px 18px 60px; max-height:none; overflow:auto; border:0; font-size:16px; }
   nav.side.open { display:block; }
+  details.pg > summary a { padding:9px 12px; }
+  details.pg li a { padding:6px 10px; font-size:15px; }
 }
-button.menu { display:none; font:14px system-ui, sans-serif; padding:5px 11px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); cursor:pointer; }
+.side-links { display:none; }
+@media (max-width: 900px) { .side-links { display:flex; gap:10px; margin-top:22px; padding-top:14px; border-top:1px solid var(--line); } .side-links a { padding:6px 14px; border:1px solid var(--line); border-radius:999px; color:var(--fg); text-decoration:none; } }
+button.menu { display:none; white-space:nowrap; flex:none; font:14px system-ui, sans-serif; padding:5px 11px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); cursor:pointer; }
 @media (max-width: 900px) { button.menu { display:inline-block; } }
 
 nav.side { position:sticky; top:62px; align-self:start; max-height:calc(100vh - 80px); overflow:auto; font-size:14px; padding-right:6px; }
