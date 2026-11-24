@@ -7,7 +7,7 @@ Every `perl` code block in these pages is run through real Perl 5.40 and Perl2JS
 
 ## Why Perl2JS?
 
-**You can write it in Perl.** Browser programs in your usual Perl syntax (`my @list`, `%hash`, `=~ s///`, `sub`, `package`, heredocs) with no server and no build step, the familiar modules (`List::Util`, `Data::Dumper`, `POSIX`, `Time::Piece`, `JSON::PP`), and the page itself driven from Perl (`$("#id")->on("click", sub { ... })`). JavaScript can be mixed in when you want it.
+**You can write it in Perl.** Your usual Perl syntax, running in the browser, with no server and no build step.
 
 | I want to... | Read |
 |---|---|

@@ -12,12 +12,7 @@ Write `my $x`, `@list`, `%hash`, `->{}`, `=~ s///`, `sub`, `package`/`bless`, he
 
 ## Why?
 
-**You can write it in Perl.** Browser programs in the Perl you already know, with no JavaScript to learn:
-
-* **Your usual Perl:** `my @list`, `%hash`, `=~ s///`, `sub`, `package`, `sprintf`, heredocs.
-* **No server, no build step:** one `<script>` tag, then `<script type="text/perl2js">` blocks.
-* **Familiar modules:** `List::Util`, `Data::Dumper`, `POSIX`, `Time::Piece`, `JSON::PP` under the same names, loaded only when used.
-* **The page, in Perl:** `$("#id")->on("click", sub { ... })` for the DOM and events; mix in JavaScript when you want to.
+**You can write it in Perl.** Your usual Perl syntax, running in the browser: no server, no build step, and the familiar modules (`List::Util`, `JSON::PP`, ...) work too.
 
 **▶ Try it:** <https://satoru.net/perl2js/> (playground with 26 examples)
 

@@ -12,12 +12,7 @@
 
 ## 何が嬉しいの?
 
-**Perl で書けることです。** JavaScript を覚えなくても、いつもの Perl 構文のままブラウザで動くプログラムが作れます。
-
-* **いつもの Perl で書ける:** `my @list`、`%hash`、`=~ s///`、`sub`、`package`、`sprintf`、ヒアドキュメント。
-* **サーバーもビルドも不要:** `<script>` を1行置いて、`<script type="text/perl2js">` に書くだけ。
-* **お馴染みのモジュール:** `List::Util`、`Data::Dumper`、`POSIX`、`Time::Piece`、`JSON::PP` が同じ名前で使えて、必要なときだけ読み込まれます。
-* **ページも Perl で操作:** `$("#id")->on("click", sub { ... })` で DOM もイベントも。必要なら JavaScript も混ぜられます。
+**Perl で書けることです。** いつもの Perl 構文のまま、ブラウザで動きます。サーバーもビルドも不要で、`List::Util`、`JSON::PP` などのお馴染みのモジュールも使えます。
 
 **▶ 試す:** <https://satoru.net/perl2js/>(サンプル26本入りのプレイグラウンド)
 
