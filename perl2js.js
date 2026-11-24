@@ -566,6 +566,118 @@ function rewriteCountOf(T) {            // $n = () = LIST;   ==>   $n = scalar(L
   return false;
 }
 
+const ASSIGN_OPS = new Set(['=', '+=', '-=', '*=', '/=', '.=', '%=', '**=', '||=', '&&=', '//=', 'x=', '++', '--']);
+function stmtEnd(T, from) {               // index of the `;` (or the closing bracket) that ends the statement starting before `from`
+  let d = 0;
+  for (let k = from; k < T.length; k++) {
+    const u = T[k];
+    if (u.t === 'op') { if ('([{'.includes(u.v)) d++; else if (')]}'.includes(u.v)) { if (d === 0) return k; d--; } else if (u.v === ';' && d === 0) return k; }
+    else if (d === 0 && u.t === 'id' && ['if', 'unless', 'for', 'foreach', 'while', 'until'].includes(u.v)) return k;
+  }
+  return T.length;
+}
+function rewriteAggAssign(T) {           // @a = LIST;  %h = LIST;  @$r = LIST;  @{EXPR} = LIST   ==>  aset_/hset_: change the array/hash IN PLACE so references to it see the change
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    const prev = T[i - 1];
+    if (prev && !(prev.t === 'op' && (prev.v === ';' || prev.v === '{' || prev.v === '}'))) continue;      // statement start (so `my @a = ...` is untouched)
+    const t = T[i];
+    let base, e;
+    if (t.t === 'var' && (t.sig === '@' || t.sig === '%') && O(T[i + 1], '=')) { base = [tok.op('\\'), t]; e = i; }
+    else if (t.t === 'deref' && (t.sig === '@' || t.sig === '%')) {
+      if (T[i + 1] && T[i + 1].t === 'var' && T[i + 1].sig === '$' && O(T[i + 2], '=')) { base = [Object.assign({}, T[i + 1], { elem: null })]; e = i + 1; }
+      else if (O(T[i + 1], '{')) { const c = matching(T, i + 1); if (!O(T[c + 1], '=')) continue; base = [tok.op('('), ...T.slice(i + 2, c), tok.op(')')]; e = c; }
+      else continue;
+    } else continue;
+    const hash = t.sig === '%';
+    const end = stmtEnd(T, e + 2);
+    let rhs = T.slice(e + 2, end);
+    if (!rhs.length) rhs = [tok.op('('), tok.op(')')];
+    if (O(rhs[0], '(') && matching(rhs, 0) === rhs.length - 1) rhs = rhs.slice(1, -1);
+    let d = 0, comma = false;
+    for (const u of rhs) { if (u.t === 'op') { if ('([{'.includes(u.v)) d++; else if (')]}'.includes(u.v)) d--; else if ((u.v === ',' || u.v === '=>') && d === 0) comma = true; } }
+    const lit = comma || rhs.length === 0 || (rhs.length === 1 && (rhs[0].t === 'num' || rhs[0].t === 'str' || rhs[0].t === 'qw'));
+    const call = (hash ? 'hset' : 'aset') + (lit ? 'l_' : '_');
+    T.splice(e + 0 - (base.length === 2 && t.t === 'var' ? 0 : 0), 0);
+    T.splice(i, end - i, tok.id(call), tok.op('('), ...base, tok.op(','), ...(lit ? [tok.op('['), ...rhs, tok.op(']')] : rhs), tok.op(')'));
+    return true;
+  }
+  return false;
+}
+
+let aliasSeq = 0;
+function rewriteForAlias(T) {            // for my $e (@a) { $e *= 2 }  /  for (@a) { s/x/y/ }   ==>  index loop where $e is spelled $a[$i]  (foreach aliases the elements)
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && (T[i].v === 'for' || T[i].v === 'foreach'))) continue;
+    let k = i + 1, loopVar = null, my = false;
+    if (T[k] && T[k].t === 'id' && T[k].v === 'my') { my = true; k++; }
+    if (T[k] && T[k].t === 'var' && T[k].sig === '$' && !T[k].elem) { loopVar = T[k]; k++; } else if (my) continue;
+    if (!O(T[k], '(')) continue;
+    const pc = matching(T, k);
+    const L = T.slice(k + 1, pc);
+    let arr;                                                                 // [tokens for  `$#arr`, element builder]
+    if (L.length === 1 && L[0].t === 'var' && L[0].sig === '@') arr = { last: { t: 'var', sig: '$#', name: L[0].name, sp: true }, elem: (ix) => [{ t: 'var', sig: '$', name: L[0].name, elem: '[', sp: true }, tok.op('['), ix, tok.op(']')] };
+    else if (L.length === 2 && L[0].t === 'deref' && L[0].sig === '@' && L[1].t === 'var' && L[1].sig === '$') arr = { last: { t: 'var', sig: '$#', name: L[1].name, ref: true, sp: true }, elem: (ix) => [Object.assign({}, L[1], { elem: null, sp: true }), tok.op('->'), tok.op('['), ix, tok.op(']')] };
+    else continue;
+    if (!O(T[pc + 1], '{')) continue;
+    const bc = matching(T, pc + 1);
+    const nm = loopVar ? loopVar.name : '_';
+    let modified = false;
+    for (let q = pc + 2; q < bc; q++) {
+      const u = T[q];
+      if (u.t === 'var' && u.sig === '$' && u.name === nm && !u.elem) {
+        const n1 = T[q + 1], p1 = T[q - 1];
+        if ((n1 && n1.t === 'op' && ASSIGN_OPS.has(n1.v)) || (n1 && O(n1, '=~') && T[q + 2] && (T[q + 2].t === 'subst' || T[q + 2].t === 'trans')) || (p1 && p1.t === 'op' && (p1.v === '++' || p1.v === '--'))) { modified = true; break; }
+      }
+      if (!loopVar && (u.t === 'subst' || u.t === 'trans') && !(T[q - 1] && O(T[q - 1], '=~'))) { modified = true; break; }       // bare s/// works on $_
+    }
+    if (!modified) continue;
+    const ix = { t: 'var', sig: '$', name: '__i' + (aliasSeq++), elem: null, sp: true };
+    // body: replace $e by the element expression (and bare s///, tr/// by  ELEM =~ s///)
+    const body = [];
+    for (let q = pc + 2; q < bc; q++) {
+      const u = T[q];
+      if (u.t === 'var' && u.sig === '$' && u.name === nm && !u.elem) body.push(...arr.elem(ix));
+      else if (!loopVar && (u.t === 'subst' || u.t === 'trans') && !(T[q - 1] && O(T[q - 1], '=~'))) body.push(...arr.elem(ix), tok.op('=~'), u);
+      else if (u.t === 'str' && u.interp && u.raw && u.raw.includes('$' + nm)) {          // "z$e"  ->  "z$a[$i]"
+        const rep = arr.elem(ix).map((x) => (x.t === 'var' ? '$' + x.name : x.v)).join('');
+        body.push(Object.assign({}, u, { raw: u.raw.replace(new RegExp('(?<!\\\\)\\$' + nm.replace(/\$/g, '\\$') + '(?![A-Za-z0-9_\\[{])', 'g'), () => (arr.elem(ix)[0].ref ? rep : rep)) }));
+      }
+      else body.push(u);
+    }
+    T.splice(i, bc + 1 - i, tok.id('foreach'), tok.id('my'), ix, tok.op('('), { t: 'num', v: '0', sp: true }, tok.op('..'), arr.last, tok.op(')'), tok.op('{'), ...body, tok.op('}'));
+    return true;
+  }
+  return false;
+}
+
+function rewriteDelete(T) {            // delete $h{k} / delete $r->{a}{b}  ==>  hdel_(base, key)   (returns the removed value like Perl)
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && T[i].v === 'delete' && T[i + 1] && T[i + 1].t === 'var' && T[i + 1].sig === '$' && !(T[i - 1] && O(T[i - 1], '->')))) continue;
+    const v = T[i + 1];
+    let k = i + 2; const groups = [];
+    if (v.elem === '{') { const c = matching(T, k); groups.push([k, c]); k = c + 1; }
+    else if (v.elem === '[') continue;
+    for (;;) {
+      if (O(T[k], '->') && O(T[k + 1], '{')) { const c = matching(T, k + 1); groups.push([k + 1, c, k]); k = c + 1; }
+      else if (O(T[k], '{') && groups.length && !T[k].sp) { const c = matching(T, k); groups.push([k, c]); k = c + 1; }
+      else break;
+    }
+    if (!groups.length) continue;
+    const last = groups[groups.length - 1];
+    const inner = T.slice(last[0] + 1, last[1]);
+    const key = inner.length === 1 && inner[0].t === 'id' ? [{ t: 'str', interp: false, v: inner[0].v, sp: true }] : inner;
+    let base;
+    if (groups.length === 1 && v.elem) base = [tok.op('\\'), { t: 'var', sig: '%', name: v.name, sp: false }];
+    else base = T.slice(i + 1, last[2] !== undefined ? last[2] : last[0]).map((x, n) => (n === 0 && groups.length === 1 ? Object.assign({}, x, { elem: null }) : x));
+    T.splice(i, last[1] + 1 - i, tok.id('hdel_'), tok.op('('), ...base, tok.op(','), ...key, tok.op(')'));
+    return true;
+  }
+  return false;
+}
+
 function rewriteSlices(T) {
   // @h{LIST} / @$r{LIST} / @{EXPR}{LIST}  -> hslice_(%h, LIST)      @$r[LIST] / @{EXPR}[LIST] -> aslice_(@$r, LIST)
   // @h{LIST} = RHS -> hsset_(%h, LIST, RHS)      delete @h{LIST} -> hsdel_(%h, LIST)      ${EXPR}{k} -> (EXPR)->{k}
@@ -574,6 +686,10 @@ function rewriteSlices(T) {
     const t = T[i];
     if (t.t === 'deref' && t.sig === '$' && O(T[i + 1], '{')) {                       // ${ $h }{k}
       const c = matching(T, i + 1);
+      if (!O(T[c + 1], '{') && !O(T[c + 1], '[')) {
+        if (c === i + 3 && T[i + 2].t === 'var' && T[i + 2].sig === '$') { const v0 = Object.assign({}, T[i + 2], { elem: null }); T.splice(i, 4, t, v0); continue; }      // ${$r}  ==  $$r
+        T.splice(c, 1, tok.op(')'), tok.op('->'), tok.id('v')); T.splice(i, 2, tok.op('(')); return true;
+      }
       if (O(T[c + 1], '{')) { T.splice(c + 1, 0, tok.op('->')); T[c] = tok.op(')'); T.splice(i, 2, tok.id('deref_'), tok.op('(')); return true; }   // ${$h}{k} -> deref_($h)->{k}
       continue;
     }
@@ -681,7 +797,7 @@ function rewriteHashList(T) {
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -850,8 +966,8 @@ function interp(raw) {
       let pre = null;
       if (c === '$' && sub.startsWith('${$')) { const e = matchBraceStr(sub, 1); pre = sub.slice(0, e + 1); m = [pre]; }       // "${$ref}[1]"
       else if (c === '@' && (m = /^@\$([A-Za-z_]\w*)/.exec(sub))) pre = m[0];                                                  // "@$ref"
-      if (pre || (m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{)|(&)|\$([A-Za-z_]\w*)(?=[\[{]))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
-        let expr = pre || c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : '') || (m[6] ? '&' : '') || (m[7] ? '$' + m[7] : ''));
+      if (pre || (m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{)|(&)|(\$+[A-Za-z_]\w*))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
+        let expr = pre || c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : '') || (m[6] ? '&' : '') || (m[7] || ''));
         let j = m[0].length;
         if (c === '$') {
           for (;;) {
@@ -997,7 +1113,13 @@ function translate(T, opts) {
     let k = eqIdx - 1;
     return T[k];
   }
+  function lastTerm() {                      // the JS text of the term just emitted:  $x   _a$a[$i]   $r["k"][0]
+    const tail = out.slice(-12).join('');
+    const m = /[\w$]+(?:\[[^\[\]]*\]|\.\w+)*$/.exec(tail);
+    return m ? m[0] : out[out.length - 1];
+  }
   function countCtx(prev, nxt) {
+    if (prev && prev.t === 'op' && prev.v === '\\') return false;            // \@a is a reference, not a count
     if (prev && ((prev.t === 'op' && (prev.v === '!' || prev.v === '.' || CMPOPS.has(prev.v) || '+-*/'.includes(prev.v) && prev.v.length === 1)) ||
         (prev.t === 'id' && ['not', 'eq', 'ne', 'lt', 'gt', 'le', 'ge'].includes(prev.v)))) return true;
     if (nxt && nxt.t === 'op' && (CMPOPS.has(nxt.v) || ['?', '&&', '||', '+', '-', '*', '/', '.'].includes(nxt.v))) return true;
@@ -1132,7 +1254,12 @@ function translate(T, opts) {
 
       case 'deref': {
         // `@$x`, `@{...}`, `%$x`, `$$x`
-        if (t.sig === '$') break;
+        if (t.sig === '$') {                                    // $$r  /  $$$r  : the scalar a reference points to
+          let k = i + 1, n = 1;
+          while (T[k] && T[k].t === 'deref' && T[k].sig === '$') { k++; n++; }
+          if (T[k] && T[k].t === 'var' && T[k].sig === '$' && !T[k].elem) { emit(vname(T[k]) + '.v'.repeat(n)); i = k; }
+          break;
+        }
         if (next && next.t === 'var') break;         // handled at the var
         break;
       }
@@ -1468,10 +1595,10 @@ function translate(T, opts) {
               const a = trArgs(nx);
               if (/r/.test(nx.flags)) emit('.$tr(' + a + ')');
               else if (nx.to === '' && !/[ds]/.test(nx.flags)) emit('.$trc(' + a + ')');
-              else { const lhs = out[out.length - 1]; emit(' = ' + lhs + '.$tr(' + a + ')'); }
+              else { const lhs = lastTerm(); emit(' = ' + lhs + '.$tr(' + a + ')'); }
               i++;
             } else if (nx && nx.t === 'subst') {
-              const lhs = out[out.length - 1];
+              const lhs = lastTerm();
               emit(' = ' + lhs + '.$sub(' + subArgs(nx) + ')'); i++;
             } else {
               emit(v === '=~' ? '.$m(' : '.$nm('); pendOne = true;
@@ -1490,7 +1617,11 @@ function translate(T, opts) {
             break;
           }
           case '!': emit('!'); break;
-          case '\\': break;
+          case '\\':
+            if (next && next.t === 'var' && next.sig === '$' && !next.elem && !(T[i + 2] && T[i + 2].t === 'op' && (T[i + 2].v === '->' || T[i + 2].v === '[' || T[i + 2].v === '{'))) {
+              const nmv = vname(next); emit('_sref(() => ' + nmv + ', (_v) => ' + nmv + ' = _v)'); i++;       // \$x
+            } else if (next && (next.t === 'num' || next.t === 'str')) { emit('_sconst('); pendOne = true; }   // \"text"  \42
+            break;
           case '++': case '--': emit(v); break;
           case '%': {
             flush(UNARY_ONLY);
@@ -1780,6 +1911,13 @@ const RT = {
   shift_: (a) => a.shift(),
   unshift_: (a, ...v) => a.unshift(...v),
   deref_: (x) => x,
+  aset_: (a, v) => { v = Array.isArray(v) ? Array.from(v) : v === undefined ? [] : [v]; a.splice(0, a.length, ...v); return a; },
+  asetl_: (a, v) => { a.splice(0, a.length, ...v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])); return a; },
+  hset_: (h, v) => { const src = Array.isArray(v) ? v : v && typeof v === 'object' ? Object.assign({}, v) : []; for (const k of Object.keys(h)) delete h[k]; if (Array.isArray(src)) for (let n = 0; n < src.length; n += 2) h[_s(src[n])] = src[n + 1]; else Object.assign(h, src); return h; },
+  hsetl_: (h, v) => RT.hset_(h, v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])),
+  hdel_: (h, k) => { const r = h[k]; delete h[k]; return r; },
+  _sref: (g, s) => new SRef(g, s),
+  _sconst: (x) => new SRef(() => x, null),
   _countof: (...l) => l.flat(1).length,
   hslice_: (h, ...k) => mk(k.flat(1).map((x) => h[x])),
   aslice_: (a, ...k) => mk(k.flat(1).map((x) => a[x < 0 ? a.length + +x : x])),
@@ -1840,7 +1978,7 @@ const RT = {
     throw m;
   },
   warn_: (...l) => { let m = l.flat(1).map(_s).join(''); if (!/\n$/.test(m)) m += ' at line ' + RT._ln.v + '.\n'; console.warn(m.replace(/\n$/, '')); return 1; },
-  ref_: (x) => x == null ? '' : (typeof x === 'object' && Object.getPrototypeOf(x) && Object.getPrototypeOf(x).__ps) ? Object.getPrototypeOf(x).__ps.__name :
+  ref_: (x) => x == null ? '' : x instanceof SRef ? (typeof x.v === 'object' && x.v !== null || typeof x.v === 'function' ? 'REF' : 'SCALAR') : x instanceof RegExp ? 'Regexp' : (typeof x === 'object' && Object.getPrototypeOf(x) && Object.getPrototypeOf(x).__ps) ? Object.getPrototypeOf(x).__ps.__name :
     (typeof x === 'object' && hasOwn(x, '__name')) ? '' : Array.isArray(x) ? 'ARRAY' : typeof x === 'function' ? 'CODE' :
     typeof x === 'object' ? (x.constructor && x.constructor !== Object ? x.constructor.name : 'HASH') : '',
   chomp_: (x) => (Array.isArray(x) ? mk(x.map((v) => String(_s(v)).replace(/\n$/, ''))) : x == null ? x : String(_s(x)).replace(/\n$/, '')),
@@ -1863,7 +2001,7 @@ const RT = {
   _NUM_ASC: (a, b) => a - b,
   _NUM_DESC: (a, b) => b - a,
   _STR_DESC: (a, b) => a < b ? 1 : a > b ? -1 : 0,
-  _arr: (x) => x instanceof Lst ? Array.from(x) : x,
+  _arr: (x) => Array.isArray(x) ? Array.from(x) : x,
   _rx: (v) => (v instanceof RegExp ? '(?:' + v.source + ')' : String(v)),
   _s,
   _cU: (x) => String(x).toUpperCase(), _cL: (x) => String(x).toLowerCase(),
@@ -1878,12 +2016,38 @@ function fmtNum(v) {
   const f = v.toFixed(Math.max(0, 14 - exp));
   return f.includes('.') ? f.replace(/\.?0+$/, '') : f;
 }
+class SRef {                                         // \$x : a reference to a scalar variable
+  constructor(get, set) { this.g = get; this.s = set; }
+  get v() { return this.g(); }
+  set v(x) { if (this.s) this.s(x); }
+}
+const ADDR = new WeakMap(); let addrN = 0;
+const addrOf = (o) => { let a = ADDR.get(o); if (a === undefined) { a = 0x55d0c8a1f000 + (addrN++) * 24; ADDR.set(o, a); } return a; };
+function refStr(v) {                                  // ARRAY(0x55d0c8a1f000)  /  Foo=HASH(0x...)
+  const hex = '(0x' + addrOf(v).toString(16) + ')';
+  const pr = Object.getPrototypeOf(v);
+  const blessed = pr && pr.__ps ? pr.__ps.__name + '=' : '';
+  const kind = v instanceof SRef ? (typeof v.v === 'object' && v.v !== null || typeof v.v === 'function' ? 'REF' : 'SCALAR') : Array.isArray(v) ? 'ARRAY' : typeof v === 'function' ? 'CODE' : 'HASH';
+  return blessed + kind + hex;
+}
+const isPlainRef = (o) => Array.isArray(o) ? !(o instanceof Lst) : o instanceof SRef || typeof o === 'function' || (() => { const pr = Object.getPrototypeOf(o); return pr === Object.prototype || pr === null || !!(pr && pr.__ps); })();
+Object.defineProperty(Object.prototype, Symbol.toPrimitive, { enumerable: false, configurable: true, writable: true, value: function (hint) {     // $ref == $ref2 compares addresses
+  if (hint !== 'string' && isPlainRef(this)) return addrOf(this);
+  for (const m of hint === 'string' ? ['toString', 'valueOf'] : ['valueOf', 'toString']) { const f = this[m]; if (typeof f === 'function') { const r = f.call(this); if (r === null || (typeof r !== 'object' && typeof r !== 'function')) return r; } }
+  throw new TypeError('Cannot convert object to primitive value');
+} });
 function _s(v) {
   if (typeof v === 'string') return v;
   if (v == null || v === false) return '';
   if (v === true) return '1';
   if (typeof v === 'number') return fmtNum(v);
   if (typeof v === 'object' && typeof v.__scalar === 'function') return v.__scalar();
+  if (typeof v === 'object') {
+    if (Array.isArray(v)) return v instanceof Lst ? v : refStr(v);
+    if (v instanceof SRef) return refStr(v);
+    const pr = Object.getPrototypeOf(v);
+    if (pr === Object.prototype || pr === null || (pr && pr.__ps)) return refStr(v);
+  } else if (typeof v === 'function') return refStr(v);
   return v;
 }
 
