@@ -832,7 +832,7 @@ const BUILTINS = new Set(['print', 'say', 'printf', 'sprintf', 'push', 'pop', 's
   'index', 'rindex', 'uc', 'lc', 'ucfirst', 'lcfirst', 'abs', 'int', 'sqrt', 'sin', 'cos', 'atan2', 'exp', 'log',
   'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode', 'sleep', 'select']);
 const UNARY = new Set(['length', 'defined', 'ref', 'scalar', 'uc', 'lc', 'ucfirst', 'lcfirst', 'int', 'abs', 'sqrt',
-  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime', 'sleep']);
+  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime']);
 const LISTFN = new Set(['map', 'grep', 'sort', 'split', 'keys', 'values', 'reverse', 'splice', 'localtime', 'gmtime']);
 const DEFARG = new Set(['ord', 'chr', 'lc', 'uc', 'lcfirst', 'ucfirst', 'length', 'abs', 'int', 'sqrt', 'sin', 'cos', 'exp', 'log', 'hex', 'oct', 'defined', 'ref']);   // `$_` when called without an argument
 const NOARG = new Set(['shift', 'pop', 'time', 'rand', 'localtime', 'gmtime', 'srand', 'exit']);
@@ -1996,7 +1996,7 @@ const RT = {
   srand_: () => 0,
   time_: () => Math.floor(Date.now() / 1000),
   // sleep blocks like Perl does (the page is busy while it waits); in Node it really sleeps without spinning
-  sleep_: (n) => { n = +n || 0; blockMs(n * 1000); return Math.round(n); },
+  sleep_: (n, cb) => { n = +n || 0; if (typeof cb === 'function') return setTimeout(cb, n * 1000); blockMs(n * 1000); return Math.round(n); },   // sleep(3, sub { ... }) waits without blocking
   select_: (r, w, e, t) => { if (t != null) blockMs(+t * 1000); return 0; },
   localtime_: (t) => timeList(t, false),
   gmtime_: (t) => timeList(t, true),

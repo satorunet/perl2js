@@ -61,8 +61,10 @@
 <p><code>sleep N</code>、<code>Time::HiRes::sleep</code> / <code>usleep</code>、<code>select(undef, undef, undef, $秒)</code> は Perl と同じく本当に待ちます。待っている間は他の処理が動かず、ページも再描画されません。短い待ちや出力順の確認には十分ですが、ページを止めたくない遅延にはタイマーを使います。</p>
 <div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>print &quot;start\n&quot;;
 setTimeout(sub { print &quot;half a second later\n&quot; }, 500);   # the page stays responsive
-sleep 1;                                                    # blocks for 1 second
+sleep(1, sub { print &quot;one second later\n&quot; });              # sleep with a callback does not block either
+sleep 1;                                                    # no callback: blocks for 1 second
 print &quot;done\n&quot;;</code></pre></div>
+<p><code>sleep(秒数, sub { ... })</code> は Perl2JS の拡張です。すぐに戻り、指定の秒数のあとでそのサブを実行します(小数もOK: <code>sleep(0.5, sub { ... })</code>。<code>Time::HiRes::sleep</code> もコールバックを受け取ります)。</p>
 <p>(<code>setTimeout</code> のコールバックの中でも <code>sleep</code> は使えます。その場合はコールバックの実行中だけブロックします。)</p>
 <h2 id="ブラウザでは-perl-より便利な点"><a class="anchor" href="#ブラウザでは-perl-より便利な点" aria-hidden="true">#</a>ブラウザでは Perl より便利な点</h2>
 <p><code>$(&quot;#id&quot;)-&gt;...</code> (jQuery 風)、<code>-&gt;</code> または <code>.</code> による DOM や JS オブジェクトの呼び出し、<a href="syntax.ja.html">ハイブリッド構文</a>、そして IME で入力した全角記号 (<code>＄ｘ ＝ （１）；</code>) は、対応する半角記号として読み取られます (文字列の中ではそのままです)。</p>

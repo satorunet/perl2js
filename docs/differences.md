@@ -40,9 +40,12 @@ File and process functions (`open`, `opendir`, `system`, `fork`, `-e`) do not ex
 ```perl2js
 print "start\n";
 setTimeout(sub { print "half a second later\n" }, 500);   # the page stays responsive
-sleep 1;                                                    # blocks for 1 second
+sleep(1, sub { print "one second later\n" });              # sleep with a callback does not block either
+sleep 1;                                                    # no callback: blocks for 1 second
 print "done\n";
 ```
+
+`sleep(SECONDS, sub { ... })` is a Perl2JS extension: it returns at once and runs the sub after the delay (fractions work: `sleep(0.5, sub { ... })`; `Time::HiRes::sleep` accepts the callback too).
 
 (`sleep` also works inside a `setTimeout` callback; it then blocks while that callback runs.)
 

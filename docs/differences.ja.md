@@ -40,9 +40,12 @@ Perl はリストコンテキストかスカラーコンテキストかを実行
 ```perl2js
 print "start\n";
 setTimeout(sub { print "half a second later\n" }, 500);   # the page stays responsive
-sleep 1;                                                    # blocks for 1 second
+sleep(1, sub { print "one second later\n" });              # sleep with a callback does not block either
+sleep 1;                                                    # no callback: blocks for 1 second
 print "done\n";
 ```
+
+`sleep(秒数, sub { ... })` は Perl2JS の拡張です。すぐに戻り、指定の秒数のあとでそのサブを実行します(小数もOK: `sleep(0.5, sub { ... })`。`Time::HiRes::sleep` もコールバックを受け取ります)。
 
 (`setTimeout` のコールバックの中でも `sleep` は使えます。その場合はコールバックの実行中だけブロックします。)
 

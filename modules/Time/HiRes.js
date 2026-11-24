@@ -3,7 +3,7 @@ Perl2JS.module({ name: 'Time::HiRes', init(api) {
   const { mk } = api;
   const hiTime = () => Date.now() / 1000;
   const wait = (ms) => { const end = Date.now() + ms; if (typeof process !== 'undefined' && typeof Atomics !== 'undefined') { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); return; } while (Date.now() < end) { /* busy wait */ } };
-  const hsleep = (s) => { wait(+s * 1000); return +s; };
+  const hsleep = (s, cb) => { if (typeof cb === 'function') return setTimeout(cb, +s * 1000); wait(+s * 1000); return +s; };
   const usleep = (us) => { wait(+us / 1000); return +us; };
   const nanosleep = (ns) => { wait(+ns / 1e6); return +ns; };
   const gettimeofday = () => { const n = Date.now(); return mk([Math.floor(n / 1000), (n % 1000) * 1000]); };
