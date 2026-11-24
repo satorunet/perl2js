@@ -101,7 +101,7 @@ Perl2JS.module({
 
 ## ドキュメント
 
-詳しい解説です(`perl` のコード例はすべて本物のPerlと出力を照合済み)。**[対応している構文](docs/syntax.ja.md)** · **[同梱モジュール](docs/modules.ja.md)** · **[人気のCPANモジュールの対応状況](docs/cpan.ja.md)** · **[自分でモジュールを作る](docs/writing-modules.ja.md)** · [ブラウザで使う](docs/browser.ja.md) · [Perlとの違い](docs/differences.ja.md)。Web版: <https://satoru.net/perl2js/docs/README.ja.html>
+詳しい解説です(`perl` のコード例はすべて本物のPerlと出力を照合済み)。**[対応している構文](docs/syntax.ja.md)** · **[組み込み関数の対応状況](docs/functions.ja.md)** · **[同梱モジュール](docs/modules.ja.md)** · **[人気のCPANモジュールの対応状況](docs/cpan.ja.md)** · **[自分でモジュールを作る](docs/writing-modules.ja.md)** · [ブラウザで使う](docs/browser.ja.md) · [Perlとの違い](docs/differences.ja.md)。Web版: <https://satoru.net/perl2js/docs/README.ja.html>
 
 ## 仕組み
 

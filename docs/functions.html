@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Built-in functions — Perl2JS</title>
+<meta name="description" content="Every row was run through real Perl 5.40 and Perl2JS side by side (the test is a one-line program per feature; output must be identical).">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <button class="menu" type="button" aria-label="Menu" aria-expanded="false">☰ Menu</button>
+  <span class="sp"></span>
+  <a class="pill" href="../">Playground</a>
+  <a class="pill" href="functions.ja.html" hreflang="ja">日本語</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<nav class="side" aria-label="Contents"><div class="side-title">Contents</div><div class="grp">Start</div><details class="pg"><summary><a href="README.html">Overview</a></summary><ul><li><a href="README.html#the-30-second-version">The 30-second version</a></li></ul></details><div class="grp">The language</div><details class="pg"><summary><a href="syntax.html">Supported syntax</a></summary><ul><li><a href="syntax.html#variables">Variables</a></li><li><a href="syntax.html#arrays-hashes-and-references">Arrays, hashes and references</a></li><li><a href="syntax.html#strings">Strings</a></li><li><a href="syntax.html#numbers-and-operators">Numbers and operators</a></li><li><a href="syntax.html#control-flow">Control flow</a></li><li><a href="syntax.html#subroutines">Subroutines</a></li><li><a href="syntax.html#regular-expressions">Regular expressions</a></li><li><a href="syntax.html#packages-and-objects">Packages and objects</a></li><li><a href="syntax.html#errors">Errors</a></li><li><a href="syntax.html#other-features">Other features</a></li><li><a href="syntax.html#perl--javascript-hybrid">Perl + JavaScript hybrid</a></li><li><a href="syntax.html#built-in-functions">Built-in functions</a></li></ul></details><details class="pg" open><summary><a href="functions.html" aria-current="page">Built-in functions</a></summary><ul><li><a href="functions.html#strings">Strings</a></li><li><a href="functions.html#numbers">Numbers</a></li><li><a href="functions.html#arrays-and-lists">Arrays and lists</a></li><li><a href="functions.html#hashes">Hashes</a></li><li><a href="functions.html#control-flow-and-scope">Control flow and scope</a></li><li><a href="functions.html#regular-expressions">Regular expressions</a></li><li><a href="functions.html#time">Time</a></li><li><a href="functions.html#output">Output</a></li><li><a href="functions.html#references-and-objects">References and objects</a></li><li><a href="functions.html#not-possible-in-a-browser">Not possible in a browser</a></li></ul></details><details class="pg"><summary><a href="differences.html">Differences from Perl</a></summary><ul><li><a href="differences.html#numbers-and-strings">Numbers and strings</a></li><li><a href="differences.html#references">References</a></li><li><a href="differences.html#context">Context</a></li><li><a href="differences.html#not-implemented">Not implemented</a></li><li><a href="differences.html#waiting">Waiting</a></li><li><a href="differences.html#things-that-are-better-than-perl-in-a-browser">Things that are better than Perl in a browser</a></li><li><a href="differences.html#names">Names</a></li></ul></details><div class="grp">Modules</div><details class="pg"><summary><a href="modules.html">Bundled modules</a></summary><ul><li><a href="modules.html#lists-and-types">Lists and types</a></li><li><a href="modules.html#data-and-text">Data and text</a></li><li><a href="modules.html#encoding-and-hashing">Encoding and hashing</a></li><li><a href="modules.html#time">Time</a></li><li><a href="modules.html#control-and-testing">Control and testing</a></li><li><a href="modules.html#files-and-math">Files and math</a></li></ul></details><details class="pg"><summary><a href="cpan.html">Popular CPAN modules</a></summary><ul><li><a href="cpan.html#lists-data-and-text">Lists, data and text</a></li><li><a href="cpan.html#encoding-and-hashing">Encoding and hashing</a></li><li><a href="cpan.html#time">Time</a></li><li><a href="cpan.html#control-flow-and-testing">Control flow and testing</a></li><li><a href="cpan.html#files-math-system">Files, math, system</a></li><li><a href="cpan.html#web-and-databases">Web and databases</a></li></ul></details><details class="pg"><summary><a href="writing-modules.html">Write your own module</a></summary><ul><li><a href="writing-modules.html#1-create-the-file">1. Create the file</a></li><li><a href="writing-modules.html#2-use-it">2. Use it</a></li><li><a href="writing-modules.html#3-where-it-is-looked-up">3. Where it is looked up</a></li><li><a href="writing-modules.html#4-perl-code-as-a-library">4. Perl code as a library</a></li></ul></details><div class="grp">Use it</div><details class="pg"><summary><a href="browser.html">In the browser</a></summary><ul><li><a href="browser.html#loading-it">Loading it</a></li><li><a href="browser.html#perl-in-a-page">Perl in a page</a></li><li><a href="browser.html#the-dom-and-the-jquery-style">The DOM and the jQuery-style $</a></li><li><a href="browser.html#the-javascript-api">The JavaScript API</a></li><li><a href="browser.html#the-playground">The playground</a></li><li><a href="browser.html#in-nodejs">In Node.js</a></li></ul></details></nav>
+<main>
+<h1>Built-in functions</h1>
+<p>Every row was run through real Perl 5.40 and Perl2JS side by side (the test is a one-line program per feature; output must be identical).
+<strong>✅</strong> works like Perl · <strong>🟡</strong> works with a difference (see the note) · <strong>➖</strong> not implemented yet · <strong>⛔</strong> cannot exist in a browser.</p>
+<h2 id="strings"><a class="anchor" href="#strings" aria-hidden="true">#</a>Strings</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Function</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>length</code> <code>uc</code> <code>lc</code> <code>ucfirst</code> <code>lcfirst</code> <code>index</code> <code>rindex</code> <code>reverse</code> <code>join</code> <code>chr</code> <code>ord</code> <code>hex</code> <code>oct</code> <code>chomp</code> <code>chop</code> <code>quotemeta</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>substr</code> (2, 3 and 4 arguments, and <code>substr($s, 0, 1) = &quot;x&quot;</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sprintf</code> / <code>printf</code> (<code>%s %d %f %e %g %x %o %b %c %%</code>, flags, width, <code>%*d</code>, <code>%2$s</code>, <code>%vd</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>x</code> (repeat), <code>.</code> (concatenate), <code>\U \L \u \l \E</code> in strings</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tr///</code> (ranges, counting, <code>d</code> <code>s</code> <code>c</code> <code>r</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>lc</code> / <code>uc</code> on non-ASCII text</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>length</code> of a UTF-8 string without <code>use utf8</code></td>
+<td>🟡</td>
+<td>counts characters; Perl counts bytes</td>
+</tr>
+<tr>
+<td><code>pack</code> / <code>unpack</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>crypt</code>, <code>study</code>, <code>fc</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>format</code> / <code>write</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="numbers"><a class="anchor" href="#numbers" aria-hidden="true">#</a>Numbers</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Function</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>abs</code> <code>int</code> <code>sqrt</code> <code>sin</code> <code>cos</code> <code>atan2</code> <code>exp</code> <code>log</code> <code>hex</code> <code>oct</code> <code>rand</code> <code>srand</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**</code> <code>%</code> (Perl&#39;s sign rules: <code>-7 % 3 == 2</code>) <code>&lt;=&gt;</code> <code>&amp; | ^ ~ &lt;&lt; &gt;&gt;</code> <code>0x</code> <code>0b</code> <code>0o</code> <code>1_000</code> literals</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>integers above 2**53</td>
+<td>🟡</td>
+<td>numbers are JavaScript doubles; <code>9007199254740993</code> prints as <code>9.00719925474099e+15</code></td>
+</tr>
+<tr>
+<td>bit operations on more than 32 bits</td>
+<td>🟡</td>
+<td>32-bit</td>
+</tr>
+</tbody></table></div>
+<h2 id="arrays-and-lists"><a class="anchor" href="#arrays-and-lists" aria-hidden="true">#</a>Arrays and lists</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Function</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>push</code> <code>pop</code> <code>shift</code> <code>unshift</code> <code>splice</code> <code>reverse</code> <code>scalar</code> <code>join</code> <code>grep</code> <code>map</code> <code>sort</code> (block, <code>$a</code>/<code>$b</code>, <code>&lt;=&gt;</code>, <code>cmp</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>exists</code> <code>delete</code> on arrays, <code>$#a</code>, <code>$#{$r}</code>, <code>$#a = 3</code>, slices <code>@a[1,2]</code>, <code>(list)[i]</code>, <code>@$r[0,1]</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>keys @array</code>, <code>foreach</code> aliasing (<code>$_ *= 2 for @a</code>), <code>wantarray</code>-free list assignment <code>($a, $b) = ($b, $a)</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sort by_name LIST</code> (a named sub as comparator)</td>
+<td>➖</td>
+<td>write the comparison in a block: <code>sort { $a &lt;=&gt; $b } @list</code></td>
+</tr>
+<tr>
+<td><code>each @array</code></td>
+<td>➖</td>
+<td>use <code>for my $i (0..$#a)</code></td>
+</tr>
+<tr>
+<td><code>wantarray</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>my $x = f();</code> where <code>f</code> returns a list</td>
+<td>🟡</td>
+<td>gets the whole list, Perl gets the last element</td>
+</tr>
+</tbody></table></div>
+<h2 id="hashes"><a class="anchor" href="#hashes" aria-hidden="true">#</a>Hashes</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Function</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>keys</code> <code>values</code> <code>each</code> <code>exists</code> <code>delete</code> <code>defined</code>, slices <code>@h{...}</code>, <code>delete @h{...}</code>, <code>%h = ()</code>, nested data, <code>%$ref</code>, <code>@{$h}{...}</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>local $h{key}</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>exists $h{a}{b}</code> creating <code>$h{a}</code> (autovivification)</td>
+<td>🟡</td>
+<td>does not create <code>$h{a}</code></td>
+</tr>
+<tr>
+<td><code>%r = reverse %h</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scalar(%h)</code></td>
+<td>✅</td>
+<td>the key count, like Perl 5.26+</td>
+</tr>
+</tbody></table></div>
+<h2 id="control-flow-and-scope"><a class="anchor" href="#control-flow-and-scope" aria-hidden="true">#</a>Control flow and scope</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Feature</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>if</code> <code>elsif</code> <code>else</code> <code>unless</code> <code>while</code> <code>until</code> <code>for (;;)</code> <code>foreach</code> <code>last</code> <code>next</code> <code>redo</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>labels (<code>OUTER: for ... { next OUTER }</code>), <code>do {} while</code>, statement modifiers (<code>... if</code>, <code>... for</code>), <code>?:</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>my</code> <code>our</code> <code>local</code>, closures, recursion, <code>return</code>, implicit return</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>subroutine signatures (<code>sub f($x, $y = 10)</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>eval { }</code>, <code>eval &quot;string&quot;</code>, <code>die</code> (string or object), <code>warn</code>, <code>$@</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>exit</code>, <code>sleep</code>, <code>__PACKAGE__</code>, <code>caller</code>-free packages, <code>use constant</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>state</code> variables</td>
+<td>➖</td>
+<td>use a <code>my</code> variable outside the sub</td>
+</tr>
+<tr>
+<td><code>BEGIN</code> / <code>END</code> blocks</td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>caller</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td>prototypes (<code>sub apply(&amp;@)</code>)</td>
+<td>➖</td>
+<td>write <code>apply(sub { ... }, @list)</code></td>
+</tr>
+<tr>
+<td><code>goto</code>, <code>given</code>/<code>when</code>, <code>format</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>do FILE</code>, <code>require FILE</code></td>
+<td>🟡</td>
+<td><code>require &quot;lib/x.p2j&quot;;</code> pulls in another Perl2JS file (<a href="browser.html#splitting-code-into-files">browser</a>)</td>
+</tr>
+</tbody></table></div>
+<h2 id="regular-expressions"><a class="anchor" href="#regular-expressions" aria-hidden="true">#</a>Regular expressions</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Feature</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>m//</code> <code>s///</code> <code>tr///</code> with <code>g i m s x e r</code> flags, captures <code>$1</code>, <code>$&amp;</code>, <code>%+</code> (<code>$+{name}</code>), <code>qr//</code>, list-context matches</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>split</code> (regex, limit, captures, <code>//</code>), lookahead / lookbehind, non-greedy, backreferences <code>\1</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>any delimiter: <code>m@a@</code>, <code>m&quot;a&quot;</code>, <code>s!a!b!</code>, <code>s{a}{b}</code>, <code>qw@a b@</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>pos()</code>, <code>\G</code>, scalar <code>//g</code> position</td>
+<td>➖</td>
+<td>scalar <code>//g</code> loops (<code>while ($s =~ /x/g)</code>) do work</td>
+</tr>
+<tr>
+<td><code>$`</code> and <code>$&#39;</code> in strings, <code>@-</code> / <code>@+</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td>recursive patterns <code>(?R)</code>, atomic groups <code>(?&gt;...)</code>, possessive quantifiers</td>
+<td>➖</td>
+<td>JavaScript&#39;s regex engine does not have them</td>
+</tr>
+<tr>
+<td><code>\p{L}</code> unicode properties on text without <code>use utf8</code></td>
+<td>🟡</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="time"><a class="anchor" href="#time" aria-hidden="true">#</a>Time</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Function</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>time</code>, <code>localtime</code>, <code>gmtime</code> (list and scalar context)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sleep</code>, <code>select(undef, undef, undef, $secs)</code></td>
+<td>✅</td>
+<td>block the page while waiting; <code>sleep($secs, sub { ... })</code> does not block</td>
+</tr>
+<tr>
+<td><code>times</code>, <code>alarm</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="output"><a class="anchor" href="#output" aria-hidden="true">#</a>Output</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Function</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>print</code> <code>printf</code> <code>say</code> (<code>print;</code> prints <code>$_</code>), <code>print STDOUT</code>, <code>print STDERR</code> (to <code>console.warn</code>), <code>$,</code> <code>$\</code> `$</td>
+<td><code>, </code>binmode`</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>here-documents (<code>&lt;&lt;&quot;EOT&quot;</code>, <code>&lt;&lt;&#39;EOT&#39;</code>, <code>&lt;&lt;~EOT</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>$0</code></td>
+<td>🟡</td>
+<td><code>main.p2j</code></td>
+</tr>
+<tr>
+<td><code>sprintf(&quot;%.0f&quot;, 0.5)</code></td>
+<td>✅</td>
+<td>exact ties round to even like C (<code>0 2 2</code> for 0.5, 1.5, 2.5)</td>
+</tr>
+</tbody></table></div>
+<h2 id="references-and-objects"><a class="anchor" href="#references-and-objects" aria-hidden="true">#</a>References and objects</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Feature</th>
+<th></th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td><code>ref</code>, <code>bless</code>, <code>-&gt;isa</code>, <code>-&gt;can</code>, <code>@ISA</code>, <code>use parent</code>, <code>SUPER::</code>, <code>__PACKAGE__-&gt;method</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>\$x</code>, <code>\@a</code>, <code>\%h</code>, <code>\&amp;f</code>, <code>$$r</code>, <code>@$r</code>, <code>%$r</code>, <code>$r-&gt;[0]</code>, <code>&quot;$ref&quot;</code> as <code>ARRAY(0x...)</code>, <code>==</code> on references</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>undef $x</code> / <code>undef @a</code> / <code>undef %h</code>, <code>defined</code>, <code>local $_</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Scalar::Util</code> (<code>blessed reftype looks_like_number refaddr</code>), <code>use constant</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ref(\\$x)</code> for a reference to a reference</td>
+<td>🟡</td>
+<td><code>SCALAR</code> (Perl: <code>REF</code>)</td>
+</tr>
+<tr>
+<td><code>AUTOLOAD</code>, <code>DESTROY</code>, <code>use overload</code>, <code>tie</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>\$h{k}</code> / <code>\$a[0]</code> (reference to an element)</td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="not-possible-in-a-browser"><a class="anchor" href="#not-possible-in-a-browser" aria-hidden="true">#</a>Not possible in a browser</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Area</th>
+<th>Functions</th>
+</tr>
+</thead><tbody><tr>
+<td>Files and directories</td>
+<td><code>open</code> <code>close</code> <code>print FH</code> <code>&lt;FH&gt;</code> <code>readline</code> <code>eof</code> <code>seek</code> <code>tell</code> <code>opendir</code> <code>readdir</code> <code>mkdir</code> <code>rmdir</code> <code>unlink</code> <code>rename</code> <code>stat</code> <code>lstat</code> <code>chdir</code> <code>glob</code> <code>-e -f -d -r -w -x -s</code></td>
+</tr>
+<tr>
+<td>Processes</td>
+<td><code>system</code> <code>exec</code> <code>fork</code> <code>wait</code> <code>waitpid</code> <code>kill</code> <code>`backticks`</code> <code>%SIG</code> <code>$$</code> <code>getppid</code></td>
+</tr>
+<tr>
+<td>Network and users</td>
+<td><code>socket</code> <code>connect</code> <code>bind</code> <code>listen</code> <code>accept</code> <code>getpwnam</code> <code>getlogin</code></td>
+</tr>
+<tr>
+<td>Terminal input</td>
+<td><code>&lt;STDIN&gt;</code> <code>getc</code> <code>read</code> <code>sysread</code> <code>syswrite</code> (use form fields and <code>$(&quot;#input&quot;)-&gt;val</code>)</td>
+</tr>
+</tbody></table></div>
+<p><code>%ENV</code> and <code>@ARGV</code> exist but are empty.</p>
+<p>Something you need is missing? <a href="https://github.com/satorunet/perl2js/issues" target="_blank" rel="noopener">Open an issue</a> with a one-line program and what real Perl prints.</p>
+
+<footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+</div>
+<script>
+(function () {                                              // mobile menu + highlight the section being read
+  var b = document.querySelector('button.menu'), side = document.querySelector('nav.side');
+  b.addEventListener('click', function () { var o = side.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  side.addEventListener('click', function (e) { if (e.target.closest('li a')) side.classList.remove('open'); });
+  var links = [].slice.call(side.querySelectorAll('details[open] li a')), heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+  function spy() { var y = window.scrollY + 90, cur = -1; heads.forEach(function (h, i) { if (h && h.offsetTop <= y) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+  window.addEventListener('scroll', spy, { passive: true }); spy();
+  var on = side.querySelector('a[aria-current]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+})();
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>組み込み関数 — Perl2JS</title>
+<meta name="description" content="各行は、本物の Perl 5.40 と Perl2JS の両方で実行して確認しています(機能ごとに1行のプログラムを用意し、出力が同一であることを条件にしています)。">
+<link rel="icon" href="../assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124f">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
+  <button class="menu" type="button" aria-label="メニュー" aria-expanded="false">☰ メニュー</button>
+  <span class="sp"></span>
+  <a class="pill" href="../">プレイグラウンド</a>
+  <a class="pill" href="functions.html" hreflang="en">English</a>
+  <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<nav class="side" aria-label="目次"><div class="side-title">目次</div><div class="grp">はじめに</div><details class="pg"><summary><a href="README.ja.html">概要</a></summary><ul><li><a href="README.ja.html#30-秒でわかる使い方">30 秒でわかる使い方</a></li></ul></details><div class="grp">言語</div><details class="pg"><summary><a href="syntax.ja.html">対応している構文</a></summary><ul><li><a href="syntax.ja.html#変数">変数</a></li><li><a href="syntax.ja.html#配列ハッシュリファレンス">配列、ハッシュ、リファレンス</a></li><li><a href="syntax.ja.html#文字列">文字列</a></li><li><a href="syntax.ja.html#数値と演算子">数値と演算子</a></li><li><a href="syntax.ja.html#制御構文">制御構文</a></li><li><a href="syntax.ja.html#サブルーチン">サブルーチン</a></li><li><a href="syntax.ja.html#正規表現">正規表現</a></li><li><a href="syntax.ja.html#パッケージとオブジェクト">パッケージとオブジェクト</a></li><li><a href="syntax.ja.html#エラー">エラー</a></li><li><a href="syntax.ja.html#その他の機能">その他の機能</a></li><li><a href="syntax.ja.html#perl--javascript-ハイブリッド">Perl + JavaScript ハイブリッド</a></li><li><a href="syntax.ja.html#組み込み関数">組み込み関数</a></li></ul></details><details class="pg" open><summary><a href="functions.ja.html" aria-current="page">組み込み関数</a></summary><ul><li><a href="functions.ja.html#文字列">文字列</a></li><li><a href="functions.ja.html#数値">数値</a></li><li><a href="functions.ja.html#配列とリスト">配列とリスト</a></li><li><a href="functions.ja.html#ハッシュ">ハッシュ</a></li><li><a href="functions.ja.html#制御構文とスコープ">制御構文とスコープ</a></li><li><a href="functions.ja.html#正規表現">正規表現</a></li><li><a href="functions.ja.html#時間">時間</a></li><li><a href="functions.ja.html#出力">出力</a></li><li><a href="functions.ja.html#リファレンスとオブジェクト">リファレンスとオブジェクト</a></li><li><a href="functions.ja.html#ブラウザではできないもの">ブラウザではできないもの</a></li></ul></details><details class="pg"><summary><a href="differences.ja.html">Perl との違い</a></summary><ul><li><a href="differences.ja.html#数値と文字列">数値と文字列</a></li><li><a href="differences.ja.html#リファレンス">リファレンス</a></li><li><a href="differences.ja.html#コンテキスト">コンテキスト</a></li><li><a href="differences.ja.html#未実装">未実装</a></li><li><a href="differences.ja.html#待機sleep">待機(sleep)</a></li><li><a href="differences.ja.html#ブラウザでは-perl-より便利な点">ブラウザでは Perl より便利な点</a></li><li><a href="differences.ja.html#名前">名前</a></li></ul></details><div class="grp">モジュール</div><details class="pg"><summary><a href="modules.ja.html">同梱モジュール</a></summary><ul><li><a href="modules.ja.html#リストと型">リストと型</a></li><li><a href="modules.ja.html#データとテキスト">データとテキスト</a></li><li><a href="modules.ja.html#エンコーディングとハッシュ">エンコーディングとハッシュ</a></li><li><a href="modules.ja.html#時刻">時刻</a></li><li><a href="modules.ja.html#制御とテスト">制御とテスト</a></li><li><a href="modules.ja.html#ファイルと数学">ファイルと数学</a></li></ul></details><details class="pg"><summary><a href="cpan.ja.html">人気のCPANモジュール</a></summary><ul><li><a href="cpan.ja.html#リストデータテキスト">リスト、データ、テキスト</a></li><li><a href="cpan.ja.html#エンコーディングとハッシュ">エンコーディングとハッシュ</a></li><li><a href="cpan.ja.html#時刻">時刻</a></li><li><a href="cpan.ja.html#制御フローとテスト">制御フローとテスト</a></li><li><a href="cpan.ja.html#ファイル数学システム">ファイル、数学、システム</a></li><li><a href="cpan.ja.html#web-とデータベース">Web とデータベース</a></li></ul></details><details class="pg"><summary><a href="writing-modules.ja.html">自分でモジュールを作る</a></summary><ul><li><a href="writing-modules.ja.html#1-ファイルを作る">1. ファイルを作る</a></li><li><a href="writing-modules.ja.html#2-使う">2. 使う</a></li><li><a href="writing-modules.ja.html#3-検索される場所">3. 検索される場所</a></li><li><a href="writing-modules.ja.html#4-perl-コードをライブラリにする">4. Perl コードをライブラリにする</a></li></ul></details><div class="grp">使い方</div><details class="pg"><summary><a href="browser.ja.html">ブラウザで使う</a></summary><ul><li><a href="browser.ja.html#読み込み方">読み込み方</a></li><li><a href="browser.ja.html#ページ内の-perl">ページ内の Perl</a></li><li><a href="browser.ja.html#dom-と-jquery-風の">DOM と jQuery 風の $</a></li><li><a href="browser.ja.html#javascript-api">JavaScript API</a></li><li><a href="browser.ja.html#プレイグラウンド">プレイグラウンド</a></li><li><a href="browser.ja.html#nodejs-で使う">Node.js で使う</a></li></ul></details></nav>
+<main>
+<h1>組み込み関数</h1>
+<p>各行は、本物の Perl 5.40 と Perl2JS の両方で実行して確認しています(機能ごとに1行のプログラムを用意し、出力が同一であることを条件にしています)。
+<strong>✅</strong> Perl と同じに動く · <strong>🟡</strong> 違いあり(備考を参照) · <strong>➖</strong> 未実装 · <strong>⛔</strong> ブラウザでは実現できない</p>
+<h2 id="文字列"><a class="anchor" href="#文字列" aria-hidden="true">#</a>文字列</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>関数</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>length</code> <code>uc</code> <code>lc</code> <code>ucfirst</code> <code>lcfirst</code> <code>index</code> <code>rindex</code> <code>reverse</code> <code>join</code> <code>chr</code> <code>ord</code> <code>hex</code> <code>oct</code> <code>chomp</code> <code>chop</code> <code>quotemeta</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>substr</code> (引数2・3・4個の形と、<code>substr($s, 0, 1) = &quot;x&quot;</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sprintf</code> / <code>printf</code> (<code>%s %d %f %e %g %x %o %b %c %%</code>、フラグ、幅、<code>%*d</code>、<code>%2$s</code>、<code>%vd</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>x</code>(繰り返し)、<code>.</code>(連結)、文字列中の <code>\U \L \u \l \E</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tr///</code>(範囲、個数のカウント、<code>d</code> <code>s</code> <code>c</code> <code>r</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>非ASCII文字への <code>lc</code> / <code>uc</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>use utf8</code> なしの UTF-8 文字列の <code>length</code></td>
+<td>🟡</td>
+<td>文字数を数えます(Perl はバイト数)</td>
+</tr>
+<tr>
+<td><code>pack</code> / <code>unpack</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>crypt</code>, <code>study</code>, <code>fc</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>format</code> / <code>write</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="数値"><a class="anchor" href="#数値" aria-hidden="true">#</a>数値</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>関数</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>abs</code> <code>int</code> <code>sqrt</code> <code>sin</code> <code>cos</code> <code>atan2</code> <code>exp</code> <code>log</code> <code>hex</code> <code>oct</code> <code>rand</code> <code>srand</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>**</code> <code>%</code> (Perl&#39;s sign rules: <code>-7 % 3 == 2</code>) <code>&lt;=&gt;</code> <code>&amp; | ^ ~ &lt;&lt; &gt;&gt;</code> <code>0x</code> <code>0b</code> <code>0o</code> <code>1_000</code> literals</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>2**53 を超える整数</td>
+<td>🟡</td>
+<td>数値は JavaScript の倍精度です。<code>9007199254740993</code> は <code>9.00719925474099e+15</code> と表示されます</td>
+</tr>
+<tr>
+<td>32ビットを超えるビット演算</td>
+<td>🟡</td>
+<td>32ビットです</td>
+</tr>
+</tbody></table></div>
+<h2 id="配列とリスト"><a class="anchor" href="#配列とリスト" aria-hidden="true">#</a>配列とリスト</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>関数</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>push</code> <code>pop</code> <code>shift</code> <code>unshift</code> <code>splice</code> <code>reverse</code> <code>scalar</code> <code>join</code> <code>grep</code> <code>map</code> <code>sort</code> (ブロック、<code>$a</code>/<code>$b</code>、<code>&lt;=&gt;</code>、<code>cmp</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>配列への <code>exists</code> <code>delete</code>、<code>$#a</code>、<code>$#{$r}</code>、<code>$#a = 3</code>、スライス <code>@a[1,2]</code>、<code>(list)[i]</code>、<code>@$r[0,1]</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>keys @array</code>、<code>foreach</code> のエイリアス(<code>$_ *= 2 for @a</code>)、リスト代入 <code>($a, $b) = ($b, $a)</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sort by_name LIST</code> (名前付きサブを比較関数にする形)</td>
+<td>➖</td>
+<td>比較をブロックに書いてください: <code>sort { $a &lt;=&gt; $b } @list</code></td>
+</tr>
+<tr>
+<td><code>each @array</code></td>
+<td>➖</td>
+<td><code>for my $i (0..$#a)</code> を使ってください</td>
+</tr>
+<tr>
+<td><code>wantarray</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td>リストを返すサブの <code>my $x = f();</code></td>
+<td>🟡</td>
+<td>リスト全体になります(Perl は最後の要素)</td>
+</tr>
+</tbody></table></div>
+<h2 id="ハッシュ"><a class="anchor" href="#ハッシュ" aria-hidden="true">#</a>ハッシュ</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>関数</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>keys</code> <code>values</code> <code>each</code> <code>exists</code> <code>delete</code> <code>defined</code>、スライス <code>@h{...}</code>、<code>delete @h{...}</code>、<code>%h = ()</code>、入れ子のデータ、<code>%$ref</code>、<code>@{$h}{...}</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>local $h{key}</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>exists $h{a}{b}</code> が <code>$h{a}</code> を作る動作(autovivification)</td>
+<td>🟡</td>
+<td><code>$h{a}</code> は作られません</td>
+</tr>
+<tr>
+<td><code>%r = reverse %h</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scalar(%h)</code></td>
+<td>✅</td>
+<td>キーの数(Perl 5.26 以降と同じ)</td>
+</tr>
+</tbody></table></div>
+<h2 id="制御構文とスコープ"><a class="anchor" href="#制御構文とスコープ" aria-hidden="true">#</a>制御構文とスコープ</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>機能</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>if</code> <code>elsif</code> <code>else</code> <code>unless</code> <code>while</code> <code>until</code> <code>for (;;)</code> <code>foreach</code> <code>last</code> <code>next</code> <code>redo</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>ラベル(<code>OUTER: for ... { next OUTER }</code>)、<code>do {} while</code>、文修飾子(<code>... if</code>、<code>... for</code>)、<code>?:</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>my</code> <code>our</code> <code>local</code>、クロージャ、再帰、<code>return</code>、暗黙の戻り値</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>サブルーチンのシグネチャ(<code>sub f($x, $y = 10)</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>eval { }</code>、<code>eval &quot;文字列&quot;</code>、<code>die</code>(文字列もオブジェクトも)、<code>warn</code>、<code>$@</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>exit</code>、<code>sleep</code>、<code>__PACKAGE__</code>、<code>package</code>、<code>use constant</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>state</code> 変数</td>
+<td>➖</td>
+<td>サブの外側の <code>my</code> 変数を使ってください</td>
+</tr>
+<tr>
+<td><code>BEGIN</code> / <code>END</code> ブロック</td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>caller</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td>プロトタイプ(<code>sub apply(&amp;@)</code>)</td>
+<td>➖</td>
+<td><code>apply(sub { ... }, @list)</code> と書いてください</td>
+</tr>
+<tr>
+<td><code>goto</code>、<code>given</code>/<code>when</code>、<code>format</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>do FILE</code>、<code>require FILE</code></td>
+<td>🟡</td>
+<td><code>require &quot;lib/x.p2j&quot;;</code> で別の Perl2JS ファイルを取り込めます(<a href="browser.ja.html">ブラウザで使う</a>)</td>
+</tr>
+</tbody></table></div>
+<h2 id="正規表現"><a class="anchor" href="#正規表現" aria-hidden="true">#</a>正規表現</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>機能</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>m//</code> <code>s///</code> <code>tr///</code> と <code>g i m s x e r</code> フラグ、キャプチャ <code>$1</code>、<code>$&amp;</code>、<code>%+</code>(<code>$+{name}</code>)、<code>qr//</code>、リストコンテキストのマッチ</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>split</code>(正規表現、limit、キャプチャ、<code>//</code>)、先読み・後読み、最短一致、後方参照 <code>\1</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>任意の区切り文字: <code>m@a@</code>、<code>m&quot;a&quot;</code>、<code>s!a!b!</code>、<code>s{a}{b}</code>、<code>qw@a b@</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>pos()</code>、<code>\G</code>、スカラーの <code>//g</code> の位置</td>
+<td>➖</td>
+<td>スカラーの <code>//g</code> ループ(<code>while ($s =~ /x/g)</code>)は動きます</td>
+</tr>
+<tr>
+<td>文字列中の <code>$`</code> と <code>$&#39;</code>、<code>@-</code> / <code>@+</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td>再帰パターン <code>(?R)</code>、アトミックグループ <code>(?&gt;...)</code>、強欲量指定子</td>
+<td>➖</td>
+<td>JavaScript の正規表現エンジンにはありません</td>
+</tr>
+<tr>
+<td><code>use utf8</code> なしのテキストに対する <code>\p{L}</code> などのUnicodeプロパティ</td>
+<td>🟡</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="時間"><a class="anchor" href="#時間" aria-hidden="true">#</a>時間</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>関数</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>time</code>、<code>localtime</code>、<code>gmtime</code>(リスト・スカラー両方のコンテキスト)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sleep</code>, <code>select(undef, undef, undef, $secs)</code></td>
+<td>✅</td>
+<td>待つ間ページを止めます。<code>sleep($secs, sub { ... })</code> は止めません</td>
+</tr>
+<tr>
+<td><code>times</code>、<code>alarm</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="出力"><a class="anchor" href="#出力" aria-hidden="true">#</a>出力</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>関数</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>print</code> <code>printf</code> <code>say</code>(<code>print;</code> は <code>$_</code> を出力)、<code>print STDOUT</code>、<code>print STDERR</code>(<code>console.warn</code> へ)、<code>$,</code> <code>$\</code> `$</td>
+<td><code>、</code>binmode`</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>ヒアドキュメント(<code>&lt;&lt;&quot;EOT&quot;</code>、<code>&lt;&lt;&#39;EOT&#39;</code>、<code>&lt;&lt;~EOT</code>)</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>$0</code></td>
+<td>🟡</td>
+<td><code>main.p2j</code></td>
+</tr>
+<tr>
+<td><code>sprintf(&quot;%.0f&quot;, 0.5)</code></td>
+<td>✅</td>
+<td>ちょうど半分の値は C と同じく偶数に丸めます(0.5, 1.5, 2.5 → <code>0 2 2</code>)</td>
+</tr>
+</tbody></table></div>
+<h2 id="リファレンスとオブジェクト"><a class="anchor" href="#リファレンスとオブジェクト" aria-hidden="true">#</a>リファレンスとオブジェクト</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>機能</th>
+<th></th>
+<th>備考</th>
+</tr>
+</thead><tbody><tr>
+<td><code>ref</code>, <code>bless</code>, <code>-&gt;isa</code>, <code>-&gt;can</code>, <code>@ISA</code>, <code>use parent</code>, <code>SUPER::</code>, <code>__PACKAGE__-&gt;method</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>\$x</code>、<code>\@a</code>、<code>\%h</code>、<code>\&amp;f</code>、<code>$$r</code>、<code>@$r</code>、<code>%$r</code>、<code>$r-&gt;[0]</code>、<code>&quot;$ref&quot;</code> の <code>ARRAY(0x...)</code> 表示、リファレンスの <code>==</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>undef $x</code> / <code>undef @a</code> / <code>undef %h</code>、<code>defined</code>、<code>local $_</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Scalar::Util</code>(<code>blessed reftype looks_like_number refaddr</code>)、<code>use constant</code></td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td>リファレンスへのリファレンスの <code>ref(\\$x)</code></td>
+<td>🟡</td>
+<td><code>SCALAR</code> を返します(Perl は <code>REF</code>)</td>
+</tr>
+<tr>
+<td><code>AUTOLOAD</code>, <code>DESTROY</code>, <code>use overload</code>, <code>tie</code></td>
+<td>➖</td>
+<td></td>
+</tr>
+<tr>
+<td><code>\$h{k}</code> / <code>\$a[0]</code>(要素へのリファレンス)</td>
+<td>➖</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h2 id="ブラウザではできないもの"><a class="anchor" href="#ブラウザではできないもの" aria-hidden="true">#</a>ブラウザではできないもの</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>分野</th>
+<th>関数</th>
+</tr>
+</thead><tbody><tr>
+<td>ファイルとディレクトリ</td>
+<td><code>open</code> <code>close</code> <code>print FH</code> <code>&lt;FH&gt;</code> <code>readline</code> <code>eof</code> <code>seek</code> <code>tell</code> <code>opendir</code> <code>readdir</code> <code>mkdir</code> <code>rmdir</code> <code>unlink</code> <code>rename</code> <code>stat</code> <code>lstat</code> <code>chdir</code> <code>glob</code> <code>-e -f -d -r -w -x -s</code></td>
+</tr>
+<tr>
+<td>プロセス</td>
+<td><code>system</code> <code>exec</code> <code>fork</code> <code>wait</code> <code>waitpid</code> <code>kill</code> <code>`backticks`</code> <code>%SIG</code> <code>$$</code> <code>getppid</code></td>
+</tr>
+<tr>
+<td>ネットワークとユーザー</td>
+<td><code>socket</code> <code>connect</code> <code>bind</code> <code>listen</code> <code>accept</code> <code>getpwnam</code> <code>getlogin</code></td>
+</tr>
+<tr>
+<td>端末からの入力</td>
+<td><code>&lt;STDIN&gt;</code> <code>getc</code> <code>read</code> <code>sysread</code> <code>syswrite</code> (フォームの入力欄と <code>$(&quot;#input&quot;)-&gt;val</code> を使ってください)</td>
+</tr>
+</tbody></table></div>
+<p><code>%ENV</code> と <code>@ARGV</code> は存在しますが空です。</p>
+<p>足りないものがあれば、1行のプログラムと本物の Perl の出力を添えて <a href="https://github.com/satorunet/perl2js/issues" target="_blank" rel="noopener">Issue</a> でお知らせください。</p>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+</div>
+<script>
+(function () {                                              // mobile menu + highlight the section being read
+  var b = document.querySelector('button.menu'), side = document.querySelector('nav.side');
+  b.addEventListener('click', function () { var o = side.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  side.addEventListener('click', function (e) { if (e.target.closest('li a')) side.classList.remove('open'); });
+  var links = [].slice.call(side.querySelectorAll('details[open] li a')), heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+  function spy() { var y = window.scrollY + 90, cur = -1; heads.forEach(function (h, i) { if (h && h.offsetTop <= y) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+  window.addEventListener('scroll', spy, { passive: true }); spy();
+  var on = side.querySelector('a[aria-current]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+})();
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

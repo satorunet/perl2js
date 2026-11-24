@@ -75,7 +75,7 @@ year 2026, month 11, day 24
 
 ## Documentation
 
-Full guides (every `perl` example is checked against real Perl): **[Syntax](docs/syntax.md)** · **[Bundled modules](docs/modules.md)** · **[Popular CPAN modules: status](docs/cpan.md)** · **[Write your own module](docs/writing-modules.md)** · [Browser use](docs/browser.md) · [Differences from Perl](docs/differences.md). Web version: <https://satoru.net/perl2js/docs/README.html>
+Full guides (every `perl` example is checked against real Perl): **[Syntax](docs/syntax.md)** · **[Built-in functions](docs/functions.md)** · **[Bundled modules](docs/modules.md)** · **[Popular CPAN modules: status](docs/cpan.md)** · **[Write your own module](docs/writing-modules.md)** · [Browser use](docs/browser.md) · [Differences from Perl](docs/differences.md). Web version: <https://satoru.net/perl2js/docs/README.html>
 
 ## Modules are loaded on demand
 

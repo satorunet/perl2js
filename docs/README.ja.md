@@ -8,6 +8,7 @@ Perl2JS は、Perl 風の言語を **ブラウザ上で** JavaScript にコン�
 | やりたいこと | 読むページ |
 |---|---|
 | 使える Perl の構文を例つきで知りたい | **[対応している構文](syntax.ja.md)** |
+| 使える組み込み関数・使えない関数を知りたい | **[組み込み関数](functions.ja.md)** |
 | Perl と JavaScript を混ぜて使いたい (`Math.max`、`document.getElementById`、`alert`) | [Perl + JavaScript ハイブリッド](syntax.ja.md) |
 | `List::Util`、`JSON::PP`、`POSIX`、`DateTime`... を使いたい | **[同梱モジュール](modules.ja.md)** |
 | 有名な CPAN モジュールが使えるか確認したい | **[主要な CPAN モジュールの対応状況](cpan.ja.md)** |

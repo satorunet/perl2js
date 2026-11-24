@@ -28,7 +28,7 @@ const QDELIM = '/|!#([{<\'"~@,%^:;*+';
 const TERMBEFORE = new Set(['and', 'or', 'not', 'xor', 'if', 'unless', 'while', 'until', 'return', 'split',
   'grep', 'map', 'join', 'push', 'unshift', 'print', 'say', 'x', 'eq', 'ne', 'lt', 'gt', 'le', 'ge', 'cmp',
   'elsif', 'foreach', 'for', 'die', 'warn', 'when', 'my', 'our', 'local', 'sort', 'reverse', 'keys', 'values',
-  'scalar', 'defined', 'ref', 'lc', 'uc', 'length', 'else', 'do', 'eval', 'each', 'delete', 'exists', 'wantarray']);
+  'scalar', 'defined', 'ref', 'lc', 'uc', 'length', 'else', 'do', 'eval', 'each', 'undef', 'delete', 'exists', 'wantarray']);
 const OPS3 = ['<=>', '**=', '||=', '&&=', '//=', '...'];
 const OPS2 = ['=~', '!~', '==', '!=', '<=', '>=', '&&', '||', '//', '++', '--', '+=', '-=', '*=', '/=', '.=',
   '%=', '->', '=>', '..', '**', '<<', '>>'];
@@ -674,10 +674,55 @@ function rewriteJsDots(T) {              // Math.max(1, 2)  document.getElementB
   return false;
 }
 
+function rewriteListIndex(T) {          // (10, 20, 30)[1]  ==>  [10, 20, 30][1]      (a comma list, not a call)
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    if (!O(T[i], '(')) continue;
+    const p = T[i - 1];
+    if (p && (p.t === 'id' && !['return', 'print', 'push', 'unshift', 'my', 'our', 'local', 'join', 'say'].includes(p.v) || p.t === 'var' || p.t === 'deref' || O(p, ')') || O(p, ']'))) continue;
+    const c = matching(T, i);
+    if (c < 0 || !O(T[c + 1], '[') || T[c + 1].sp) continue;
+    let d = 0, comma = false;
+    for (let k = i + 1; k < c; k++) { const u = T[k]; if (u.t === 'op') { if ('([{'.includes(u.v)) d++; else if (')]}'.includes(u.v)) d--; else if (u.v === ',' && d === 0) comma = true; } }
+    if (!comma) continue;
+    T[i] = tok.op('['); T[c] = tok.op(']');
+    T[i].sp = false; T[i].lit = true; T[c].lit = true;
+    if (O(p, '+') && T[i - 2] && T[i - 2].t === 'id') { T.splice(i - 1, 1); }            // print +(1,2,3)[1]
+    return true;
+  }
+  return false;
+}
+
+function rewriteSubstr(T) {              // substr($s, o, l, repl)  and  substr($s, o, l) = repl   ==>   $s = substr4_($s, o, l, repl)
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && T[i].v === 'substr' && O(T[i + 1], '(') && T[i + 2] && T[i + 2].t === 'var' && T[i + 2].sig === '$' && !T[i + 2].elem && O(T[i + 3], ','))) continue;
+    if (T[i - 1] && O(T[i - 1], '->')) continue;
+    const c = matching(T, i + 1);
+    const args = []; let d = 0, cur = [];
+    for (let k = i + 2; k < c; k++) { const u = T[k]; if (u.t === 'op') { if ('([{'.includes(u.v)) d++; else if (')]}'.includes(u.v)) d--; else if (u.v === ',' && d === 0) { args.push(cur); cur = []; continue; } } cur.push(u); }
+    args.push(cur);
+    const v = T[i + 2];
+    const join = (a) => a.reduce((acc, x, n) => (n ? acc.concat([tok.op(',')], x) : x), []);
+    if (args.length === 4) {
+      T.splice(i, c + 1 - i, tok.op('('), Object.assign({}, v), tok.op('='), tok.id('substr4_'), tok.op('('), ...join(args), tok.op(')'), tok.op(')'));
+      return true;
+    }
+    if ((args.length === 2 || args.length === 3) && O(T[c + 1], '=')) {
+      const end = stmtEnd(T, c + 2);
+      let rhs = T.slice(c + 2, end);
+      const len = args.length === 3 ? args[2] : [tok.id('undef')];
+      T.splice(i, end - i, tok.op('('), Object.assign({}, v), tok.op('='), tok.id('substr4_'), tok.op('('), ...args[0], tok.op(','), ...args[1], tok.op(','), ...len, tok.op(','), tok.op('('), ...rhs, tok.op(')'), tok.op(')'), tok.op(')'));
+      return true;
+    }
+  }
+  return false;
+}
+
 function rewriteDelete(T) {            // delete $h{k} / delete $r->{a}{b}  ==>  hdel_(base, key)   (returns the removed value like Perl)
   const O = (t, v) => t && t.t === 'op' && t.v === v;
   for (let i = 0; i < T.length; i++) {
-    if (!(T[i].t === 'id' && T[i].v === 'delete' && T[i + 1] && T[i + 1].t === 'var' && T[i + 1].sig === '$' && !(T[i - 1] && O(T[i - 1], '->')))) continue;
+    if (!(T[i].t === 'id' && (T[i].v === 'delete' || T[i].v === 'exists') && T[i + 1] && T[i + 1].t === 'var' && T[i + 1].sig === '$' && !(T[i - 1] && O(T[i - 1], '->')))) continue;
     const v = T[i + 1];
     let k = i + 2; const groups = [];
     if (v.elem === '{') { const c = matching(T, k); groups.push([k, c]); k = c + 1; }
@@ -694,7 +739,7 @@ function rewriteDelete(T) {            // delete $h{k} / delete $r->{a}{b}  ==> 
     let base;
     if (groups.length === 1 && v.elem) base = [tok.op('\\'), { t: 'var', sig: '%', name: v.name, sp: false }];
     else base = T.slice(i + 1, last[2] !== undefined ? last[2] : last[0]).map((x, n) => (n === 0 && groups.length === 1 ? Object.assign({}, x, { elem: null }) : x));
-    T.splice(i, last[1] + 1 - i, tok.id('hdel_'), tok.op('('), ...base, tok.op(','), ...key, tok.op(')'));
+    T.splice(i, last[1] + 1 - i, tok.id(T[i].v === 'exists' ? 'hexists_' : 'hdel_'), tok.op('('), ...base, tok.op(','), ...key, tok.op(')'));
     return true;
   }
   return false;
@@ -819,7 +864,7 @@ function rewriteHashList(T) {
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteJsDots(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteListIndex(T) || rewriteSubstr(T) || rewriteJsDots(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -831,9 +876,9 @@ function prepare(T) {
 const BUILTINS = new Set(['print', 'say', 'printf', 'sprintf', 'push', 'pop', 'shift', 'unshift', 'splice', 'join',
   'split', 'map', 'grep', 'sort', 'reverse', 'keys', 'values', 'exists', 'defined', 'scalar', 'length', 'substr',
   'index', 'rindex', 'uc', 'lc', 'ucfirst', 'lcfirst', 'abs', 'int', 'sqrt', 'sin', 'cos', 'atan2', 'exp', 'log',
-  'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode', 'sleep', 'select']);
+  'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode', 'sleep', 'select', 'quotemeta']);
 const UNARY = new Set(['length', 'defined', 'ref', 'scalar', 'uc', 'lc', 'ucfirst', 'lcfirst', 'int', 'abs', 'sqrt',
-  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime', 'exit']);
+  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime', 'exit', 'quotemeta']);
 const LISTFN = new Set(['map', 'grep', 'sort', 'split', 'keys', 'values', 'reverse', 'splice', 'localtime', 'gmtime']);
 const DEFARG = new Set(['ord', 'chr', 'lc', 'uc', 'lcfirst', 'ucfirst', 'length', 'abs', 'int', 'sqrt', 'sin', 'cos', 'exp', 'log', 'hex', 'oct', 'defined', 'ref']);   // `$_` when called without an argument
 const NOARG = new Set(['shift', 'pop', 'time', 'rand', 'localtime', 'gmtime', 'srand']);
@@ -1434,7 +1479,12 @@ function translate(T, opts) {
             if (next && next.t === 'id' && /^[A-Z_][A-Z0-9_]*$/.test(next.v)) { emit(kw + ' ' + next.v); i++; } else emit(kw);       // last OUTER;
             break;
           }
-          case 'undef': emit('undefined'); break;
+          case 'undef':
+            if (next && next.t === 'var' && !next.elem && !(T[i + 2] && T[i + 2].t === 'op' && (T[i + 2].v === '->' || T[i + 2].v === '['))) {
+              const nmv = next.sig === '%' ? '_h$' + safeName(next.name) : vname(next);                                       // undef $x;  undef @a;  undef %h;
+              emit(next.sig === '$' ? '(' + nmv + ' = undefined)' : next.sig === '@' ? '(' + nmv + '.length = 0, undefined)' : '(Object.keys(' + nmv + ').forEach((k) => delete ' + nmv + '[k]), undefined)'); i++;
+            } else emit('undefined');
+            break;
           case 'return': {
             const lr = listReturn(i + 1);
             if (lr === 'wrap') { emit('return ['); st.push({ k: 'retlist', close: ']' }); }
@@ -1510,7 +1560,7 @@ function translate(T, opts) {
             isOpener = true;
             const sub = (prev && prev.t === 'var' && prev.elem === '[') || isOp(prev, '->') ||
               (!t.sp && prev && (isOp(prev, ']') || (isOp(prev, '}') && prev.kind === 'sub')));
-            const sliceable = !t.sp && prev && (isOp(prev, ')') || (prev.t === 'var' && prev.sig === '@' && !prev.elem && !(T[i - 2] && T[i - 2].t === 'deref')));
+            const sliceable = !t.sp && prev && (isOp(prev, ')') || (isOp(prev, ']') && prev.lit) || (prev.t === 'var' && prev.sig === '@' && !prev.elem && !(T[i - 2] && T[i - 2].t === 'deref')));
             if (sliceable && (hasComma(i) || hasRange(i))) {
               emit('._slice(_L(['); st.push({ k: 'brk', close: ']))', argc: 0 });
             }
@@ -1622,7 +1672,7 @@ function translate(T, opts) {
               i++;
             } else if (nx && nx.t === 'subst') {
               const lhs = lastTerm();
-              emit(' = ' + lhs + '.$sub(' + subArgs(nx) + ')'); i++;
+              emit(/r/.test(nx.flags) ? '.$sub(' + subArgs(nx) + ')' : ' = ' + lhs + '.$sub(' + subArgs(nx) + ')'); i++;
             } else {
               emit(v === '=~' ? '.$m(' : '.$nm('); pendOne = true;
             }
@@ -1788,7 +1838,7 @@ function translate(T, opts) {
       return;
     }
     const minusTerm = isOp(next, '-') && T[i + 2] && !T[i + 2].sp && (T[i + 2].t === 'num' || T[i + 2].t === 'var' || T[i + 2].t === 'id' || isOp(T[i + 2], '('));   // print -7, ...
-    if (!startsTerm(next) && !minusTerm) { emit(name + '()'); return; }
+    if (!startsTerm(next) && !minusTerm) { emit((v === 'print' || v === 'say') && (!next || (next.t === 'op' && (next.v === ';' || next.v === '}'))) ? name + '($_)' : name + '()'); return; }
     emit(name + '('); st.push({ k: 'call', close: ')', callee: v, argc: 0 });
   }
 }
@@ -1814,7 +1864,7 @@ function sprintf_(fmt, ...args) {
       case 's': s = String(_s(a)); if (prec !== undefined) s = s.slice(0, +prec); break;
       case 'c': s = String.fromCharCode(a); break;
       case 'd': case 'i': case 'u': s = String(Math.trunc(Number(a) || 0)); break;
-      case 'f': s = (Number(a) || 0).toFixed(prec === undefined ? 6 : +prec); break;
+      case 'f': s = toFixedC(Number(a) || 0, prec === undefined ? 6 : +prec); break;
       case 'e': case 'E': s = (Number(a) || 0).toExponential(prec === undefined ? 6 : +prec).replace(/e([+-])(\d)$/, 'e$10$2'); if (conv === 'E') s = s.toUpperCase(); break;
       case 'g': s = String(Number(Number(a).toPrecision(prec === undefined ? 6 : +prec || 1))); break;
       case 'x': s = (Number(a) >>> 0).toString(16); if (flags.includes('#')) s = '0x' + s; break;
@@ -1940,12 +1990,15 @@ const RT = {
   shift_: (a) => a.shift(),
   unshift_: (a, ...v) => a.unshift(...v),
   deref_: (x) => x,
+  substr4_: (s, off, len, repl) => { s = String(_s(s)); off = +off; if (off < 0) off = Math.max(0, s.length + off); len = len == null ? s.length - off : +len < 0 ? Math.max(0, s.length - off + +len) : +len; return s.slice(0, off) + _s(repl) + s.slice(off + len); },
+  quotemeta_: (x) => String(_s(x)).replace(/[^A-Za-z0-9_]/g, '\\$&'),
   _h$NAMED_: new Proxy({}, { get: (t, k) => (typeof k === 'string' && LAST && LAST.groups ? LAST.groups[k] : undefined), has: (t, k) => !!(LAST && LAST.groups && k in LAST.groups) }),
   $0: 'main.p2j', _a$ARGV: [], _h$ENV: {},
   aset_: (a, v) => { v = Array.isArray(v) ? Array.from(v) : v === undefined ? [] : [v]; a.splice(0, a.length, ...v); return a; },
   asetl_: (a, v) => { a.splice(0, a.length, ...v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])); return a; },
   hset_: (h, v) => { const src = Array.isArray(v) ? v : v && typeof v === 'object' ? Object.assign({}, v) : []; for (const k of Object.keys(h)) delete h[k]; if (Array.isArray(src)) for (let n = 0; n < src.length; n += 2) h[_s(src[n])] = src[n + 1]; else Object.assign(h, src); return h; },
   hsetl_: (h, v) => RT.hset_(h, v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])),
+  hexists_: (h, k) => h != null && typeof h === 'object' && _s(k) in h,
   hdel_: (h, k) => { const r = h[k]; delete h[k]; return r; },
   _sref: (g, s) => new SRef(g, s),
   _sconst: (x) => new SRef(() => x, null),
@@ -2042,6 +2095,17 @@ const RT = {
   _cu: (x) => { x = String(x); return x.charAt(0).toUpperCase() + x.slice(1); }, _cl: (x) => { x = String(x); return x.charAt(0).toLowerCase() + x.slice(1); },
 };
 // Perl prints numbers with %.15g (0.1+0.2 => 0.3, 1e15 => 1e+15); JS would print 0.30000000000000004
+function toFixedC(v, p) {                                  // like C's printf("%.Nf"): an exact tie rounds to even (0.5 -> 0, 1.5 -> 2, 2.5 -> 2)
+  if (!Number.isFinite(v) || Math.abs(v) >= 1e21 || p > 60) return v.toFixed(Math.min(p, 100));
+  const exact = Math.abs(v).toFixed(Math.min(100, p + 30)), frac = exact.split('.')[1] || '';
+  if (/^50*$/.test(frac.slice(p))) {                       // exactly halfway
+    const down = Math.abs(v).toFixed(p + 1).slice(0, -1).replace(/\.$/, '');          // truncated at p digits
+    const lastDigit = +down.replace('.', '').slice(-1);
+    const up = lastDigit % 2 === 0 ? down : (Math.abs(v) + Math.pow(10, -p) / 2).toFixed(p);
+    return (v < 0 ? '-' : '') + (lastDigit % 2 === 0 ? down : up);
+  }
+  return v.toFixed(p);
+}
 function fmtNum(v) {
   if (Number.isInteger(v) && Math.abs(v) < 1e15) return String(v);
   if (!isFinite(v)) return isNaN(v) ? 'NaN' : v > 0 ? 'Inf' : '-Inf';

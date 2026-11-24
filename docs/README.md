@@ -8,6 +8,7 @@ Every `perl` code block in these pages is run through real Perl 5.40 and Perl2JS
 | I want to... | Read |
 |---|---|
 | see which Perl syntax works, with examples | **[Supported syntax](syntax.md)** |
+| see which built-in functions work (and which do not) | **[Built-in functions](functions.md)** |
 | mix Perl and JavaScript (`Math.max`, `document.getElementById`, `alert`) | [Perl + JavaScript hybrid](syntax.md#perl--javascript-hybrid) |
 | use `List::Util`, `JSON::PP`, `POSIX`, `DateTime`... | **[Bundled modules](modules.md)** |
 | check whether a popular CPAN module is available | **[Popular CPAN modules: status](cpan.md)** |
