@@ -9,13 +9,24 @@ const { marked } = require('marked');
 const DOCS = path.join(__dirname, '..', 'docs');
 const V = '20261124f';                                   // cache-buster for assets, same as index.html
 
-const NAV = {
-  en: [['README', 'Overview'], ['syntax', 'Syntax'], ['modules', 'Modules'], ['cpan', 'CPAN status'], ['writing-modules', 'Write a module'], ['browser', 'Browser'], ['differences', 'Differences']],
-  ja: [['README', '概要'], ['syntax', '構文'], ['modules', 'モジュール'], ['cpan', 'CPAN 対応状況'], ['writing-modules', 'モジュールを作る'], ['browser', 'ブラウザで使う'], ['differences', 'Perl との違い']],
+// side menu: groups of pages (file name without .md)
+const GROUPS = {
+  en: [
+    ['Start', [['README', 'Overview']]],
+    ['The language', [['syntax', 'Supported syntax'], ['functions', 'Built-in functions'], ['differences', 'Differences from Perl']]],
+    ['Modules', [['modules', 'Bundled modules'], ['cpan', 'Popular CPAN modules'], ['writing-modules', 'Write your own module']]],
+    ['Use it', [['browser', 'In the browser']]],
+  ],
+  ja: [
+    ['はじめに', [['README', '概要']]],
+    ['言語', [['syntax', '対応している構文'], ['functions', '組み込み関数'], ['differences', 'Perl との違い']]],
+    ['モジュール', [['modules', '同梱モジュール'], ['cpan', '人気のCPANモジュール'], ['writing-modules', '自分でモジュールを作る']]],
+    ['使い方', [['browser', 'ブラウザで使う']]],
+  ],
 };
 const T = {
-  en: { home: 'Playground', docs: 'Docs', lang: '日本語', footer: 'Source and issues:', toc: 'On this page', copy: 'Copy', copied: 'Copied ✓', run: 'Open in playground' },
-  ja: { home: 'プレイグラウンド', docs: 'ドキュメント', lang: 'English', footer: 'ソースコード・Issue:', toc: 'このページの内容', copy: 'コピー', copied: 'コピーしました ✓', run: 'プレイグラウンドで開く' },
+  en: { home: 'Playground', docs: 'Docs', lang: '日本語', footer: 'Source and issues:', toc: 'On this page', menu: 'Menu', contents: 'Contents', copy: 'Copy', copied: 'Copied ✓', run: 'Open in playground' },
+  ja: { home: 'プレイグラウンド', docs: 'ドキュメント', lang: 'English', footer: 'ソースコード・Issue:', toc: 'このページの内容', menu: 'メニュー', contents: '目次', copy: 'コピー', copied: 'コピーしました ✓', run: 'プレイグラウンドで開く' },
 };
 
 const slug = (s) => s.toLowerCase().replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, '').replace(/[^\p{L}\p{N}\- _]/gu, '').trim().replace(/ /g, '-');
@@ -49,6 +60,35 @@ function render(md, lang) {
   return { html, toc };
 }
 
+function headingsOf(name, lang) {
+  const file = path.join(DOCS, name + (lang === 'ja' ? '.ja' : '') + '.md');
+  if (!fs.existsSync(file)) return [];
+  const out = []; let fence = false;
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    if (/^```/.test(line)) fence = !fence;
+    const m = !fence && /^##\s+(.+)$/.exec(line);
+    if (m) out.push({ id: slug(m[1]), text: m[1].replace(/`/g, '') });
+  }
+  return out;
+}
+
+function sidebar(name, lang) {
+  const t = T[lang], sfx = lang === 'ja' ? '.ja' : '';
+  let h = `<nav class="side" aria-label="${t.contents}"><div class="side-title">${t.contents}</div>`;
+  for (const [g, pages] of GROUPS[lang]) {
+    h += `<div class="grp">${esc(g)}</div>`;
+    for (const [n, label] of pages) {
+      if (!fs.existsSync(path.join(DOCS, n + sfx + '.md'))) continue;
+      const cur = n === name;
+      const heads = headingsOf(n, lang);
+      h += `<details class="pg"${cur ? ' open' : ''}><summary><a href="${n}${sfx}.html"${cur ? ' aria-current="page"' : ''}>${esc(label)}</a></summary>`;
+      if (heads.length) h += '<ul>' + heads.map((x) => `<li><a href="${n}${sfx}.html#${x.id}">${esc(x.text)}</a></li>`).join('') + '</ul>';
+      h += '</details>';
+    }
+  }
+  return h + '</nav>';
+}
+
 function page(name, lang) {
   const file = path.join(DOCS, name + (lang === 'ja' ? '.ja' : '') + '.md');
   if (!fs.existsSync(file)) return null;
@@ -60,8 +100,7 @@ function page(name, lang) {
   const t = T[lang];
   const other = lang === 'en' ? name + '.ja.html' : name + '.html';
   const otherExists = fs.existsSync(path.join(DOCS, name + (lang === 'en' ? '.ja' : '') + '.md'));
-  const nav = NAV[lang].map(([n, label]) => `<a href="${n}${lang === 'ja' ? '.ja' : ''}.html"${n === name ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('');
-  const tocHtml = toc.length > 2 ? `<nav class="toc" aria-label="${t.toc}"><b>${t.toc}</b>${toc.map((x) => `<a href="#${x.id}">${esc(x.text)}</a>`).join('')}</nav>` : '';
+  const side = sidebar(name, lang);
   const desc = (/^([^#\n|`\-*>\[].{30,200})$/m.exec(md) || [, ''])[1].replace(/[*`\[\]]/g, '').slice(0, 160);
   return `<!doctype html>
 <html lang="${lang}">
@@ -76,21 +115,30 @@ function page(name, lang) {
 <body>
 <header class="top">
   <a class="brand" href="./${lang === 'ja' ? 'README.ja.html' : 'README.html'}"><picture><source srcset="../assets/logo.svg?v=${V}" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=${V}" alt="Perl2JS" height="34"></picture></a>
-  <nav class="main">${nav}</nav>
+  <button class="menu" type="button" aria-label="${t.menu}" aria-expanded="false">☰ ${t.menu}</button>
   <span class="sp"></span>
   <a class="pill" href="../">${t.home}</a>
   ${otherExists ? `<a class="pill" href="${other}" hreflang="${lang === 'en' ? 'ja' : 'en'}">${t.lang}</a>` : ''}
   <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
 </header>
 <div class="layout">
+${side}
 <main>
 <h1>${esc(title)}</h1>
 ${html}
 <footer>${t.footer} <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
 </main>
-${tocHtml}
 </div>
 <script>
+(function () {                                              // mobile menu + highlight the section being read
+  var b = document.querySelector('button.menu'), side = document.querySelector('nav.side');
+  b.addEventListener('click', function () { var o = side.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  side.addEventListener('click', function (e) { if (e.target.closest('li a')) side.classList.remove('open'); });
+  var links = [].slice.call(side.querySelectorAll('details[open] li a')), heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+  function spy() { var y = window.scrollY + 90, cur = -1; heads.forEach(function (h, i) { if (h && h.offsetTop <= y) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+  window.addEventListener('scroll', spy, { passive: true }); spy();
+  var on = side.querySelector('a[aria-current]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+})();
 document.querySelectorAll('.code .copy').forEach(function (b) {
   b.addEventListener('click', function () {
     var text = b.closest('.code').querySelector('code').textContent;

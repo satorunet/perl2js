@@ -11,13 +11,14 @@
 <body>
 <header class="top">
   <a class="brand" href="./README.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
-  <nav class="main"><a href="README.html">Overview</a><a href="syntax.html">Syntax</a><a href="modules.html" aria-current="page">Modules</a><a href="cpan.html">CPAN status</a><a href="writing-modules.html">Write a module</a><a href="browser.html">Browser</a><a href="differences.html">Differences</a></nav>
+  <button class="menu" type="button" aria-label="Menu" aria-expanded="false">☰ Menu</button>
   <span class="sp"></span>
   <a class="pill" href="../">Playground</a>
   <a class="pill" href="modules.ja.html" hreflang="ja">日本語</a>
   <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
 </header>
 <div class="layout">
+<nav class="side" aria-label="Contents"><div class="side-title">Contents</div><div class="grp">Start</div><details class="pg"><summary><a href="README.html">Overview</a></summary><ul><li><a href="README.html#the-30-second-version">The 30-second version</a></li></ul></details><div class="grp">The language</div><details class="pg"><summary><a href="syntax.html">Supported syntax</a></summary><ul><li><a href="syntax.html#variables">Variables</a></li><li><a href="syntax.html#arrays-hashes-and-references">Arrays, hashes and references</a></li><li><a href="syntax.html#strings">Strings</a></li><li><a href="syntax.html#numbers-and-operators">Numbers and operators</a></li><li><a href="syntax.html#control-flow">Control flow</a></li><li><a href="syntax.html#subroutines">Subroutines</a></li><li><a href="syntax.html#regular-expressions">Regular expressions</a></li><li><a href="syntax.html#packages-and-objects">Packages and objects</a></li><li><a href="syntax.html#errors">Errors</a></li><li><a href="syntax.html#other-features">Other features</a></li><li><a href="syntax.html#perl--javascript-hybrid">Perl + JavaScript hybrid</a></li><li><a href="syntax.html#built-in-functions">Built-in functions</a></li></ul></details><details class="pg"><summary><a href="differences.html">Differences from Perl</a></summary><ul><li><a href="differences.html#numbers-and-strings">Numbers and strings</a></li><li><a href="differences.html#references">References</a></li><li><a href="differences.html#context">Context</a></li><li><a href="differences.html#not-implemented">Not implemented</a></li><li><a href="differences.html#waiting">Waiting</a></li><li><a href="differences.html#things-that-are-better-than-perl-in-a-browser">Things that are better than Perl in a browser</a></li><li><a href="differences.html#names">Names</a></li></ul></details><div class="grp">Modules</div><details class="pg" open><summary><a href="modules.html" aria-current="page">Bundled modules</a></summary><ul><li><a href="modules.html#lists-and-types">Lists and types</a></li><li><a href="modules.html#data-and-text">Data and text</a></li><li><a href="modules.html#encoding-and-hashing">Encoding and hashing</a></li><li><a href="modules.html#time">Time</a></li><li><a href="modules.html#control-and-testing">Control and testing</a></li><li><a href="modules.html#files-and-math">Files and math</a></li></ul></details><details class="pg"><summary><a href="cpan.html">Popular CPAN modules</a></summary><ul><li><a href="cpan.html#lists-data-and-text">Lists, data and text</a></li><li><a href="cpan.html#encoding-and-hashing">Encoding and hashing</a></li><li><a href="cpan.html#time">Time</a></li><li><a href="cpan.html#control-flow-and-testing">Control flow and testing</a></li><li><a href="cpan.html#files-math-system">Files, math, system</a></li><li><a href="cpan.html#web-and-databases">Web and databases</a></li></ul></details><details class="pg"><summary><a href="writing-modules.html">Write your own module</a></summary><ul><li><a href="writing-modules.html#1-create-the-file">1. Create the file</a></li><li><a href="writing-modules.html#2-use-it">2. Use it</a></li><li><a href="writing-modules.html#3-where-it-is-looked-up">3. Where it is looked up</a></li><li><a href="writing-modules.html#4-perl-code-as-a-library">4. Perl code as a library</a></li></ul></details><div class="grp">Use it</div><details class="pg"><summary><a href="browser.html">In the browser</a></summary><ul><li><a href="browser.html#loading-it">Loading it</a></li><li><a href="browser.html#perl-in-a-page">Perl in a page</a></li><li><a href="browser.html#the-dom-and-the-jquery-style">The DOM and the jQuery-style $</a></li><li><a href="browser.html#the-javascript-api">The JavaScript API</a></li><li><a href="browser.html#the-playground">The playground</a></li><li><a href="browser.html#in-nodejs">In Node.js</a></li></ul></details></nav>
 <main>
 <h1>Modules</h1>
 <p>Modules are separate files in <a href="https://github.com/satorunet/perl2js/blob/main/modules" target="_blank" rel="noopener"><code>modules/</code></a>. <code>use List::Util qw(sum);</code> loads <code>modules/List/Util.js</code> the first time a program asks for it,
@@ -261,9 +262,17 @@ printf &quot;deg2rad(90)=%.8f deg2rad(450)=%.8f rad2deg(pi)=%.4f\n&quot;, deg2ra
 
 <footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
 </main>
-<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#lists-and-types">Lists and types</a><a href="#data-and-text">Data and text</a><a href="#encoding-and-hashing">Encoding and hashing</a><a href="#time">Time</a><a href="#control-and-testing">Control and testing</a><a href="#files-and-math">Files and math</a></nav>
 </div>
 <script>
+(function () {                                              // mobile menu + highlight the section being read
+  var b = document.querySelector('button.menu'), side = document.querySelector('nav.side');
+  b.addEventListener('click', function () { var o = side.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  side.addEventListener('click', function (e) { if (e.target.closest('li a')) side.classList.remove('open'); });
+  var links = [].slice.call(side.querySelectorAll('details[open] li a')), heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+  function spy() { var y = window.scrollY + 90, cur = -1; heads.forEach(function (h, i) { if (h && h.offsetTop <= y) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+  window.addEventListener('scroll', spy, { passive: true }); spy();
+  var on = side.querySelector('a[aria-current]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+})();
 document.querySelectorAll('.code .copy').forEach(function (b) {
   b.addEventListener('click', function () {
     var text = b.closest('.code').querySelector('code').textContent;

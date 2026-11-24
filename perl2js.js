@@ -28,7 +28,7 @@ const QDELIM = '/|!#([{<\'"~@,%^:;*+';
 const TERMBEFORE = new Set(['and', 'or', 'not', 'xor', 'if', 'unless', 'while', 'until', 'return', 'split',
   'grep', 'map', 'join', 'push', 'unshift', 'print', 'say', 'x', 'eq', 'ne', 'lt', 'gt', 'le', 'ge', 'cmp',
   'elsif', 'foreach', 'for', 'die', 'warn', 'when', 'my', 'our', 'local', 'sort', 'reverse', 'keys', 'values',
-  'scalar', 'defined', 'ref', 'lc', 'uc', 'length', 'else', 'do', 'eval']);
+  'scalar', 'defined', 'ref', 'lc', 'uc', 'length', 'else', 'do', 'eval', 'each', 'delete', 'exists', 'wantarray']);
 const OPS3 = ['<=>', '**=', '||=', '&&=', '//=', '...'];
 const OPS2 = ['=~', '!~', '==', '!=', '<=', '>=', '&&', '||', '//', '++', '--', '+=', '-=', '*=', '/=', '.=',
   '%=', '->', '=>', '..', '**', '<<', '>>'];
@@ -171,7 +171,7 @@ function lex(src) {
       if ((m = /^\$([A-Za-z_]\w*(?:::\w+)*|\d+|[@!&|,\\\/]|\+(?=\{))/.exec(rest))) {
         i += m[0].length;
         const nx = src[i];
-        push({ t: 'var', sig: '$', name: m[1], elem: nx === '[' ? '[' : nx === '{' ? '{' : null });
+        push({ t: 'var', sig: '$', name: m[1] === '+' ? 'NAMED_' : m[1], elem: nx === '[' ? '[' : nx === '{' ? '{' : null });
         continue;
       }
       if (src[i + 1] === '$' || src[i + 1] === '{') { push({ t: 'deref', sig: '$' }); i++; continue; }
@@ -327,6 +327,7 @@ function rewriteMods(T) {
       } else if (v === ';' && stk.length === startDepth) start = i + 1;
       continue;
     }
+    if (t.t === 'id' && i === start && stk.length === startDepth && /^[A-Z_][A-Z0-9_]*$/.test(t.v) && T[i + 1] && T[i + 1].t === 'op' && T[i + 1].v === ':' && !(T[i + 2] && T[i + 2].t === 'op' && T[i + 2].v === ':')) { start = i + 2; continue; }   // LABEL: for ...
     if (t.t === 'id' && MODS.has(t.v) && !t.dwTail && i > start && stk.length === startDepth) {
       let d = 0, j = i + 1;
       for (; j < T.length; j++) {
@@ -832,10 +833,10 @@ const BUILTINS = new Set(['print', 'say', 'printf', 'sprintf', 'push', 'pop', 's
   'index', 'rindex', 'uc', 'lc', 'ucfirst', 'lcfirst', 'abs', 'int', 'sqrt', 'sin', 'cos', 'atan2', 'exp', 'log',
   'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode', 'sleep', 'select']);
 const UNARY = new Set(['length', 'defined', 'ref', 'scalar', 'uc', 'lc', 'ucfirst', 'lcfirst', 'int', 'abs', 'sqrt',
-  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime']);
+  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime', 'exit']);
 const LISTFN = new Set(['map', 'grep', 'sort', 'split', 'keys', 'values', 'reverse', 'splice', 'localtime', 'gmtime']);
 const DEFARG = new Set(['ord', 'chr', 'lc', 'uc', 'lcfirst', 'ucfirst', 'length', 'abs', 'int', 'sqrt', 'sin', 'cos', 'exp', 'log', 'hex', 'oct', 'defined', 'ref']);   // `$_` when called without an argument
-const NOARG = new Set(['shift', 'pop', 'time', 'rand', 'localtime', 'gmtime', 'srand', 'exit']);
+const NOARG = new Set(['shift', 'pop', 'time', 'rand', 'localtime', 'gmtime', 'srand']);
 const NOSPREAD = new Set(['map', 'grep', 'sort', 'scalar', 'keys', 'values', 'reverse', '_list', 'defined', 'exists', 'ref']);
 const FIRSTARR = new Set(['push', 'unshift', 'splice', 'pop', 'shift']);
 const PEND = new Set(['call', 'unary', 'rng', 'exprfn', 'retlist']);
@@ -901,7 +902,7 @@ function vname(t) {
     if (t.elem === '[') return nm === '_' ? '$_args' : '_a$' + safeName(nm);
     if (t.elem === '{') return '_h$' + safeName(nm);
     if (nm === 'this') return 'this';
-    if (nm === '+') return '$NAMED';          // $+{name}: named captures
+    if (nm === '+') return 'NAMED_';          // $+{name}: named captures (hash %+)
     if (nm === '|') return '$AUTOFLUSH';
     if (nm === ',') return '$OFS';
     if (nm === '\\') return '$ORS';
@@ -1609,7 +1610,8 @@ function translate(T, opts) {
             flush(UNARY_ONLY);
             const nx = next;
             const argCtx = T[i - 2] && (isOp(T[i - 2], ',') || (isOp(T[i - 2], '(') && T[i - 3] && T[i - 3].t === 'id' && !['if', 'elsif', 'while', 'unless', 'until', 'and', 'or', 'not', 'for', 'foreach'].includes(T[i - 3].v))) && next && next.t === 're' && T[i + 2] && (isOp(T[i + 2], ')') || isOp(T[i + 2], ','));   // join("|", $s =~ m/(..)/)
-            listRhs = argCtx || lastListClose === i - 1 || (prev && prev.t === 'var' && prev.sig === '@');      // `my ($a, $b) = $s =~ /../` : the match is in list context
+            const asgn = T[i - 2] && isOp(T[i - 2], '=') && T[i - 3] && ((T[i - 3].t === 'var' && T[i - 3].sig === '@') || isOp(T[i - 3], ')'));       // my @n = $s =~ /x/g;   my ($a, $b) = $s =~ /../
+            listRhs = argCtx || asgn || lastListClose === i - 1 || (prev && prev.t === 'var' && prev.sig === '@');      // `my ($a, $b) = $s =~ /../` : the match is in list context
             if (nx && nx.t === 're') {
               emit((v === '=~' ? (listRhs ? '.$ml(' : '.$m(') : '.$nm(') + reLiteral(nx.pat, nx.flags) + ')'); i++;
             } else if (nx && nx.t === 'trans') {
@@ -1651,7 +1653,7 @@ function translate(T, opts) {
             let simple = u && (u.t === 'num' || (u.t === 'var' && u.sig === '$') || (u.t === 'op' && (u.v === ')' || u.v === ']' || (u.v === '}' && u.kind === 'sub'))));
             if (simple && u.t === 'op') { k = findOpen(T, k); while (k > 0 && ((T[k - 1].t === 'id' && !WORDOPS.has(T[k - 1].v)) || T[k - 1].t === 'var' || isOp(T[k - 1], '->'))) k--; }
             const b = T[k - 1];
-            if (b && ((b.t === 'op' && ['*', '/', '%', '**', '.', '!', '\\'].includes(b.v)) || (b.t === 'id' && b.v === 'x') || (b.t === 'op' && (b.v === '-' || b.v === '+') && !valueEnd(T[k - 2])))) simple = false;
+            if (b && ((b.t === 'op' && ['*', '/', '%', '**', '.', '!', '\\'].includes(b.v)) || (b.t === 'id' && b.v === 'x') || (b.t === 'op' && (b.v === '-' || b.v === '+') && !valueEnd(T[k - 2]) && !(b.v === '-' && u.t === 'num')))) simple = false;
             if (simple && isOp(next, '-') && T[i + 2] && T[i + 2].t === 'num') { emit(' .$mod(-' + T[i + 2].v + ')'); i += 2; }
             else if (simple) { emit(' .$mod('); pendOne = true; } else emit(' % ');
             break;
@@ -1938,6 +1940,7 @@ const RT = {
   shift_: (a) => a.shift(),
   unshift_: (a, ...v) => a.unshift(...v),
   deref_: (x) => x,
+  _h$NAMED_: new Proxy({}, { get: (t, k) => (typeof k === 'string' && LAST && LAST.groups ? LAST.groups[k] : undefined), has: (t, k) => !!(LAST && LAST.groups && k in LAST.groups) }),
   $0: 'main.p2j', _a$ARGV: [], _h$ENV: {},
   aset_: (a, v) => { v = Array.isArray(v) ? Array.from(v) : v === undefined ? [] : [v]; a.splice(0, a.length, ...v); return a; },
   asetl_: (a, v) => { a.splice(0, a.length, ...v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])); return a; },

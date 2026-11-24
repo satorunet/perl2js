@@ -11,13 +11,14 @@
 <body>
 <header class="top">
   <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124f" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="34"></picture></a>
-  <nav class="main"><a href="README.ja.html" aria-current="page">概要</a><a href="syntax.ja.html">構文</a><a href="modules.ja.html">モジュール</a><a href="cpan.ja.html">CPAN 対応状況</a><a href="writing-modules.ja.html">モジュールを作る</a><a href="browser.ja.html">ブラウザで使う</a><a href="differences.ja.html">Perl との違い</a></nav>
+  <button class="menu" type="button" aria-label="メニュー" aria-expanded="false">☰ メニュー</button>
   <span class="sp"></span>
   <a class="pill" href="../">プレイグラウンド</a>
   <a class="pill" href="README.html" hreflang="en">English</a>
   <a class="pill" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
 </header>
 <div class="layout">
+<nav class="side" aria-label="目次"><div class="side-title">目次</div><div class="grp">はじめに</div><details class="pg" open><summary><a href="README.ja.html" aria-current="page">概要</a></summary><ul><li><a href="README.ja.html#30-秒でわかる使い方">30 秒でわかる使い方</a></li></ul></details><div class="grp">言語</div><details class="pg"><summary><a href="syntax.ja.html">対応している構文</a></summary><ul><li><a href="syntax.ja.html#変数">変数</a></li><li><a href="syntax.ja.html#配列ハッシュリファレンス">配列、ハッシュ、リファレンス</a></li><li><a href="syntax.ja.html#文字列">文字列</a></li><li><a href="syntax.ja.html#数値と演算子">数値と演算子</a></li><li><a href="syntax.ja.html#制御構文">制御構文</a></li><li><a href="syntax.ja.html#サブルーチン">サブルーチン</a></li><li><a href="syntax.ja.html#正規表現">正規表現</a></li><li><a href="syntax.ja.html#パッケージとオブジェクト">パッケージとオブジェクト</a></li><li><a href="syntax.ja.html#エラー">エラー</a></li><li><a href="syntax.ja.html#その他の機能">その他の機能</a></li><li><a href="syntax.ja.html#perl--javascript-ハイブリッド">Perl + JavaScript ハイブリッド</a></li><li><a href="syntax.ja.html#組み込み関数">組み込み関数</a></li></ul></details><details class="pg"><summary><a href="differences.ja.html">Perl との違い</a></summary><ul><li><a href="differences.ja.html#数値と文字列">数値と文字列</a></li><li><a href="differences.ja.html#リファレンス">リファレンス</a></li><li><a href="differences.ja.html#コンテキスト">コンテキスト</a></li><li><a href="differences.ja.html#未実装">未実装</a></li><li><a href="differences.ja.html#待機sleep">待機(sleep)</a></li><li><a href="differences.ja.html#ブラウザでは-perl-より便利な点">ブラウザでは Perl より便利な点</a></li><li><a href="differences.ja.html#名前">名前</a></li></ul></details><div class="grp">モジュール</div><details class="pg"><summary><a href="modules.ja.html">同梱モジュール</a></summary><ul><li><a href="modules.ja.html#リストと型">リストと型</a></li><li><a href="modules.ja.html#データとテキスト">データとテキスト</a></li><li><a href="modules.ja.html#エンコーディングとハッシュ">エンコーディングとハッシュ</a></li><li><a href="modules.ja.html#時刻">時刻</a></li><li><a href="modules.ja.html#制御とテスト">制御とテスト</a></li><li><a href="modules.ja.html#ファイルと数学">ファイルと数学</a></li></ul></details><details class="pg"><summary><a href="cpan.ja.html">人気のCPANモジュール</a></summary><ul><li><a href="cpan.ja.html#リストデータテキスト">リスト、データ、テキスト</a></li><li><a href="cpan.ja.html#エンコーディングとハッシュ">エンコーディングとハッシュ</a></li><li><a href="cpan.ja.html#時刻">時刻</a></li><li><a href="cpan.ja.html#制御フローとテスト">制御フローとテスト</a></li><li><a href="cpan.ja.html#ファイル数学システム">ファイル、数学、システム</a></li><li><a href="cpan.ja.html#web-とデータベース">Web とデータベース</a></li></ul></details><details class="pg"><summary><a href="writing-modules.ja.html">自分でモジュールを作る</a></summary><ul><li><a href="writing-modules.ja.html#1-ファイルを作る">1. ファイルを作る</a></li><li><a href="writing-modules.ja.html#2-使う">2. 使う</a></li><li><a href="writing-modules.ja.html#3-検索される場所">3. 検索される場所</a></li><li><a href="writing-modules.ja.html#4-perl-コードをライブラリにする">4. Perl コードをライブラリにする</a></li></ul></details><div class="grp">使い方</div><details class="pg"><summary><a href="browser.ja.html">ブラウザで使う</a></summary><ul><li><a href="browser.ja.html#読み込み方">読み込み方</a></li><li><a href="browser.ja.html#ページ内の-perl">ページ内の Perl</a></li><li><a href="browser.ja.html#dom-と-jquery-風の">DOM と jQuery 風の $</a></li><li><a href="browser.ja.html#javascript-api">JavaScript API</a></li><li><a href="browser.ja.html#プレイグラウンド">プレイグラウンド</a></li><li><a href="browser.ja.html#nodejs-で使う">Node.js で使う</a></li></ul></details></nav>
 <main>
 <h1>Perl2JS ドキュメント</h1>
 <p>Perl2JS は、Perl 風の言語を <strong>ブラウザ上で</strong> JavaScript にコンパイルします。サーバーも WebAssembly も不要です。
@@ -66,9 +67,17 @@
 
 <footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
 </main>
-
 </div>
 <script>
+(function () {                                              // mobile menu + highlight the section being read
+  var b = document.querySelector('button.menu'), side = document.querySelector('nav.side');
+  b.addEventListener('click', function () { var o = side.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  side.addEventListener('click', function (e) { if (e.target.closest('li a')) side.classList.remove('open'); });
+  var links = [].slice.call(side.querySelectorAll('details[open] li a')), heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+  function spy() { var y = window.scrollY + 90, cur = -1; heads.forEach(function (h, i) { if (h && h.offsetTop <= y) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+  window.addEventListener('scroll', spy, { passive: true }); spy();
+  var on = side.querySelector('a[aria-current]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+})();
 document.querySelectorAll('.code .copy').forEach(function (b) {
   b.addEventListener('click', function () {
     var text = b.closest('.code').querySelector('code').textContent;
