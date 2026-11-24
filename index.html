@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl構文の言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124zz" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124zz">
+<link rel="icon" href="assets/icon.svg?v=20261124zzz" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124zzz">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124zz">
+<meta property="og:image" content="assets/social-preview.png?v=20261124zzz">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -34,6 +34,16 @@
   .hint { color: var(--mut); font-size: 13px; margin-left:auto; }
   .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .mtabs { display: none; }
+  @media (max-width: 800px) {
+    :root { --paneH: clamp(300px, 60vh, 560px); }
+    body.tall { --paneH: clamp(300px, 64vh, 600px); }
+    .mtabs { display: flex; gap: 0; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); position: sticky; top: 0; z-index: 6; }
+    .mtabs button { flex: 1; padding: 10px 0; border: 0; border-radius: 0; background: transparent; color: var(--mut); font-weight: 600; font-size: 15px; cursor: pointer; }
+    .mtabs button[aria-pressed=true] { background: var(--acc); color: var(--accfg); }
+    .grid.m-src > .col:nth-child(2) { display: none; }
+    .grid.m-con > .col:nth-child(1) { display: none; }
+  }
   pre, .stage { width:100%; margin:0; border:1px solid var(--line); border-radius: 10px; background: var(--code); color: var(--fg);
     font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 12px 14px; }
   pre { overflow:auto; white-space: pre-wrap; word-break: break-word; }
@@ -123,6 +133,19 @@
   details.more > summary { cursor: pointer; padding: 11px 0; font-weight: 600; color: var(--mut); }
   details.more[open] > summary { color: var(--fg); border-bottom: 1px solid var(--line); margin-bottom: 12px; }
   details.more > :last-child { margin-bottom: 14px; }
+  .burger { display: none; position: absolute; top: 28px; right: 20px; width: 42px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); cursor: pointer; }
+  .burger i { display: block; width: 18px; height: 2px; margin: 4px auto; background: var(--fg); border-radius: 1px; }
+  .menu { position: absolute; top: 70px; right: 20px; z-index: 20; min-width: 190px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  .menu[hidden] { display: none; }
+  .menu a { display: block; padding: 11px 14px; border-radius: 8px; color: var(--fg); text-decoration: none; font-size: 15px; }
+  .menu a:hover { background: var(--code); }
+  @media (max-width: 800px) {
+    .burger { display: block; }
+    a.gh { display: none; }
+    h1.brand img { max-width: calc(100% - 60px); }
+    .bar select { flex: 1 1 100%; min-width: 0; max-width: 100%; }
+    .bar .hint { display: none; }
+  }
   .why { margin: 4px 0 20px; }
   .why h2 { font-size: 18px; margin: 0 0 4px; }
   .why .big { font-size: 17px; margin: 0 0 12px; }
@@ -138,9 +161,15 @@
 </head>
 <body>
 <main>
+  <button class="burger" id="burger" type="button" aria-label="メニュー" aria-expanded="false" aria-controls="menu"><i></i><i></i><i></i></button>
+  <div class="menu" id="menu" hidden>
+    <a href="docs/README.ja.html">ドキュメント</a>
+    <a href="docs/README.html">Docs (English)</a>
+    <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+  </div>
   <a class="gh docs" href="docs/README.ja.html">📘 ドキュメント</a>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124zz"><img src="assets/logo-light.svg?v=20261124zz" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124zzz"><img src="assets/logo-light.svg?v=20261124zzz" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perl構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <section class="why" aria-labelledby="why-h">
@@ -152,11 +181,17 @@
   <div class="bar">
     <select id="ex" aria-label="サンプル"></select>
     <button class="run" id="run">▶ 実行</button>
+    <button id="stop" type="button" hidden title="実行を止める">■ 停止</button>
     <button id="link" title="このサンプルへのリンクをコピー (#名前 付きURL)">🔗 リンク</button>
     <span class="hint">Ctrl/⌘ + Enter で実行</span>
   </div>
 
-  <div class="grid">
+  <div class="mtabs" role="tablist" aria-label="表示の切り替え">
+    <button id="mSrc" type="button" role="tab" aria-pressed="true">ソース</button>
+    <button id="mCon" type="button" role="tab" aria-pressed="false">コンソール</button>
+  </div>
+
+  <div class="grid m-src" id="grid">
     <div class="col">
       <div class="win notepad">
         <div class="win-bar">
@@ -872,6 +907,7 @@ let runSeq = 0;
 async function run() {
   updateLayout();
   const my = ++runSeq;                       // ignore results of an older, slower run
+  byId('stop').hidden = true;
   stage.innerHTML = ''; outBuf = ''; outErr.textContent = ''; renderOut(''); renderGutter(0);
   setStatus('', '実行中…');
   const t0 = performance.now();
@@ -881,9 +917,17 @@ async function run() {
     const js = Perl2JS.compile(src.value);
     if (showJs) { outBuf = js.replace(/;(?=[a-zA-Z_$}\`])/g, ';\n'); renderOut(outBuf); setStatus('', '生成されたJS'); return; }
     Perl2JS.stdout = (s) => { outBuf += s; scheduleRender(); };
-    Perl2JS.run(src.value, { globals: { stage } });
+    const ret = Perl2JS.run(src.value, { globals: { stage }, exclusive: true });
     renderOut(outBuf);
-    setStatus('ok', '✓ 完了 · ' + Math.max(1, Math.round(performance.now() - t0)) + ' ms');
+    let stopped = false;
+    if (ret && typeof ret.then === 'function') {                         // the program sleeps: it keeps running without freezing the page
+      byId('stop').hidden = false; setStatus('', '実行中… (■ 停止で止められます)');
+      byId('stop').onclick = () => { stopped = true; Perl2JS.stop(); };
+      await ret;
+      if (my !== runSeq) return;
+      byId('stop').hidden = true; renderOut(outBuf);
+    }
+    setStatus(stopped ? '' : 'ok', stopped ? '■ 停止しました' : '✓ 完了 · ' + Math.max(1, Math.round(performance.now() - t0)) + ' ms');
     const fw = Perl2JS.notes || [];
     if (fw.length) {                                                          // 全角記号を半角として解釈したことを知らせる
       const uniq = [...new Set(fw.map((n) => n.from + '→' + n.to))].slice(0, 6).join('  ');
@@ -891,13 +935,25 @@ async function run() {
     } else byId('conInfo').textContent = '';
   } catch (e) {
     if (my !== runSeq) return;
+    byId('stop').hidden = true;
+    if (phone()) setPane('con');
     renderOut(outBuf);
     Perl2JS.renderError(e, outErr, { append: true, dark: true });      // 行番号・該当行の抜粋・ヒント付きで表示
     if (e && e.line) renderGutter(e.line);
     setStatus('bad', '✗ ' + (e && e.kind === 'compile' ? 'コンパイルエラー' : '実行時エラー') + (e && e.line ? ' (行 ' + e.line + ')' : ''));
   }
 }
-byId('run').onclick = run;
+const grid = byId('grid');
+function setPane(which) {                         // phones: show the source or the console, one per screen
+  grid.classList.toggle('m-src', which === 'src'); grid.classList.toggle('m-con', which === 'con');
+  byId('mSrc').setAttribute('aria-pressed', which === 'src'); byId('mCon').setAttribute('aria-pressed', which === 'con');
+}
+const phone = () => !!(window.matchMedia && window.matchMedia('(max-width: 800px)').matches);
+byId('mSrc').onclick = () => setPane('src'); byId('mCon').onclick = () => setPane('con');
+byId('run').onclick = () => { if (phone()) setPane('con'); run(); };           // after ▶ on a phone, look at the console
+const burger = byId('burger'), menuEl = byId('menu');
+burger.onclick = (e) => { e.stopPropagation(); const open = menuEl.hidden; menuEl.hidden = !open; burger.setAttribute('aria-expanded', open); };
+document.addEventListener('click', (e) => { if (!menuEl.hidden && !menuEl.contains(e.target)) { menuEl.hidden = true; burger.setAttribute('aria-expanded', false); } });
 sel.onchange = () => load(sel.value);
 window.addEventListener('hashchange', () => { const n = nameOf(location.hash); if (n && n !== sel.value) load(n, true); });
 byId('link').onclick = (e) => copyText(location.origin + location.pathname + '#' + slugOf(sel.value), e.currentTarget);

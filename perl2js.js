@@ -883,6 +883,65 @@ function rewriteHashList(T) {
   return false;
 }
 
+// `sleep` must not freeze the page: a program that sleeps is compiled as async code.
+// The sleep (and every sub that sleeps, and every call of such a sub) becomes an `await`, wherever that is legal
+// (top level and inside subs; not inside map/grep/sort/eval/do callbacks, which keep the blocking sleep).
+const CALLBACK_OWNERS = new Set(['map', 'grep', 'sort', 'first', 'any', 'all', 'none', 'notall', 'reduce', 'try', 'catch', 'finally', 'eval', 'do', 'pairmap', 'sum_by', 'max_by', 'min_by']);
+function markAsync(T) {
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  const n = T.length;
+  // owner of every block: { kind: 'sub' | 'cb' | 'plain', sub: index of the `sub` token, name }
+  const owner = new Array(n).fill(null), stack = [];
+  const encl = new Array(n).fill(null);                       // innermost function boundary around token i: null (top level) / {kind:'sub'|'cb', tok, name}
+  for (let i = 0; i < n; i++) {
+    const t = T[i];
+    encl[i] = stack.length ? (() => { for (let k = stack.length - 1; k >= 0; k--) if (stack[k].kind !== 'plain') return stack[k]; return null; })() : null;
+    if (t.t === 'op' && (t.v === '{')) {
+      let kind = 'plain', tokIdx = -1, name = null;
+      const p1 = T[i - 1], p2 = T[i - 2];
+      if (p1 && p1.t === 'id' && p1.v === 'sub') { kind = 'sub'; tokIdx = i - 1; }
+      else if (p1 && p1.t === 'id' && p2 && p2.t === 'id' && p2.v === 'sub') { kind = 'sub'; tokIdx = i - 2; name = p1.v; }
+      else if (p1 && p1.t === 'id' && CALLBACK_OWNERS.has(p1.v)) kind = 'cb';
+      stack.push({ kind, tok: tokIdx, name });
+    } else if (t.t === 'op' && t.v === '}') stack.pop();
+  }
+  const asyncSubs = new Map();                                // name -> sub token index (named subs that must be async)
+  const asyncAnon = new Set();                                // sub token indexes (anonymous subs)
+  let any = false, changed = true;
+  const mark = (e) => { if (e.kind === 'sub') { if (e.name) { if (!asyncSubs.has(e.name)) { asyncSubs.set(e.name, e.tok); changed = true; } } else if (!asyncAnon.has(e.tok)) { asyncAnon.add(e.tok); changed = true; } } };
+  const sleepCallbackForm = (i) => {                          // sleep(3, sub { ... })  does not block and needs no await
+    let d = 0, j = i + 1; if (!O(T[j], '(')) { for (; j < n && !O(T[j], ';') && !O(T[j], '}'); j++) if (T[j].t === 'id' && T[j].v === 'sub') return true; return false; }
+    for (; j < n; j++) { if (O(T[j], '(')) d++; else if (O(T[j], ')')) { d--; if (d === 0) break; } else if (T[j].t === 'id' && T[j].v === 'sub') return true; }
+    return false;
+  };
+  const targets = [];                                         // tokens that will get `await`
+  for (let i = 0; i < n; i++) {
+    const t = T[i];
+    if (t.t === 'id' && t.v === 'sleep' && !O(T[i - 1], '->') && !(T[i + 1] && O(T[i + 1], '=>')) && !sleepCallbackForm(i)) {
+      const e = encl[i];
+      if (!e) { targets.push(i); any = true; } else if (e.kind === 'sub') { targets.push(i); mark(e); any = true; }
+    }
+  }
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < n; i++) {
+      const t = T[i];
+      if (t.t !== 'id' || !asyncSubs.has(t.v) || t.awaitMarked) continue;
+      if (T[i - 1] && (O(T[i - 1], '->') || (T[i - 1].t === 'id' && T[i - 1].v === 'sub'))) continue;   // a definition or a method call
+      const e = encl[i];
+      if (e && e.kind === 'cb') continue;
+      t.awaitMarked = true; targets.push(i); any = true;
+      if (e && e.kind === 'sub') mark(e);
+      changed = true;
+    }
+  }
+  if (!any) return false;
+  for (const i of targets) T[i].await = true;
+  for (const [, idx] of asyncSubs) T[idx].async = true;
+  for (const idx of asyncAnon) T[idx].async = true;
+  return true;
+}
+
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
@@ -890,6 +949,7 @@ function prepare(T) {
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
+  T.asyncMode = markAsync(T);
   return T;
 }
 
@@ -1455,8 +1515,8 @@ function translate(T, opts) {
               if (isOp(T[i + 2], '{')) T[i + 2].after = ');';
               i++;
             }
-            else if (next && next.t === 'id') { emit('function ' + safeName(next.v) + '(...$_args)'); i++; }
-            else emit('function(...$_args)');
+            else if (next && next.t === 'id') { emit((t.async ? 'async ' : '') + 'function ' + safeName(next.v) + '(...$_args)'); i++; }
+            else emit((t.async ? 'async ' : '') + 'function(...$_args)');
             subBody = true;
             break;
           }
@@ -1554,7 +1614,7 @@ function translate(T, opts) {
             } else if (curPkg !== 'main' && knownSubs[curPkg] && knownSubs[curPkg].has(v) && isOp(next, '(')) {
               emit('_pkg(' + JSON.stringify(curPkg) + ').$f.' + v); break;
             }
-            emit(safeName(v) + ' ');
+            emit((t.await ? 'await ' : '') + safeName(v) + ' ');
           }
         }
         break;
@@ -1832,7 +1892,7 @@ function translate(T, opts) {
 
   function builtinCall(v, imp) {            // imp: an imported (module) function, otherwise a core builtin
     const next = T[i + 1];
-    const name = imp ? (imp.line && T[i].line ? '(_ln.v = ' + T[i].line + ', ' + jsName(v) + ')' : jsName(v)) : (v === 'die' || v === 'warn') && T[i].line ? '(_ln.v = ' + T[i].line + ', ' + v + '_)' : v + '_';
+    const name = imp ? (imp.line && T[i].line ? '(_ln.v = ' + T[i].line + ', ' + jsName(v) + ')' : jsName(v)) : (v === 'die' || v === 'warn') && T[i].line ? '(_ln.v = ' + T[i].line + ', ' + v + '_)' : (v === 'sleep' && T[i].await) ? 'await sleep_a' : v + '_';
     if (!imp && (v === 'print' || v === 'say' || v === 'printf')) {
       if (next && next.t === 'id' && (next.v === 'STDERR' || next.v === 'STDOUT')) {
         if (next.v === 'STDERR') emit('warn_'); else emit(name);
@@ -2449,8 +2509,10 @@ function compileFull(src) {
   const { cur, imports } = buildImports(uses);
   CUR = cur;
   try {
-    const js = 'let $_args = [];\n' + translate(prepare(T), { marks: true }) + '\n';
-    return { js, mods: Array.from(new Set(need.map((n) => n.mod))), imports, uses };
+    const P = prepare(T);
+    const body = 'let $_args = [];\n' + translate(P, { marks: true }) + '\n';
+    const js = P.asyncMode ? 'return (async () => {' + body + '})();\n' : body;
+    return { async: !!P.asyncMode, js, mods: Array.from(new Set(need.map((n) => n.mod))), imports, uses };
   } finally { CUR = emptyCur(); }
 }
 // module names a program needs (so a page can preload them asynchronously)
@@ -2464,6 +2526,7 @@ function requires(src) {
 
 const API = { G, hide, mk, Lst, RT, _s, root, NUMHOOKS, pkg, hasOwn };
 
+const LIVE = new Set();                                         // stop tokens of the async programs that are running
 const Perl2JS = {
   notes: [],                                  // hints from the last compile, e.g. full-width symbols read as half-width
   errorText, renderError,
@@ -2476,10 +2539,19 @@ const Perl2JS = {
   compile(src) {
     try { return compileFull(src).js; } catch (e) { throw toPerlError('compile', e, src); }
   },
+  stop() { for (const t of LIVE) t.stopped = true; LIVE.clear(); },        // stop every async (sleeping) program
   run(src, opts) {
     let c;
     try { c = compileFull(src); } catch (e) { throw toPerlError('compile', e, src); }
     const js = c.js, scope = Object.assign({}, RT);
+    // async programs (they `sleep`): every run has its own stop token, checked whenever the program wakes up
+    const tok = { stopped: false };
+    if (opts && opts.exclusive) Perl2JS.stop();
+    LIVE.add(tok);
+    scope.sleep_a = (n) => new Promise((res, rej) => {
+      if (tok.stopped) return rej({ exit: true });
+      setTimeout(() => (tok.stopped ? rej({ exit: true }) : res(Math.round(+n || 0))), Math.max(0, (+n || 0) * 1000));
+    });
     for (const m of c.mods) {
       const def = MODS[m]; if (!def) continue;
       const key = safeName(m), ex = def.exports || {};
@@ -2493,8 +2565,14 @@ const Perl2JS = {
     const names = Object.keys(scope);
     let fn;
     try { fn = new Function(...names, js); } catch (e) { throw toPerlError('compile', e, src, js); }
-    const finish = () => { for (const m of c.mods) { const d = MODS[m]; if (d && d.finish) { try { d.finish(); } catch (e) { /* ignore */ } } } };
-    try { const r = fn(...names.map((k) => scope[k])); finish(); return r; }
+    const finish = () => { LIVE.delete(tok); for (const m of c.mods) { const d = MODS[m]; if (d && d.finish) { try { d.finish(); } catch (e) { /* ignore */ } } } };
+    try {
+      const r = fn(...names.map((k) => scope[k]));
+      if (c.async && r && typeof r.then === 'function') {            // an async program: resolves when it ends (or is stopped)
+        return r.then((v) => { finish(); return v; }, (e) => { finish(); if (e && e.exit) return; throw toPerlError('runtime', e, src, js); });
+      }
+      finish(); return r;
+    }
     catch (e) { finish(); if (e && e.exit) return; throw toPerlError('runtime', e, src, js); }
   },
   // load whatever the program needs (asynchronously, so no blocking request), then run it
