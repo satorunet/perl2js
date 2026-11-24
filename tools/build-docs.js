@@ -110,6 +110,18 @@ function page(name, lang) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} — Perl2JS</title>
 <meta name="description" content="${esc(desc)}">
+<link rel="canonical" href="https://satoru.net/perl2js/docs/${name}${lang === 'ja' ? '.ja' : ''}.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Perl2JS">
+<meta property="og:locale" content="${lang === 'ja' ? 'ja_JP' : 'en_US'}">
+<meta property="og:url" content="https://satoru.net/perl2js/docs/${name}${lang === 'ja' ? '.ja' : ''}.html">
+<meta property="og:title" content="${esc(title)} — Perl2JS">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:image" content="https://satoru.net/perl2js/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b6e69">
 <link rel="icon" href="../assets/icon.svg?v=${V}" type="image/svg+xml">
 <link rel="stylesheet" href="docs.css?v=${V}">
 </head>
