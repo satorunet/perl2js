@@ -1009,7 +1009,7 @@ function translate(T, opts) {
           case 'or': flush(PEND); emit(' || '); break;
           case 'xor': flush(PEND); emit(' !== '); break;
           case 'not': emit('!'); break;
-          case 'my': case 'our': emit(v === 'my' ? 'let ' : ''); break;
+          case 'my': case 'our': emit(v === 'my' && !t.hoisted ? 'let ' : ''); break;
           case 'local': {
             // local LVALUE [= expr];  -> save the old value now, restore it when the enclosing block exits
             let j = i + 1;
@@ -1090,10 +1090,24 @@ function translate(T, opts) {
             subBody = true;
             break;
           }
-          case 'if': case 'while': emit(v + ' '); condNext = true; break;
+          case 'if': case 'while': case 'unless': case 'until': {
+            // `while (my $line = shift @lines) { ... }` : `let` cannot sit inside a JS condition, so the declaration is lifted in front of the statement
+            const names = [];
+            if (isOp(next, '(')) {
+              const close = matching(T, i + 1);
+              for (let k = i + 2; k < close; k++) {
+                if (T[k].t === 'id' && T[k].v === 'my' && T[k + 1] && T[k + 1].t === 'var' && T[k + 1].sig === '$' && !T[k + 1].elem) { T[k].hoisted = true; names.push(vname(T[k + 1])); }
+              }
+              if (names.length) {
+                if (v === 'while' || v === 'until') { emit('{ let ' + names.join(', ') + '; '); if (T[close + 1] && isOp(T[close + 1], '{')) T[close + 1].after = (T[close + 1].after || '') + '}'; }
+                else emit('var ' + names.join(', ') + '; ');
+              }
+            }
+            emit(v === 'unless' ? 'if ' : v === 'until' ? 'while ' : v + ' ');
+            condNext = true; if (v === 'unless' || v === 'until') negNext = true;
+            break;
+          }
           case 'elsif': emit('else if '); condNext = true; break;
-          case 'unless': emit('if '); condNext = true; negNext = true; break;
-          case 'until': emit('while '); condNext = true; negNext = true; break;
           case 'else': emit('else '); break;
           case 'try': case 'finally': if (isOp(next, '{')) { emit(v + ' '); break; } emit(safeName(v) + ' '); break;
           case 'catch': emit('catch '); break;
