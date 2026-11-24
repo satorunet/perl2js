@@ -24,7 +24,7 @@ const jsName = (n) => (RESERVED.has(n) ? '_i$' + n : n);
 /* ------------------------------------------------------------------ lexer */
 
 const QLIKE = new Set(['q', 'qq', 'qw', 'm', 'qr', 's', 'tr', 'y']);
-const QDELIM = '/|!#([{<\'"~';
+const QDELIM = '/|!#([{<\'"~@,%^:;*+';
 const TERMBEFORE = new Set(['and', 'or', 'not', 'xor', 'if', 'unless', 'while', 'until', 'return', 'split',
   'grep', 'map', 'join', 'push', 'unshift', 'print', 'say', 'x', 'eq', 'ne', 'lt', 'gt', 'le', 'ge', 'cmp',
   'elsif', 'foreach', 'for', 'die', 'warn', 'when', 'my', 'our', 'local', 'sort', 'reverse', 'keys', 'values',
@@ -1345,6 +1345,8 @@ function translate(T, opts) {
           case '=~': case '!~': {
             flush(UNARY_ONLY);
             const nx = next;
+            const argCtx = T[i - 2] && (isOp(T[i - 2], ',') || (isOp(T[i - 2], '(') && T[i - 3] && T[i - 3].t === 'id' && !['if', 'elsif', 'while', 'unless', 'until', 'and', 'or', 'not', 'for', 'foreach'].includes(T[i - 3].v))) && next && next.t === 're' && T[i + 2] && (isOp(T[i + 2], ')') || isOp(T[i + 2], ','));   // join("|", $s =~ m/(..)/)
+            listRhs = argCtx || lastListClose === i - 1 || (prev && prev.t === 'var' && prev.sig === '@');      // `my ($a, $b) = $s =~ /../` : the match is in list context
             if (nx && nx.t === 're') {
               emit((v === '=~' ? (listRhs ? '.$ml(' : '.$m(') : '.$nm(') + reLiteral(nx.pat, nx.flags) + ')'); i++;
             } else if (nx && nx.t === 'trans') {
@@ -1363,7 +1365,6 @@ function translate(T, opts) {
           }
           case '=': {
             flush(UNARY_ONLY);
-            listRhs = lastListClose === i - 1 || (prev && prev.t === 'var' && prev.sig === '@');      // `my ($a, $b) = $s =~ /../` : the match is in list context
             if (prev && prev.t === 'var' && prev.sig === '@' && next && !isOp(next, '(') && !isOp(next, '[') && next.t !== 'qw') {
               emit(' = _arr('); st.push({ k: 'call', close: ')', callee: '_list', argc: 0 });
             } else if (prev && prev.t === 'var' && prev.sig === '%' && !isOp(next, '(')) {
