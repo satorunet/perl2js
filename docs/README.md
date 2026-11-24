@@ -5,6 +5,10 @@
 Perl2JS compiles Perl syntax to JavaScript **in the browser**. No server, no WebAssembly.
 Every `perl` code block in these pages is run through real Perl 5.40 and Perl2JS in CI-style checks (`node tools/verify-docs.js docs/*.md`), and the output must be identical.
 
+## Why Perl2JS?
+
+**You can write it in Perl.** Browser programs in your usual Perl syntax (`my @list`, `%hash`, `=~ s///`, `sub`, `package`, heredocs) with no server and no build step, the familiar modules (`List::Util`, `Data::Dumper`, `POSIX`, `Time::Piece`, `JSON::PP`), and the page itself driven from Perl (`$("#id")->on("click", sub { ... })`). JavaScript can be mixed in when you want it.
+
 | I want to... | Read |
 |---|---|
 | see which Perl syntax works, with examples | **[Supported syntax](syntax.md)** |

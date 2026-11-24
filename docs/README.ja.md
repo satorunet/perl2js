@@ -5,6 +5,10 @@
 Perl2JS は、Perl 構文で書いたコードを **ブラウザ上で** JavaScript にコンパイルします。サーバーも WebAssembly も不要です。
 これらのページにあるすべての `perl` コードブロックは、本物の Perl 5.40 と Perl2JS の両方で CI 風のチェック (`node tools/verify-docs.js docs/*.md`) にかけられ、出力が一致する必要があります。
 
+## 何が嬉しいの?
+
+**Perl で書けることです。** いつもの Perl 構文(`my @list`、`%hash`、`=~ s///`、`sub`、`package`、ヒアドキュメント)のまま、サーバーもビルドも使わずにブラウザで動くプログラムが書けます。お馴染みのモジュール(`List::Util`、`Data::Dumper`、`POSIX`、`Time::Piece`、`JSON::PP`)も使え、ページの操作も Perl で書けます(`$("#id")->on("click", sub { ... })`)。JavaScript は必要なときに混ぜられます。
+
 | やりたいこと | 読むページ |
 |---|---|
 | 使える Perl の構文を例つきで知りたい | **[対応している構文](syntax.ja.md)** |

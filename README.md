@@ -10,6 +10,15 @@
 **Perl2JS** compiles Perl syntax to JavaScript **in the browser** — no server, no WebAssembly.
 Write `my $x`, `@list`, `%hash`, `->{}`, `=~ s///`, `sub`, `package`/`bless`, heredocs … and call the DOM, `console`, or the built-in jQuery-style `$("#id")` directly.
 
+## Why?
+
+**You can write it in Perl.** Browser programs in the Perl you already know, with no JavaScript to learn:
+
+* **Your usual Perl:** `my @list`, `%hash`, `=~ s///`, `sub`, `package`, `sprintf`, heredocs.
+* **No server, no build step:** one `<script>` tag, then `<script type="text/perl2js">` blocks.
+* **Familiar modules:** `List::Util`, `Data::Dumper`, `POSIX`, `Time::Piece`, `JSON::PP` under the same names, loaded only when used.
+* **The page, in Perl:** `$("#id")->on("click", sub { ... })` for the DOM and events; mix in JavaScript when you want to.
+
 **▶ Try it:** <https://satoru.net/perl2js/> (playground with 26 examples)
 
 ## Quick start
