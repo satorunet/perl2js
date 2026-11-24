@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl風言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124d" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124d">
+<link rel="icon" href="assets/icon.svg?v=20261124e" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124e">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl風の構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124d">
+<meta property="og:image" content="assets/social-preview.png?v=20261124e">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -104,7 +104,7 @@
 <body>
 <main>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124d"><img src="assets/logo-light.svg?v=20261124d" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124e"><img src="assets/logo-light.svg?v=20261124e" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <div class="bar">
@@ -793,6 +793,11 @@ async function run() {
     Perl2JS.run(src.value, { globals: { stage } });
     renderOut(outBuf);
     setStatus('ok', '✓ 完了 · ' + Math.max(1, Math.round(performance.now() - t0)) + ' ms');
+    const fw = Perl2JS.notes || [];
+    if (fw.length) {                                                          // 全角記号を半角として解釈したことを知らせる
+      const uniq = [...new Set(fw.map((n) => n.from + '→' + n.to))].slice(0, 6).join('  ');
+      byId('conInfo').textContent = '全角記号 ' + fw.length + ' 個を半角として解釈: ' + uniq;
+    } else byId('conInfo').textContent = '';
   } catch (e) {
     if (my !== runSeq) return;
     renderOut(outBuf);

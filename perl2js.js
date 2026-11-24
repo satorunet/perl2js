@@ -86,6 +86,35 @@ function lex(src) {
       } else break;
     }
     if (i >= n) break;
+    if ('$@%&'.includes(src[i]) && src.charCodeAt(i + 1) >= 0xFF21 && src.charCodeAt(i + 1) <= 0xFF5A) {      // @ａ  %ｈ : half-width sigil + full-width name
+      let k = i + 1, run = '';
+      for (; k < n; k++) { const cc = src.charCodeAt(k); if (cc >= 0xFF01 && cc <= 0xFF5E) { run += String.fromCharCode(cc - 0xFEE0); Perl2JS.notes.push({ line: lineOf(k), from: src[k], to: run[run.length - 1] }); } else break; }
+      src = src.slice(0, i + 1) + run + src.slice(k);
+    }
+    {   // full-width symbols typed with a Japanese IME  ＄ｘ ＝ （ ） ｛ ｝ ； ， “ ” ‘ ’ ...  are read as their half-width twins (inside strings they stay as text)
+      const fc = src.charCodeAt(i);
+      let half = null;
+      if (fc >= 0xFF01 && fc <= 0xFF5E) half = String.fromCharCode(fc - 0xFEE0);
+      else if (fc === 0x201C || fc === 0x201D) half = '"';
+      else if (fc === 0x2018 || fc === 0x2019) half = "'";
+      else if (fc === 0x3001 && false) half = ',';
+      if (half && (fc === 0x201C || fc === 0x2018)) {                                   // “text” / ‘text’ : convert the closing quote too
+        const closer = fc === 0x201C ? ['\u201D', '\u201C', '"'] : ['\u2019', '\u2018', "'"];
+        let e = -1;
+        for (let k = i + 1; k < n && src[k] !== '\n'; k++) if (src[k] === closer[0] || src[k] === closer[1]) { e = k; break; }
+        if (e > 0) src = src.slice(0, e) + half + src.slice(e + 1);
+      }
+      if (half) {
+        let k = i, run = '';
+        for (; k < n; k++) {                                                              // the whole run:  ＄ｎ  ｛ｋ｝  １．．３
+          const cc = src.charCodeAt(k);
+          if (cc >= 0xFF01 && cc <= 0xFF5E) { run += String.fromCharCode(cc - 0xFEE0); Perl2JS.notes.push({ line: lineOf(k), from: src[k], to: run[run.length - 1] }); }
+          else if (k === i) { run += half; Perl2JS.notes.push({ line: lineOf(k), from: src[k], to: half }); }
+          else break;
+        }
+        src = src.slice(0, i) + run + src.slice(k);
+      }
+    }
     const c = src[i];
     const last = T[T.length - 1];
     const expectTerm = !valueEnd(last);
@@ -135,6 +164,8 @@ function lex(src) {
     // variables
     if (c === '$') {
       if (src[i + 1] === '(' || (src[i + 1] === '-' && src[i + 2] === '>')) { push({ t: 'id', v: '$' }); i++; continue; }   // jQuery: $("#id") / $->ajax(..)
+      if ((m = /^\$\$([A-Za-z_]\w*)(?=[\[{])/.exec(rest))) { push({ t: 'var', sig: '$', name: m[1], elem: null }); push({ t: 'op', v: '->' }); i += m[0].length; continue; }   // $$r[0]  ==  $r->[0]
+      if (rest.startsWith('$#{')) { push({ t: 'deref', sig: '$#' }); i += 2; continue; }       // $#{ expr }
       if ((m = /^\$#\$([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '$#', name: m[1], ref: true }); i += m[0].length; continue; }
       if ((m = /^\$#([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '$#', name: m[1] }); i += m[0].length; continue; }
       if ((m = /^\$([A-Za-z_]\w*(?:::\w+)*|\d+|[@!&|,\\\/]|\+(?=\{))/.exec(rest))) {
@@ -152,6 +183,9 @@ function lex(src) {
     if (c === '%' && expectTerm) {
       if ((m = /^%([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '%', name: m[1] }); i += m[0].length; continue; }
       if (src[i + 1] === '$' || src[i + 1] === '{') { push({ t: 'deref', sig: '%' }); i++; continue; }
+    }
+    if (c === '&' && expectTerm && (m = /^&(?:\$([A-Za-z_]\w*)|\{\s*\$([A-Za-z_]\w*)\s*\})(?=\s*\()/.exec(rest))) {      // &$code(args)  ==  $code->(args)
+      push({ t: 'var', sig: '$', name: m[1] || m[2], elem: null }); push({ t: 'op', v: '->' }); i += m[0].length; continue;
     }
     if (c === '&' && expectTerm && (m = /^&([A-Za-z_]\w*)/.exec(rest))) {
       push({ t: 'id', v: m[1] }); i += m[0].length; continue;
@@ -506,6 +540,76 @@ function rewriteCopyAssign(T) {
   return false;
 }
 
+function rewriteLastIdx(T) {            // $#{ EXPR }  ==>  (scalar(@{ EXPR }) - 1)
+  for (let i = 0; i < T.length; i++) {
+    if (T[i].t === 'deref' && T[i].sig === '$#' && T[i + 1] && T[i + 1].t === 'op' && T[i + 1].v === '{') {
+      const c = matching(T, i + 1);
+      T.splice(c + 1, 0, tok.op(')'), tok.op('-'), { t: 'num', v: '1', sp: true }, tok.op(')'));
+      T.splice(i, 1, tok.op('('), tok.id('scalar'), tok.op('('), { t: 'deref', sig: '@', sp: true });
+      return true;
+    }
+  }
+  return false;
+}
+
+function rewriteCountOf(T) {            // $n = () = LIST;   ==>   $n = scalar(LIST)   (number of elements / matches)
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i + 3 < T.length; i++) {
+    if (O(T[i], '=') && O(T[i + 1], '(') && O(T[i + 2], ')') && O(T[i + 3], '=')) {
+      let k = i + 4, d = 0;
+      for (; k < T.length; k++) { const u = T[k]; if (u.t === 'op') { if ('([{'.includes(u.v)) d++; else if (')]}'.includes(u.v)) { if (d === 0) break; d--; } else if (u.v === ';' && d === 0) break; } }
+      T.splice(k, 0, tok.op(')'));
+      T.splice(i + 1, 3, tok.id('_countof'), tok.op('('));
+      return true;
+    }
+  }
+  return false;
+}
+
+function rewriteSlices(T) {
+  // @h{LIST} / @$r{LIST} / @{EXPR}{LIST}  -> hslice_(%h, LIST)      @$r[LIST] / @{EXPR}[LIST] -> aslice_(@$r, LIST)
+  // @h{LIST} = RHS -> hsset_(%h, LIST, RHS)      delete @h{LIST} -> hsdel_(%h, LIST)      ${EXPR}{k} -> (EXPR)->{k}
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    const t = T[i];
+    if (t.t === 'deref' && t.sig === '$' && O(T[i + 1], '{')) {                       // ${ $h }{k}
+      const c = matching(T, i + 1);
+      if (O(T[c + 1], '{')) { T.splice(c + 1, 0, tok.op('->')); T[c] = tok.op(')'); T.splice(i, 2, tok.id('deref_'), tok.op('(')); return true; }   // ${$h}{k} -> deref_($h)->{k}
+      continue;
+    }
+    let kind = null, start = i, base = [], j;
+    if (t.t === 'var' && t.sig === '@' && O(T[i + 1], '{') && !T[i + 1].sp) { kind = 'h'; base = [tok.op('\\'), { t: 'var', sig: '%', name: t.name, sp: false }]; j = i + 1; }
+    else if (t.t === 'deref' && t.sig === '@') {
+      let e;
+      if (T[i + 1] && T[i + 1].t === 'var' && T[i + 1].sig === '$') { e = i + 1; base = [Object.assign({}, T[i + 1], { elem: null })]; }
+      else if (O(T[i + 1], '{')) { e = matching(T, i + 1); base = [tok.op('('), ...T.slice(i + 2, e), tok.op(')')]; }
+      else continue;
+      if (O(T[e + 1], '{') && !T[e + 1].sp) { kind = 'h'; j = e + 1; }
+      else if (O(T[e + 1], '[') && !T[e + 1].sp) { kind = 'a'; j = e + 1; }
+      else continue;
+    } else continue;
+    if (!kind) continue;
+    const c = matching(T, j);
+    const list = T.slice(j + 1, c);
+    let end = c + 1;
+    const callee = kind === 'a' ? 'aslice_' : 'hslice_';
+    const prevDelete = T[start - 1] && T[start - 1].t === 'id' && T[start - 1].v === 'delete';
+    if (kind === 'h' && O(T[end], '=') ) {                                               // assignment
+      let d = 0, k = end + 1;
+      for (; k < T.length; k++) { const u = T[k]; if (u.t === 'op') { if ('([{'.includes(u.v)) d++; else if (')]}'.includes(u.v)) { if (d === 0) break; d--; } else if (u.v === ';' && d === 0) break; } }
+      let rhs = T.slice(end + 1, k);
+      if (O(rhs[0], '(') && matching(rhs, 0) === rhs.length - 1) rhs = rhs.slice(1, -1);
+      T.splice(start, k - start, tok.id('hsset_'), tok.op('('), ...base, tok.op(','), tok.op('['), ...list, tok.op(']'), tok.op(','), tok.op('['), ...rhs, tok.op(']'), tok.op(')'));
+      return true;
+    }
+    const name = prevDelete ? 'hsdel_' : callee;
+    const from = prevDelete ? start - 1 : start;
+    T.splice(from, end - from, tok.id(name), tok.op('('), ...base, tok.op(','), ...list, tok.op(')'));
+    return true;
+  }
+  return false;
+}
+
 function rewriteEach(T) {
   const isO = (t, v) => t && t.t === 'op' && t.v === v;
   for (let i = 0; i < T.length; i++) {
@@ -577,7 +681,7 @@ function rewriteHashList(T) {
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -734,14 +838,20 @@ function interp(raw) {
       const sub = raw.slice(i);
       let m;
       if (c === '@' && (m = /^@\{/.exec(sub))) {
-        const end = matchBraceStr(sub, 1);
+        let end = matchBraceStr(sub, 1);
+        if (sub[end + 1] === '[' || sub[end + 1] === '{') end = matchBraceStr(sub, end + 1);       // "@{$r}[0,1]"  "@{$h}{qw(a b)}"
         const code = sub.slice(0, end + 1);
         s += '${(' + compileExpr(code) + ').join(" ")}';
         i += end + 1; continue;
       }
+      if (c === '$' && sub.startsWith('$#{')) { const end = matchBraceStr(sub, 2); s += '${_s(' + compileExpr(sub.slice(0, end + 1)) + ')}'; i += end + 1; continue; }
+      if (c === '$' && (m = /^\$#\$([A-Za-z_]\w*)/.exec(sub))) { s += '${($' + m[1] + '.length-1)}'; i += m[0].length; continue; }
       if (c === '$' && (m = /^\$#([A-Za-z_]\w*)/.exec(sub))) { s += '${(_a$' + m[1] + '.length-1)}'; i += m[0].length; continue; }
-      if ((m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{)|(&))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
-        let expr = c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : '') || (m[6] ? '&' : ''));
+      let pre = null;
+      if (c === '$' && sub.startsWith('${$')) { const e = matchBraceStr(sub, 1); pre = sub.slice(0, e + 1); m = [pre]; }       // "${$ref}[1]"
+      else if (c === '@' && (m = /^@\$([A-Za-z_]\w*)/.exec(sub))) pre = m[0];                                                  // "@$ref"
+      if (pre || (m = c === '$' ? /^\$(?:\{(\w+)\}|([A-Za-z_]\w*(?:::\w+)*)|(\d+)|(@)|(\+)(?=\{)|(&)|\$([A-Za-z_]\w*)(?=[\[{]))/.exec(sub) : /^@([A-Za-z_]\w*)/.exec(sub))) {
+        let expr = pre || c + (m[1] || m[2] || m[3] || (m[4] ? '@' : '') || (m[5] ? '+' : '') || (m[6] ? '&' : '') || (m[7] ? '$' + m[7] : ''));
         let j = m[0].length;
         if (c === '$') {
           for (;;) {
@@ -756,7 +866,7 @@ function interp(raw) {
           }
           s += piece('_s(' + compileExpr(expr) + ')'); one = '';
         } else {
-          if (sub[j] === '[') { const e = matchBraceStr(sub, j); expr += sub.slice(j, e + 1); j = e + 1; }   // "@a[0,1]"
+          if (sub[j] === '[' || sub[j] === '{') { const e = matchBraceStr(sub, j); expr += sub.slice(j, e + 1); j = e + 1; }   // "@a[0,1]"  "@h{qw(a b)}"
           s += '${' + compileExpr(expr) + '.join(" ")}';
         }
         i += j; continue;
@@ -793,7 +903,7 @@ function translate(T, opts) {
   }
   const scopes = [new Set()];
   let pendDecl = [];
-  const keyOf = (v) => (v.sig === '$' ? (v.elem === '[' ? '@' : v.elem === '{' ? '%' : '$') : v.sig === '$#' ? '@' : v.sig) + v.name;
+  const keyOf = (v) => v.sig === '$#' && v.ref ? '$' + v.name : (v.sig === '$' ? (v.elem === '[' ? '@' : v.elem === '{' ? '%' : '$') : v.sig === '$#' ? '@' : v.sig) + v.name;
   const declare = (k) => scopes[scopes.length - 1].add(k);
   const checkVar = (v, k) => {
     if (!strict || STRICT_OK.has(v.name) || /^\d+$/.test(v.name) || v.name.includes('::') || v.ref) return;
@@ -998,7 +1108,12 @@ function translate(T, opts) {
           else if (isOp(prev, '(') && isId(T[i - 2], 'catch')) pendDecl.push(k);      // catch ($e) { ... }
           else checkVar(t, k);
         }
-        if (t.sig === '$#') { emit('(' + (t.ref ? '$' + t.name : '_a$' + safeName(t.name)) + '.length-1)'); break; }
+        if (t.sig === '$#') {
+          const nm = t.ref ? '$' + t.name : '_a$' + safeName(t.name);
+          if (isOp(next, '=')) { emit(nm + '.length = 1 + ('); st.push({ k: 'unary', close: ')', callee: '_n' }); i++; break; }      // $#a = 3;
+          if (isOp(next, '++') || isOp(next, '--')) { emit(nm + '.length'); break; }                                                  // $#a--;
+          emit('(' + nm + '.length-1)'); break;
+        }
         const nm = vname(t);
         const declInit = prev && prev.t === 'id' && (prev.v === 'my' || prev.v === 'our' || prev.v === 'local') &&
           !isOp(next, '=') && !(top() && top().k === 'mylist');
@@ -1664,6 +1779,12 @@ const RT = {
   pop_: (a) => a.pop(),
   shift_: (a) => a.shift(),
   unshift_: (a, ...v) => a.unshift(...v),
+  deref_: (x) => x,
+  _countof: (...l) => l.flat(1).length,
+  hslice_: (h, ...k) => mk(k.flat(1).map((x) => h[x])),
+  aslice_: (a, ...k) => mk(k.flat(1).map((x) => a[x < 0 ? a.length + +x : x])),
+  hsset_: (h, k, v) => { k = [].concat(k).flat(1); v = [].concat(v).flat(1); k.forEach((x, n) => { h[x] = v[n]; }); return mk(v); },
+  hsdel_: (h, ...k) => mk(k.flat(1).map((x) => { const r = h[x]; delete h[x]; return r; })),
   splice_: (a, off = 0, len, ...l) => a.splice(off, len === undefined ? a.length : len, ...l),
   join_: (sep, ...l) => l.flat(1).map(_s).join(sep),
   split_: (pat, str, limit) => {
@@ -2022,7 +2143,9 @@ function buildImports(uses) {
   return { cur, imports };
 }
 function compileFull(src) {
+  Perl2JS.notes.length = 0;
   const T = lex(src);
+  const seen = new Set(); Perl2JS.notes = Perl2JS.notes.filter((n) => { const k = n.line + n.from; if (seen.has(k)) return false; seen.add(k); return true; });
   const uses = scanUses(T);
   const jq = T.find((t) => t.t === 'id' && t.v === '$');
   const need = uses.map((u) => ({ mod: u.mod, line: u.line }));
@@ -2047,6 +2170,7 @@ function requires(src) {
 const API = { G, hide, mk, Lst, RT, _s, root, NUMHOOKS, pkg, hasOwn };
 
 const Perl2JS = {
+  notes: [],                                  // hints from the last compile, e.g. full-width symbols read as half-width
   errorText, renderError,
   lex, prepare,
   PerlError,
