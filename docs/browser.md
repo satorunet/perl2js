@@ -80,7 +80,7 @@ Runtime errors are `PerlError` objects with `.kind` (`compile` / `runtime`), `.l
 
 ## The playground
 
-[satoru.net/perl2js](https://satoru.net/perl2js/) has an editor with line numbers, a DevTools-style console, a "generated JS" tab, copy buttons and about 30 runnable examples. `Ctrl+Enter` runs the program. The `#stage` area below it is where the DOM examples draw.
+[satoru.net/perl2js](https://satoru.net/perl2js/) has an editor with line numbers, a DevTools-style console, a "generated JS" tab, copy buttons and about 30 runnable examples. `Ctrl+Enter` runs the program. Every example has a stable link, e.g. `https://satoru.net/perl2js/#fizzbuzz` (the 🔗 button copies the current one): `hello fizzbuzz word-count closures nested-data regex hybrid jquery-counter jquery-todo jquery-dom jquery-effects jquery-ajax heredoc oop strict-tr data-dumper local error-demo datetime time-piece datetime-module list-util json-pp try-tiny test-more text-encode error-handling`. The `#stage` area below it is where the DOM examples draw.
 
 ## In Node.js
 
