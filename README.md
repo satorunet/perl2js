@@ -1,5 +1,4 @@
 <p align="center">
-  <img alt="Dromi, the Perl2JS camel" src="assets/mascot.svg" width="230"><br>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
     <img alt="Perl2JS" src="assets/logo-light.svg" width="520">
@@ -110,13 +109,8 @@ perl2js.js        the compiler + runtime (core)
 modules/          Perl modules, loaded by `use`
 index.html        playground + documentation
 demo.html, require-demo.html, hello.p2j, main.p2j, lib/   small examples
-assets/           logo, mascot
+assets/           logo
 ```
-
-## Mascot
-
-**Dromi** is the Perl2JS camel: a hump with a `$` badge and a saddle blanket with `»` (Perl → JS).
-It is an original character — not the O'Reilly "Perl camel" artwork, which is O'Reilly Media's trademark.
 
 ## Known differences from Perl
 

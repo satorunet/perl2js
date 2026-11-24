@@ -1,5 +1,4 @@
 <p align="center">
-  <img alt="Dromi — Perl2JS のラクダ" src="assets/mascot.svg" width="230"><br>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
     <img alt="Perl2JS" src="assets/logo-light.svg" width="520">
@@ -110,13 +109,8 @@ perl2js.js        コンパイラ + ランタイム(コア)
 modules/          Perlモジュール(use で読み込み)
 index.html        プレイグラウンド + ドキュメント
 demo.html, require-demo.html, hello.p2j, main.p2j, lib/   小さなサンプル
-assets/           ロゴ・マスコット
+assets/           ロゴ
 ```
-
-## マスコット
-
-**Dromi(ドロミー)** は Perl2JS のラクダです。コブには `$` のバッジ、鞍には `»`(Perl → JS)がついています。
-オリジナルのキャラクターで、O'Reilly の「Perlのラクダ」のイラスト(O'Reilly Media の商標)とは別物です。
 
 ## Perlとの違い
 
