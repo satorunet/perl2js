@@ -652,6 +652,27 @@ function rewriteForAlias(T) {            // for my $e (@a) { $e *= 2 }  /  for (
   return false;
 }
 
+const JS_GLOBALS = new Set(['Math', 'JSON', 'console', 'document', 'window', 'Object', 'Array', 'Number', 'String', 'Date', 'Promise', 'localStorage', 'sessionStorage', 'navigator', 'location', 'Intl', 'history', 'performance']);
+function rewriteJsDots(T) {              // Math.max(1, 2)  document.getElementById("x").value   ==>   JS-style `.` access is accepted next to `->`
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && JS_GLOBALS.has(T[i].v) && O(T[i + 1], '.') && !T[i + 1].sp && T[i + 2] && T[i + 2].t === 'id' && !T[i + 2].sp)) continue;
+    if (T[i - 1] && O(T[i - 1], '->')) continue;
+    let d = 0, changed = false;
+    for (let k = i + 1; k < T.length; k++) {
+      const u = T[k];
+      if (u.t === 'op') {
+        if ('([{'.includes(u.v)) d++;
+        else if (')]}'.includes(u.v)) { if (d === 0) break; d--; }
+        else if ((u.v === ';' || u.v === ',') && d === 0) break;
+        else if (u.v === '.' && !u.sp && T[k + 1] && T[k + 1].t === 'id' && !T[k + 1].sp && (T[k - 1].t === 'id' || O(T[k - 1], ')') || O(T[k - 1], ']'))) { T[k] = Object.assign({}, u, { v: '->' }); changed = true; }
+      }
+    }
+    if (changed) return true;
+  }
+  return false;
+}
+
 function rewriteDelete(T) {            // delete $h{k} / delete $r->{a}{b}  ==>  hdel_(base, key)   (returns the removed value like Perl)
   const O = (t, v) => t && t.t === 'op' && t.v === v;
   for (let i = 0; i < T.length; i++) {
@@ -797,7 +818,7 @@ function rewriteHashList(T) {
 function prepare(T) {
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteJsDots(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -1911,6 +1932,7 @@ const RT = {
   shift_: (a) => a.shift(),
   unshift_: (a, ...v) => a.unshift(...v),
   deref_: (x) => x,
+  $0: 'main.p2j', _a$ARGV: [], _h$ENV: {},
   aset_: (a, v) => { v = Array.isArray(v) ? Array.from(v) : v === undefined ? [] : [v]; a.splice(0, a.length, ...v); return a; },
   asetl_: (a, v) => { a.splice(0, a.length, ...v.flatMap((x) => (x instanceof Lst || (x && x.__listlike)) ? x : [x])); return a; },
   hset_: (h, v) => { const src = Array.isArray(v) ? v : v && typeof v === 'object' ? Object.assign({}, v) : []; for (const k of Object.keys(h)) delete h[k]; if (Array.isArray(src)) for (let n = 0; n < src.length; n += 2) h[_s(src[n])] = src[n + 1]; else Object.assign(h, src); return h; },

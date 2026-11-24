@@ -352,6 +352,32 @@ print "ok\n" if "abc" =~ /b/ and not "abc" =~ /z/;
 
 Also available: `wantarray` is **not** supported; `local $_` works; `printf`/`sprintf` support `%s %d %f %e %g %x %o %b %c %%`, flags, width, precision and `%vd`.
 
+## Perl + JavaScript hybrid
+
+Perl2JS compiles to JavaScript, so JavaScript's world is one step away. You can keep writing Perl and call browser or JS objects in the same program, with either `->` (Perl style) or `.` (JavaScript style) on the common JS globals:
+
+```perl2js
+for (0..5) {
+    alert(10);                       # Perl loop, JavaScript function
+}
+
+print Math.max(1, 5, 3), "\n";                       # 5   (also Math->max(...))
+print JSON.stringify({ a => 1, b => [1, 2] }), "\n";  # {"a":1,"b":[1,2]}
+
+my $el = document.getElementById("out");             # the DOM, straight from Perl
+$el->{textContent} = "Hello from Perl";              # properties are hash-style: ->{name}
+console.log("sum:", 1 + 2);
+
+my $now = new Date();
+print $now->getFullYear(), "\n";                     # methods on JS objects: ->name(...)
+```
+
+Which JS names work with a `.`: `Math JSON console document window Object Array Number String Date Promise localStorage sessionStorage navigator location Intl history performance`.
+Everywhere else use `->`: `$obj->method(...)` calls a method, `$obj->{prop}` reads or writes a property, `$fn->(...)` calls a function value, and `sub { ... }` is a function you can pass to any JS API (`setTimeout(sub { print "later" }, 500)`).
+Perl code and JS values mix freely: arrays are real JS arrays, hashes are plain objects, strings and numbers are the JS ones.
+
+Not accepted (it is Perl, not JavaScript): `let`/`const`, arrow functions `x => x * 2`, `===`, template literals. See [Differences](differences.md).
+
 ## Built-in functions
 
 | Group | Functions |

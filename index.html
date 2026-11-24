@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perl2JS — ブラウザで動くPerl風言語</title>
-<link rel="icon" href="assets/icon.svg?v=20261124e" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124e">
+<link rel="icon" href="assets/icon.svg?v=20261124f" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=20261124f">
 <meta property="og:title" content="Perl2JS">
 <meta property="og:description" content="Perl風の構文を、ブラウザ内でJavaScriptにコンパイルして実行します。">
-<meta property="og:image" content="assets/social-preview.png?v=20261124e">
+<meta property="og:image" content="assets/social-preview.png?v=20261124f">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1b17; --mut:#6d675c; --card:#fff; --line:#e3ded2; --acc:#0b6e69; --accfg:#fff; --code:#f3f0e8; --err:#b3261e; }
   @media (prefers-color-scheme: dark) {
@@ -51,7 +51,9 @@
   .win button.tab[aria-pressed=true] { background:#388bfd33; border-color:#388bfd; color:#fff; }
   .win-status { display:flex; justify-content:space-between; gap:12px; padding:4px 12px; background:#161b22; border-top:1px solid #30363d; font:11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#8b949e; }
   .win-status .ok { color:#3fb950; } .win-status .bad { color:#ff7b72; }
-  :root { --paneH: clamp(240px, 38vh, 340px); }          /* keeps #stage visible below the editor/console on a normal screen */
+  :root { --paneH: clamp(240px, 38vh, 340px); }
+  body.tall { --paneH: clamp(340px, 66vh, 640px); }          /* no #stage needed: make the editor and console tall */
+  body.tall .stage { display:none; }          /* keeps #stage visible below the editor/console on a normal screen */
   .editor { display:flex; height:var(--paneH); }
   .editor pre.gutter { width:auto; min-width:3.4em; margin:0; padding:12px 10px 12px 8px; border:0; border-right:1px solid #21262d; border-radius:0; background:#0d1117; color:#6e7681;
     text-align:right; white-space:pre; overflow:hidden; user-select:none; font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
@@ -104,7 +106,7 @@
 <body>
 <main>
   <a class="gh" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener" aria-label="GitHub: satorunet/perl2js">&lt;/&gt; GitHub</a>
-  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124e"><img src="assets/logo-light.svg?v=20261124e" alt="Perl2JS" height="72"></picture></h1>
+  <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg?v=20261124f"><img src="assets/logo-light.svg?v=20261124f" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
   <div class="bar">
@@ -337,6 +339,17 @@ print "dates found: $n\\n";
 my $masked = $log;
 $masked =~ s/(\\d{4})-(\\d\\d)-(\\d\\d)/$3\\/$2\\/$1/g;
 print $masked, "\\n";
+`,
+"Perl + JS ハイブリッド": `# Perl のループに JavaScript の関数、Math / JSON / document を . でそのまま
+for (0..2) {
+    console.log("loop", $_);                    # ブラウザの DevTools コンソールに出ます
+}
+print Math.max(1, 5, 3), " ", Math.floor(2.7), "\\n";
+print JSON.stringify({ name => "Perl2JS", tags => ["perl", "js"] }), "\\n";
+
+$("#stage")->html("<b id='hy'>Perl が DOM を書き換え</b>");
+document.getElementById("hy")->{style}{color} = "crimson";
+setTimeout(sub { print "0.5秒後に実行\\n" }, 500);
 `,
 "jQuery風: カウンター": `$("#stage")->html("<button id='b'>押してね</button> <b id='n'>0</b>");
 
@@ -740,7 +753,9 @@ function renderPos() {
   const before = src.value.slice(0, src.selectionStart).split('\n');
   byId('edPos').textContent = 'Ln ' + before.length + ', Col ' + (before[before.length - 1].length + 1);
 }
-src.addEventListener('input', () => { renderGutter(0); renderPos(); });
+/* the #stage box is only shown for programs that touch the page (jQuery-style $, document, #stage); otherwise the panes get taller */
+function updateLayout() { document.body.classList.toggle('tall', !/\$\(|\$->|\bdocument\b|\bwindow\b|#stage|\balert\b/.test(src.value)); }
+src.addEventListener('input', () => { renderGutter(0); renderPos(); updateLayout(); });
 src.addEventListener('scroll', () => { gutter.scrollTop = src.scrollTop; });
 ['keyup', 'click', 'select'].forEach((ev) => src.addEventListener(ev, renderPos));
 
@@ -780,6 +795,7 @@ for (const pre of document.querySelectorAll('section.doc pre')) {          // ev
 function load(name) { src.value = EXAMPLES[name]; byId('fileName').textContent = 'main.p2j'; renderGutter(0); renderPos(); run(); }
 let runSeq = 0;
 async function run() {
+  updateLayout();
   const my = ++runSeq;                       // ignore results of an older, slower run
   stage.innerHTML = ''; outBuf = ''; outErr.textContent = ''; renderOut(''); renderGutter(0);
   setStatus('', '実行中…');
