@@ -57,6 +57,13 @@
 <p><code>wantarray</code>, formats (<code>format STDOUT =</code>), <code>tie</code>, <code>pos()</code> and <code>\G</code>, <code>sort by_name LIST</code> (use a block: <code>sort { $a &lt;=&gt; $b } LIST</code>), <code>goto</code>, typeglobs (<code>*name</code>), <code>AUTOLOAD</code>, <code>DESTROY</code> timing, <code>local</code> on array and hash elements.
 File and process functions (<code>open</code>, <code>opendir</code>, <code>system</code>, <code>fork</code>, <code>-e</code>) do not exist in a browser.
 <code>binmode</code> and <code>STDIN</code> are accepted and ignored; <code>print STDERR</code> goes to <code>console.warn</code>.</p>
+<h2 id="waiting"><a class="anchor" href="#waiting" aria-hidden="true">#</a>Waiting</h2>
+<p><code>sleep N</code>, <code>Time::HiRes::sleep</code> / <code>usleep</code> and <code>select(undef, undef, undef, $secs)</code> really wait, like Perl: nothing else runs and the page does not repaint until they return. That is fine for short pauses and for output order, but for a delay that should not freeze the page use a timer:</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">Copy</button></div><pre><code>print &quot;start\n&quot;;
+setTimeout(sub { print &quot;half a second later\n&quot; }, 500);   # the page stays responsive
+sleep 1;                                                    # blocks for 1 second
+print &quot;done\n&quot;;</code></pre></div>
+<p>(<code>sleep</code> also works inside a <code>setTimeout</code> callback; it then blocks while that callback runs.)</p>
 <h2 id="things-that-are-better-than-perl-in-a-browser"><a class="anchor" href="#things-that-are-better-than-perl-in-a-browser" aria-hidden="true">#</a>Things that are better than Perl in a browser</h2>
 <p><code>$(&quot;#id&quot;)-&gt;...</code> (jQuery style), calling DOM and JS objects with <code>-&gt;</code> or <code>.</code>, <a href="syntax.html#perl--javascript-hybrid">hybrid syntax</a>, and full-width symbols (<code>＄ｘ ＝ （１）；</code>) typed with an IME are read as their half-width twins (inside strings they stay as they are).</p>
 <h2 id="names"><a class="anchor" href="#names" aria-hidden="true">#</a>Names</h2>
@@ -65,7 +72,7 @@ File and process functions (<code>open</code>, <code>opendir</code>, <code>syste
 
 <footer>Source and issues: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
 </main>
-<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#numbers-and-strings">Numbers and strings</a><a href="#references">References</a><a href="#context">Context</a><a href="#not-implemented">Not implemented</a><a href="#things-that-are-better-than-perl-in-a-browser">Things that are better than Perl in a browser</a><a href="#names">Names</a></nav>
+<nav class="toc" aria-label="On this page"><b>On this page</b><a href="#numbers-and-strings">Numbers and strings</a><a href="#references">References</a><a href="#context">Context</a><a href="#not-implemented">Not implemented</a><a href="#waiting">Waiting</a><a href="#things-that-are-better-than-perl-in-a-browser">Things that are better than Perl in a browser</a><a href="#names">Names</a></nav>
 </div>
 <script>
 document.querySelectorAll('.code .copy').forEach(function (b) {

@@ -33,6 +33,19 @@ Perl はリストコンテキストかスカラーコンテキストかを実行
 ファイルとプロセスに関する関数 (`open`、`opendir`、`system`、`fork`、`-e`) は、ブラウザには存在しません。
 `binmode` と `STDIN` は受け付けられて無視され、`print STDERR` は `console.warn` に出力されます。
 
+## 待機(sleep)
+
+`sleep N`、`Time::HiRes::sleep` / `usleep`、`select(undef, undef, undef, $秒)` は Perl と同じく本当に待ちます。待っている間は他の処理が動かず、ページも再描画されません。短い待ちや出力順の確認には十分ですが、ページを止めたくない遅延にはタイマーを使います。
+
+```perl2js
+print "start\n";
+setTimeout(sub { print "half a second later\n" }, 500);   # the page stays responsive
+sleep 1;                                                    # blocks for 1 second
+print "done\n";
+```
+
+(`setTimeout` のコールバックの中でも `sleep` は使えます。その場合はコールバックの実行中だけブロックします。)
+
 ## ブラウザでは Perl より便利な点
 
 `$("#id")->...` (jQuery 風)、`->` または `.` による DOM や JS オブジェクトの呼び出し、[ハイブリッド構文](syntax.ja.md)、そして IME で入力した全角記号 (`＄ｘ ＝ （１）；`) は、対応する半角記号として読み取られます (文字列の中ではそのままです)。

@@ -38,7 +38,7 @@ How to load a bundled module: `use List::Util qw(sum);` loads `modules/List/Util
 | `POSIX` | 🟡 | `strftime mktime floor ceil fmod pow round trunc`, limits |
 | `Time::Local` | ✅ | `timelocal timegm` |
 | `Time::Piece`, `Time::Seconds` | ✅ | |
-| `Time::HiRes` | 🟡 | `time gettimeofday tv_interval`; `sleep`/`usleep` cannot block a browser |
+| `Time::HiRes` | 🟡 | `time gettimeofday tv_interval`; `sleep`/`usleep` block the page while waiting |
 | `DateTime`, `DateTime::Duration` | ✅ | with real time zones (IANA names) |
 | `DateTime::Format::*`, `Date::Calc` | ➖ | |
 

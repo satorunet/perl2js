@@ -38,7 +38,7 @@
 | `POSIX` | 🟡 | `strftime mktime floor ceil fmod pow round trunc`、各種上限値 |
 | `Time::Local` | ✅ | `timelocal timegm` |
 | `Time::Piece`, `Time::Seconds` | ✅ | |
-| `Time::HiRes` | 🟡 | `time gettimeofday tv_interval`。`sleep`/`usleep` はブラウザをブロックできません |
+| `Time::HiRes` | 🟡 | `time gettimeofday tv_interval sleep usleep`。`sleep` は待つ間ページが止まります |
 | `DateTime`, `DateTime::Duration` | ✅ | 実際のタイムゾーン (IANA 名) に対応 |
 | `DateTime::Format::*`, `Date::Calc` | ➖ | |
 

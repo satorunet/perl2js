@@ -33,6 +33,19 @@ Perl decides list or scalar context at run time. Perl2JS decides from the shape 
 File and process functions (`open`, `opendir`, `system`, `fork`, `-e`) do not exist in a browser.
 `binmode` and `STDIN` are accepted and ignored; `print STDERR` goes to `console.warn`.
 
+## Waiting
+
+`sleep N`, `Time::HiRes::sleep` / `usleep` and `select(undef, undef, undef, $secs)` really wait, like Perl: nothing else runs and the page does not repaint until they return. That is fine for short pauses and for output order, but for a delay that should not freeze the page use a timer:
+
+```perl2js
+print "start\n";
+setTimeout(sub { print "half a second later\n" }, 500);   # the page stays responsive
+sleep 1;                                                    # blocks for 1 second
+print "done\n";
+```
+
+(`sleep` also works inside a `setTimeout` callback; it then blocks while that callback runs.)
+
 ## Things that are better than Perl in a browser
 
 `$("#id")->...` (jQuery style), calling DOM and JS objects with `->` or `.`, [hybrid syntax](syntax.md#perl--javascript-hybrid), and full-width symbols (`＄ｘ ＝ （１）；`) typed with an IME are read as their half-width twins (inside strings they stay as they are).

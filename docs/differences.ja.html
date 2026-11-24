@@ -57,6 +57,13 @@
 <p><code>wantarray</code>、フォーマット (<code>format STDOUT =</code>)、<code>tie</code>、<code>pos()</code> と <code>\G</code>、<code>sort by_name LIST</code> (ブロックを使ってください: <code>sort { $a &lt;=&gt; $b } LIST</code>)、<code>goto</code>、型グロブ (<code>*name</code>)、<code>AUTOLOAD</code>、<code>DESTROY</code> のタイミング、配列要素とハッシュ要素に対する <code>local</code>。
 ファイルとプロセスに関する関数 (<code>open</code>、<code>opendir</code>、<code>system</code>、<code>fork</code>、<code>-e</code>) は、ブラウザには存在しません。
 <code>binmode</code> と <code>STDIN</code> は受け付けられて無視され、<code>print STDERR</code> は <code>console.warn</code> に出力されます。</p>
+<h2 id="待機sleep"><a class="anchor" href="#待機sleep" aria-hidden="true">#</a>待機(sleep)</h2>
+<p><code>sleep N</code>、<code>Time::HiRes::sleep</code> / <code>usleep</code>、<code>select(undef, undef, undef, $秒)</code> は Perl と同じく本当に待ちます。待っている間は他の処理が動かず、ページも再描画されません。短い待ちや出力順の確認には十分ですが、ページを止めたくない遅延にはタイマーを使います。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>print &quot;start\n&quot;;
+setTimeout(sub { print &quot;half a second later\n&quot; }, 500);   # the page stays responsive
+sleep 1;                                                    # blocks for 1 second
+print &quot;done\n&quot;;</code></pre></div>
+<p>(<code>setTimeout</code> のコールバックの中でも <code>sleep</code> は使えます。その場合はコールバックの実行中だけブロックします。)</p>
 <h2 id="ブラウザでは-perl-より便利な点"><a class="anchor" href="#ブラウザでは-perl-より便利な点" aria-hidden="true">#</a>ブラウザでは Perl より便利な点</h2>
 <p><code>$(&quot;#id&quot;)-&gt;...</code> (jQuery 風)、<code>-&gt;</code> または <code>.</code> による DOM や JS オブジェクトの呼び出し、<a href="syntax.ja.html">ハイブリッド構文</a>、そして IME で入力した全角記号 (<code>＄ｘ ＝ （１）；</code>) は、対応する半角記号として読み取られます (文字列の中ではそのままです)。</p>
 <h2 id="名前"><a class="anchor" href="#名前" aria-hidden="true">#</a>名前</h2>
@@ -65,7 +72,7 @@
 
 <footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
 </main>
-<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#数値と文字列">数値と文字列</a><a href="#リファレンス">リファレンス</a><a href="#コンテキスト">コンテキスト</a><a href="#未実装">未実装</a><a href="#ブラウザでは-perl-より便利な点">ブラウザでは Perl より便利な点</a><a href="#名前">名前</a></nav>
+<nav class="toc" aria-label="このページの内容"><b>このページの内容</b><a href="#数値と文字列">数値と文字列</a><a href="#リファレンス">リファレンス</a><a href="#コンテキスト">コンテキスト</a><a href="#未実装">未実装</a><a href="#待機sleep">待機(sleep)</a><a href="#ブラウザでは-perl-より便利な点">ブラウザでは Perl より便利な点</a><a href="#名前">名前</a></nav>
 </div>
 <script>
 document.querySelectorAll('.code .copy').forEach(function (b) {

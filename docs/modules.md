@@ -225,7 +225,7 @@ print $p->add_months(11)->ymd, " ", $p->add_years(-1)->ymd, "\n";
 
 ### Time::HiRes
 
-`time` (fractional seconds), `gettimeofday`, `tv_interval`. `sleep`/`usleep` cannot block in a browser and are not provided.
+`time` (fractional seconds), `gettimeofday`, `tv_interval`, and `sleep` / `usleep` / `nanosleep` (fractional sleeps). Like Perl they block: the page is busy while they wait; for a wait that keeps the page responsive use `setTimeout(sub { ... }, $ms)`.
 
 ```perl
 use Time::HiRes qw(time gettimeofday tv_interval);

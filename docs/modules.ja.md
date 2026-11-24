@@ -225,7 +225,7 @@ print $p->add_months(11)->ymd, " ", $p->add_years(-1)->ymd, "\n";
 
 ### Time::HiRes
 
-`time` (小数秒)、`gettimeofday`、`tv_interval`。`sleep`/`usleep` はブラウザではブロックできないため、提供されていません。
+`time` (小数秒)、`gettimeofday`、`tv_interval`、そして `sleep` / `usleep` / `nanosleep` (小数秒もOK)。Perl と同じく待っている間は処理をブロックし、ページも止まります。ページを止めずに待ちたいときは `setTimeout(sub { ... }, $ms)` を使ってください。
 
 ```perl
 use Time::HiRes qw(time gettimeofday tv_interval);

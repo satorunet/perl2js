@@ -830,9 +830,9 @@ function prepare(T) {
 const BUILTINS = new Set(['print', 'say', 'printf', 'sprintf', 'push', 'pop', 'shift', 'unshift', 'splice', 'join',
   'split', 'map', 'grep', 'sort', 'reverse', 'keys', 'values', 'exists', 'defined', 'scalar', 'length', 'substr',
   'index', 'rindex', 'uc', 'lc', 'ucfirst', 'lcfirst', 'abs', 'int', 'sqrt', 'sin', 'cos', 'atan2', 'exp', 'log',
-  'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode']);
+  'hex', 'oct', 'rand', 'srand', 'time', 'localtime', 'die', 'warn', 'ref', 'chr', 'ord', 'num', 'exit', 'eval', 'bless', 'gmtime', 'binmode', 'sleep', 'select']);
 const UNARY = new Set(['length', 'defined', 'ref', 'scalar', 'uc', 'lc', 'ucfirst', 'lcfirst', 'int', 'abs', 'sqrt',
-  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime']);
+  'exists', 'shift', 'pop', 'chr', 'ord', 'hex', 'oct', 'keys', 'values', 'rand', 'log', 'exp', 'sin', 'cos', 'num', 'localtime', 'gmtime', 'sleep']);
 const LISTFN = new Set(['map', 'grep', 'sort', 'split', 'keys', 'values', 'reverse', 'splice', 'localtime', 'gmtime']);
 const DEFARG = new Set(['ord', 'chr', 'lc', 'uc', 'lcfirst', 'ucfirst', 'length', 'abs', 'int', 'sqrt', 'sin', 'cos', 'exp', 'log', 'hex', 'oct', 'defined', 'ref']);   // `$_` when called without an argument
 const NOARG = new Set(['shift', 'pop', 'time', 'rand', 'localtime', 'gmtime', 'srand', 'exit']);
@@ -1906,6 +1906,12 @@ hide(TimeList.prototype, '__listlike', true);
 const TIMELIST_FWD = ['$m', '$nm', '$sub', '$tr', '$trc', '$x'];
 hide(TimeList.prototype, 'toString', function () { return this.__scalar(); });
 
+function blockMs(ms) {
+  if (ms <= 0) return;
+  if (typeof SharedArrayBuffer !== 'undefined' && typeof Atomics !== 'undefined' && typeof process !== 'undefined') { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); return; }
+  const end = Date.now() + ms;
+  while (Date.now() < end) { /* the browser cannot sleep synchronously */ }
+}
 const RT = {
   _pkg: pkg,
   _def: (pk, name, fn) => { const P = pkg(pk); P.$f[name] = fn; const w = function (...a) { return fn.apply(this, [this, ...a]); }; P[name] = w; P.proto[name] = w; },
@@ -1989,6 +1995,9 @@ const RT = {
   rand_: (n) => Math.random() * (n || 1),
   srand_: () => 0,
   time_: () => Math.floor(Date.now() / 1000),
+  // sleep blocks like Perl does (the page is busy while it waits); in Node it really sleeps without spinning
+  sleep_: (n) => { n = +n || 0; blockMs(n * 1000); return Math.round(n); },
+  select_: (r, w, e, t) => { if (t != null) blockMs(+t * 1000); return 0; },
   localtime_: (t) => timeList(t, false),
   gmtime_: (t) => timeList(t, true),
   _ln: { v: 0 },
