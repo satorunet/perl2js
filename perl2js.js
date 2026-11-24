@@ -1792,7 +1792,7 @@ function readSync(url) {
   if (x.status && (x.status < 200 || x.status >= 300)) throw new Error('HTTP ' + x.status);
   return x.responseText;
 }
-const evalModule = (text, url) => new Function('Perl2JS', 'PerlScript', text + '\n//# sourceURL=' + url)(Perl2JS, Perl2JS);   // `PerlScript` = the old name, still accepted
+const evalModule = (text, url) => new Function('Perl2JS', text + '\n//# sourceURL=' + url)(Perl2JS);
 const missing = (name, url, e) => new Error('モジュール "' + name + '" を読み込めません (' + url + ')' + (e && e.message ? ': ' + e.message : ''));
 function initModule(name) {
   const raw = PENDING[name];
@@ -1956,12 +1956,12 @@ const Perl2JS = {
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = Perl2JS;
-else { root.Perl2JS = Perl2JS; root.PerlScript = Perl2JS; }       // PerlScript: the old global name, kept as an alias
+else root.Perl2JS = Perl2JS;
 
-// <script type="text/perl2js"> (and the old type="text/perlscript") auto-run
+// <script type="text/perl2js"> auto-run
 if (typeof document !== 'undefined') {
   const go = async () => {
-    for (const s of document.querySelectorAll('script[type="text/perl2js"], script[type="text/perlscript"]')) {
+    for (const s of document.querySelectorAll('script[type="text/perl2js"]')) {
       try {
         const base = s.src ? new URL(s.src, document.baseURI).href : document.baseURI;
         const text = s.src ? await (await fetch(s.src)).text() : s.textContent;

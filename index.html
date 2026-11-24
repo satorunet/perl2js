@@ -18,6 +18,7 @@
   body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
   main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; }
   h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -.01em; }
+  img.mascot { float: right; width: 150px; height: auto; margin: -6px 0 0 12px; } @media (max-width: 640px) { img.mascot { display: none; } }
   h1.brand { margin: 0 0 8px; line-height: 0; } h1.brand img { max-width: 100%; height: auto; max-height: 72px; }
   h1 span { color: var(--acc); }
   p.lead { color: var(--mut); margin: 0 0 20px; }
@@ -54,6 +55,7 @@
 </head>
 <body>
 <main>
+  <img class="mascot" src="assets/mascot.svg" alt="Dromi, the Perl2JS camel" width="150" height="123">
   <h1 class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg"><img src="assets/logo-light.svg" alt="Perl2JS" height="72"></picture></h1>
   <p class="lead">Perlっぽい構文で書くと、ブラウザ内でJavaScriptにコンパイルされて動きます。<code>document</code> や <code>console</code> などJSの世界もそのまま使えます。</p>
 
@@ -81,7 +83,6 @@
 
   <section class="doc">
     <h2>HTMLに直接書く</h2>
-    <p class="note" style="margin:0 0 8px">旧名「PerlScript」の <code>perlscript.js</code> / <code>window.PerlScript</code> / <code>type="text/perlscript"</code> も、別名としてそのまま動きます。拡張子は何でも構いません(サンプルは <code>.p2j</code>)。</p>
     <pre style="height:auto">&lt;script src="perl2js.js"&gt;&lt;/script&gt;
 &lt;script type="text/perl2js"&gt;
   my $n = 0;
