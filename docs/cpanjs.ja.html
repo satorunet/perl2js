@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPANjs — モジュールを登録する — Perl2JS</title>
+<meta name="description" content="print hello(&quot;Perl&quot;), &quot;\n&quot;;                      # Hello, Perl!">
+<link rel="canonical" href="https://satoru.net/perl2js/docs/cpanjs.ja.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Perl2JS">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:url" content="https://satoru.net/perl2js/docs/cpanjs.ja.html">
+<meta property="og:title" content="CPANjs — モジュールを登録する — Perl2JS">
+<meta property="og:description" content="print hello(&quot;Perl&quot;), &quot;\n&quot;;                      # Hello, Perl!">
+<meta property="og:image" content="https://satoru.net/perl2js/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b6e69">
+<link rel="icon" href="../assets/icon.svg?v=20261124n" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css?v=20261124n">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./README.ja.html"><picture><source srcset="../assets/logo.svg?v=20261124n" media="(prefers-color-scheme: dark)"><img src="../assets/logo-light.svg?v=20261124n" alt="Perl2JS" height="34"></picture></a>
+  <button class="menu" type="button" aria-label="メニュー" aria-expanded="false">☰ メニュー</button>
+  <span class="sp"></span>
+  <a class="pill opt" href="../">プレイグラウンド</a>
+  <a class="pill" href="cpanjs.html" hreflang="en">English</a>
+  <a class="pill opt" href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a>
+</header>
+<div class="layout">
+<nav class="side" aria-label="目次"><div class="side-title">目次</div><div class="grp">はじめに</div><details class="pg"><summary><a href="README.ja.html">概要</a></summary><ul><li><a href="README.ja.html#何が嬉しいの">何が嬉しいの?</a></li><li><a href="README.ja.html#30-秒でわかる使い方">30 秒でわかる使い方</a></li></ul></details><div class="grp">言語</div><details class="pg"><summary><a href="syntax.ja.html">対応している構文</a></summary><ul><li><a href="syntax.ja.html#変数">変数</a></li><li><a href="syntax.ja.html#配列ハッシュリファレンス">配列、ハッシュ、リファレンス</a></li><li><a href="syntax.ja.html#文字列">文字列</a></li><li><a href="syntax.ja.html#数値と演算子">数値と演算子</a></li><li><a href="syntax.ja.html#制御構文">制御構文</a></li><li><a href="syntax.ja.html#サブルーチン">サブルーチン</a></li><li><a href="syntax.ja.html#正規表現">正規表現</a></li><li><a href="syntax.ja.html#パッケージとオブジェクト">パッケージとオブジェクト</a></li><li><a href="syntax.ja.html#エラー">エラー</a></li><li><a href="syntax.ja.html#その他の機能">その他の機能</a></li><li><a href="syntax.ja.html#perl--javascript-ハイブリッド">Perl + JavaScript ハイブリッド</a></li><li><a href="syntax.ja.html#組み込み関数">組み込み関数</a></li></ul></details><details class="pg"><summary><a href="functions.ja.html">組み込み関数</a></summary><ul><li><a href="functions.ja.html#文字列">文字列</a></li><li><a href="functions.ja.html#数値">数値</a></li><li><a href="functions.ja.html#配列とリスト">配列とリスト</a></li><li><a href="functions.ja.html#ハッシュ">ハッシュ</a></li><li><a href="functions.ja.html#制御構文とスコープ">制御構文とスコープ</a></li><li><a href="functions.ja.html#正規表現">正規表現</a></li><li><a href="functions.ja.html#時間">時間</a></li><li><a href="functions.ja.html#出力">出力</a></li><li><a href="functions.ja.html#リファレンスとオブジェクト">リファレンスとオブジェクト</a></li><li><a href="functions.ja.html#ブラウザではできないもの">ブラウザではできないもの</a></li></ul></details><details class="pg"><summary><a href="differences.ja.html">Perl との違い</a></summary><ul><li><a href="differences.ja.html#数値と文字列">数値と文字列</a></li><li><a href="differences.ja.html#リファレンス">リファレンス</a></li><li><a href="differences.ja.html#コンテキスト">コンテキスト</a></li><li><a href="differences.ja.html#未実装">未実装</a></li><li><a href="differences.ja.html#待機sleep">待機(sleep)</a></li><li><a href="differences.ja.html#ブラウザでは-perl-より便利な点">ブラウザでは Perl より便利な点</a></li><li><a href="differences.ja.html#名前">名前</a></li></ul></details><div class="grp">モジュール</div><details class="pg"><summary><a href="modules.ja.html">同梱モジュール</a></summary><ul><li><a href="modules.ja.html#リストと型">リストと型</a></li><li><a href="modules.ja.html#データとテキスト">データとテキスト</a></li><li><a href="modules.ja.html#エンコーディングとハッシュ">エンコーディングとハッシュ</a></li><li><a href="modules.ja.html#時刻">時刻</a></li><li><a href="modules.ja.html#制御とテスト">制御とテスト</a></li><li><a href="modules.ja.html#cgi-cookie">CGI (Cookie)</a></li><li><a href="modules.ja.html#ファイルと数学">ファイルと数学</a></li></ul></details><details class="pg"><summary><a href="cpan.ja.html">人気のCPANモジュール</a></summary><ul><li><a href="cpan.ja.html#リストデータテキスト">リスト、データ、テキスト</a></li><li><a href="cpan.ja.html#エンコーディングとハッシュ">エンコーディングとハッシュ</a></li><li><a href="cpan.ja.html#時刻">時刻</a></li><li><a href="cpan.ja.html#制御フローとテスト">制御フローとテスト</a></li><li><a href="cpan.ja.html#ファイル数学システム">ファイル、数学、システム</a></li><li><a href="cpan.ja.html#web-とデータベース">Web とデータベース</a></li></ul></details><details class="pg"><summary><a href="writing-modules.ja.html">自分でモジュールを作る</a></summary><ul><li><a href="writing-modules.ja.html#1-ファイルを作る">1. ファイルを作る</a></li><li><a href="writing-modules.ja.html#2-使う">2. 使う</a></li><li><a href="writing-modules.ja.html#3-検索される場所">3. 検索される場所</a></li><li><a href="writing-modules.ja.html#4-perl-コードをライブラリにする">4. Perl コードをライブラリにする</a></li></ul></details><details class="pg" open><summary><a href="cpanjs.ja.html" aria-current="page">CPANjs: 登録する</a></summary><ul><li><a href="cpanjs.ja.html#使う">使う</a></li><li><a href="cpanjs.ja.html#登録する">登録する</a></li><li><a href="cpanjs.ja.html#perl-で書くモジュール">Perl で書くモジュール</a></li><li><a href="cpanjs.ja.html#ルール">ルール</a></li><li><a href="cpanjs.ja.html#対応してほしい-cpan-モジュールのリクエスト">対応してほしい CPAN モジュールのリクエスト</a></li><li><a href="cpanjs.ja.html#管理者向け-マージの前に確認すること">管理者向け: マージの前に確認すること</a></li></ul></details><div class="grp">使い方</div><details class="pg"><summary><a href="browser.ja.html">ブラウザで使う</a></summary><ul><li><a href="browser.ja.html#読み込み方">読み込み方</a></li><li><a href="browser.ja.html#ページ内の-perl">ページ内の Perl</a></li><li><a href="browser.ja.html#dom-と-jquery-風の">DOM と jQuery 風の $</a></li><li><a href="browser.ja.html#javascript-api">JavaScript API</a></li><li><a href="browser.ja.html#プレイグラウンド">プレイグラウンド</a></li><li><a href="browser.ja.html#nodejs-で使う">Node.js で使う</a></li></ul></details><div class="side-links"><a href="../">プレイグラウンド</a><a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">GitHub</a></div></nav>
+<main>
+<h1>CPANjs — モジュールを登録する</h1>
+<p><strong>CPANjs</strong> は、CPAN のように、誰でもモジュールを登録して使える仕組みです。登録は GitHub の Pull Request で行い、確認してマージされると公開されます。公開中のモジュールは <a href="https://satoru.net/perl2js/cpanjs/" target="_blank" rel="noopener">一覧</a> で検索できます。</p>
+<h2 id="使う"><a class="anchor" href="#使う" aria-hidden="true">#</a>使う</h2>
+<p><code>use</code> するだけです。インストールは要りません。</p>
+<div class="code"><div class="code-bar"><span class="lang">Perl2JS</span><button class="copy" type="button">コピー</button></div><pre><code>use Acme::Hello qw(hello);
+print hello(&quot;Perl&quot;), &quot;\n&quot;;                      # Hello, Perl!
+print Acme::Hello-&gt;new(greeting =&gt; &quot;Hi&quot;)-&gt;greet(&quot;CPANjs&quot;), &quot;\n&quot;;</code></pre></div>
+<p>同梱モジュールに同じ名前がないときだけ、<code>perl2js.js</code> と同じ場所の <code>cpanjs/lib/</code> から読み込みます。</p>
+<p><strong>何も設定しない場合</strong>、CDN の <code>@main</code> なら最新のモジュールです (反映が半日ほど遅れることがあります)。</p>
+<p><strong>版を固定する場合</strong> (本番ではこれをおすすめします) は、その時点のコミット ID を指定します。</p>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">コピー</button></div><pre><code>Perl2JS.cpanjs = &quot;https://cdn.jsdelivr.net/gh/satorunet/perl2js@コミットID/cpanjs/lib/&quot;;</code></pre></div>
+<p><strong>CPANjs を使わない場合</strong>は、次のように設定します。</p>
+<div class="code"><div class="code-bar"><span class="lang">JavaScript</span><button class="copy" type="button">コピー</button></div><pre><code>Perl2JS.cpanjs = false;</code></pre></div>
+<blockquote>
+<p>モジュールは、使うページの中で何でも実行できるコードです。登録時に確認していますが、安全を保証するものではありません。大事なページでは中身を読んで、版を固定してください。</p>
+</blockquote>
+<h2 id="登録する"><a class="anchor" href="#登録する" aria-hidden="true">#</a>登録する</h2>
+<ol>
+<li><a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">satorunet/perl2js</a> を Fork して、手元に clone します。</li>
+<li>ひな形を作ります (JavaScript で書くときは <code>--js</code> を付けます)。</li>
+</ol>
+<div class="code"><div class="code-bar"><span class="lang">text</span><button class="copy" type="button">コピー</button></div><pre><code>node tools/cpanjs.js new Foo::Bar --author あなたのGitHubユーザー名</code></pre></div>
+<ol start="3">
+<li>次の 3 つのファイルを書きます。</li>
+</ol>
+<div class="tablewrap"><table><thead><tr>
+<th>ファイル</th>
+<th>中身</th>
+</tr>
+</thead><tbody><tr>
+<td><code>cpanjs/lib/Foo/Bar.pm</code> (または <code>.js</code>)</td>
+<td>モジュール本体。200KB まで</td>
+</tr>
+<tr>
+<td><code>cpanjs/lib/Foo/Bar.json</code></td>
+<td><code>name</code> <code>version</code> <code>abstract</code> (1 行の説明) <code>authors</code> <code>license</code></td>
+</tr>
+<tr>
+<td><code>cpanjs/t/Foo/Bar.pl</code></td>
+<td><code>Test::More</code> のテスト (必須)</td>
+</tr>
+</tbody></table></div>
+<ol start="4">
+<li><code>node tools/cpanjs.js check</code> が通ることを確認して、Pull Request を出します。同じチェックが GitHub 上でも自動で動きます。</li>
+</ol>
+<h2 id="perl-で書くモジュール"><a class="anchor" href="#perl-で書くモジュール" aria-hidden="true">#</a>Perl で書くモジュール</h2>
+<p>いつもの <code>.pm</code> です。<code>package</code> / <code>sub</code> / <code>bless</code>、<code>use parent</code>、<code>@EXPORT</code> / <code>@EXPORT_OK</code> / <code>%EXPORT_TAGS</code>、ほかのモジュールの <code>use</code> が使えます。</p>
+<div class="code"><div class="code-bar"><span class="lang">text</span><button class="copy" type="button">コピー</button></div><pre><code>package Foo::Bar;
+use strict;
+use warnings;
+use Exporter qw(import);
+
+our @EXPORT_OK = qw(hello);
+
+sub hello { return &quot;Hello&quot; }
+
+1;</code></pre></div>
+<ul>
+<li>ファイル名と同じ <code>package</code> が必要です。</li>
+<li>モジュールの中では <code>sleep</code> は使えません。</li>
+<li>独自の <code>sub import</code> による取り込みには対応していません。</li>
+<li>そのほかは <a href="differences.ja.html">Perl との違い</a> と同じです。</li>
+</ul>
+<p>JavaScript で書くときの形式は <a href="writing-modules.ja.html">自作モジュールの書き方</a> を参照してください。</p>
+<h2 id="ルール"><a class="anchor" href="#ルール" aria-hidden="true">#</a>ルール</h2>
+<ul>
+<li>名前は先着順です。同梱モジュールやプラグマと同じ名前、大文字小文字だけが違う名前は登録できません。</li>
+<li>更新できるのは、<code>authors</code> に入っている人だけです。コードを変えるときは <code>version</code> を上げます。</li>
+<li>登録の Pull Request で変更できるのは <code>cpanjs/lib/</code> と <code>cpanjs/t/</code> だけです。一覧は自動で作られます。</li>
+<li>削除してほしいときは Issue で依頼してください。</li>
+<li>中身が読めない形 (難読化・圧縮)、利用者の情報を勝手に送るもの、外部からコードを取ってきて実行するもの、権利を侵害するものは登録できません。見つけた場合は削除します。</li>
+</ul>
+<h2 id="対応してほしい-cpan-モジュールのリクエスト"><a class="anchor" href="#対応してほしい-cpan-モジュールのリクエスト" aria-hidden="true">#</a>対応してほしい CPAN モジュールのリクエスト</h2>
+<p>対応してほしい CPAN モジュールや Perl の標準モジュールがあれば、<strong>GitHub の Issue でリクエストしてください</strong>: <a href="https://github.com/satorunet/perl2js/issues/new?template=module-request.yml" target="_blank" rel="noopener">リクエストを送る</a>。モジュール名と、使いたい機能のサンプルコードを書いてください。すべての対応を約束するものではありません。対応済みのものは <a href="cpan.ja.html">人気の CPAN モジュール</a> にあります。</p>
+<h2 id="管理者向け-マージの前に確認すること"><a class="anchor" href="#管理者向け-マージの前に確認すること" aria-hidden="true">#</a>管理者向け: マージの前に確認すること</h2>
+<ul>
+<li>自動チェックが成功していて、変更が <code>cpanjs/lib/</code> と <code>cpanjs/t/</code> だけであること (<code>.github/</code> が変わる Pull Request は、チェックの結果を信用しないでください)。</li>
+<li>コードを読んで、上のルールに反していないこと。名前が有名なモジュールと紛らわしくないこと。</li>
+<li>マージした後、satoru.net で公開するにはサーバー側で <code>git pull</code> します。</li>
+</ul>
+
+<footer>ソースコード・Issue: <a href="https://github.com/satorunet/perl2js" target="_blank" rel="noopener">github.com/satorunet/perl2js</a></footer>
+</main>
+</div>
+<script>
+(function () {                                              // mobile menu + highlight the section being read
+  var b = document.querySelector('button.menu'), side = document.querySelector('nav.side');
+  b.addEventListener('click', function () { var o = side.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  side.addEventListener('click', function (e) { if (e.target.closest('li a')) side.classList.remove('open'); });
+  var links = [].slice.call(side.querySelectorAll('details[open] li a')), heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+  function spy() { var y = window.scrollY + 90, cur = -1; heads.forEach(function (h, i) { if (h && h.offsetTop <= y) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+  window.addEventListener('scroll', spy, { passive: true }); spy();
+  var on = side.querySelector('a[aria-current]'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+})();
+document.querySelectorAll('.code .copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = b.closest('.code').querySelector('code').textContent;
+    var done = function () { var o = b.textContent; b.textContent = "コピーしました ✓"; setTimeout(function () { b.textContent = o; }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done); else done();
+  });
+});
+</script>
+</body>
+</html>

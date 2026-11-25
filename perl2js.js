@@ -75,10 +75,15 @@ function lex(src) {
     let sp = false;
     for (;;) {
       if (i >= n) break;
+      if (src[i] === '\u00a5' || src[i] === '\uffe5') src = src.slice(0, i) + '\\' + src.slice(i + 1);   // ¥%h in the code itself is \%h (strings keep their ¥)
       const ch = src[i];
       if (ch === '\n' && i === hdLine) { i = hdEnd; hdLine = -1; sp = true; }
       else if (/\s/.test(ch)) { i++; sp = true; }
-      else if (ch === '#') { while (i < n && src[i] !== '\n') i++; sp = true; }
+      else if (ch === '#' || ch === '\uFF03') {            // comment (a full-width ＃ typed with a Japanese IME works too)
+        if (ch !== '#') Perl2JS.notes.push({ line: lineOf(i), from: ch, to: '#' });
+        while (i < n && src[i] !== '\n') i++;
+        sp = true;
+      }
       else if (ch === '=' && (i === 0 || src[i - 1] === '\n') && /^=[a-zA-Z]/.test(src.slice(i, i + 2))) {
         const e = src.indexOf('\n=cut', i);               // POD block
         if (e < 0) i = n; else { const nl = src.indexOf('\n', e + 1); i = nl < 0 ? n : nl; }
@@ -165,6 +170,13 @@ function lex(src) {
     if (c === '$') {
       if (src[i + 1] === '(' || (src[i + 1] === '-' && src[i + 2] === '>')) { push({ t: 'id', v: '$' }); i++; continue; }   // jQuery: $("#id") / $->ajax(..)
       if ((m = /^\$\$([A-Za-z_]\w*)(?=[\[{])/.exec(rest))) { push({ t: 'var', sig: '$', name: m[1], elem: null }); push({ t: 'op', v: '->' }); i += m[0].length; continue; }   // $$r[0]  ==  $r->[0]
+      if ((m = /^\$(?:\{\^(MATCH|PREMATCH|POSTMATCH)\}|\^([OWT])|(\$)(?![\w{$:\[])|([`'";\]])|(\.)(?![A-Za-z_])|(\+)(?![{\w$\[])|([-+])(?=\[))/.exec(rest))) {      // $` $' $+ $" $; $. $] $$ $^O ${^MATCH} $-[0]
+        i += m[0].length;
+        const name = m[1] ? '^' + m[1] : m[2] ? '^' + m[2] : m[3] || m[4] || m[5] || m[6] || m[7];
+        push({ t: 'var', sig: '$', name, elem: m[7] ? '[' : null });
+        continue;
+      }
+      if (rest.startsWith('$#_') && !/\w/.test(rest[3] || '')) { push({ t: 'var', sig: '$#', name: '_' }); i += 3; continue; }
       if (rest.startsWith('$#{')) { push({ t: 'deref', sig: '$#' }); i += 2; continue; }       // $#{ expr }
       if ((m = /^\$#\$([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '$#', name: m[1], ref: true }); i += m[0].length; continue; }
       if ((m = /^\$#([A-Za-z_]\w*)/.exec(rest))) { push({ t: 'var', sig: '$#', name: m[1] }); i += m[0].length; continue; }
@@ -177,6 +189,7 @@ function lex(src) {
       if (src[i + 1] === '$' || src[i + 1] === '{') { push({ t: 'deref', sig: '$' }); i++; continue; }
     }
     if (c === '@') {
+      if ((m = /^@(?:\{\^(CAPTURE)\}|([-+])(?![\w{$]))/.exec(rest))) { push({ t: 'var', sig: '@', name: m[1] ? '^' + m[1] : m[2] }); i += m[0].length; continue; }   // @{^CAPTURE} @- @+
       if ((m = /^@([A-Za-z_]\w*(?:::\w+)*)/.exec(rest))) { push({ t: 'var', sig: '@', name: m[1] }); i += m[0].length; continue; }
       if (src[i + 1] === '$' || src[i + 1] === '{') { push({ t: 'deref', sig: '@' }); i++; continue; }
     }
@@ -654,6 +667,20 @@ function rewriteForAlias(T) {            // for my $e (@a) { $e *= 2 }  /  for (
 }
 
 const JS_GLOBALS = new Set(['Math', 'JSON', 'console', 'document', 'window', 'Object', 'Array', 'Number', 'String', 'Date', 'Promise', 'localStorage', 'sessionStorage', 'navigator', 'location', 'Intl', 'history', 'performance']);
+function rewriteJqDots(T) {              // $(".a").html("x").hide()   ==>   $(".a")->html("x")->hide()   (`. ` with a space after it stays a concatenation)
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  let changed = false;
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && T[i].v === '$' && O(T[i + 1], '('))) continue;
+    for (let k = matching(T, i + 1) + 1; k > 0 && T[k] && T[k + 1] && T[k + 1].t === 'id';) {
+      const call = O(T[k + 2], '(');
+      if (O(T[k], '.') && !T[k + 1].sp && (call || T[k + 1].v === 'length')) { T[k] = Object.assign({}, T[k], { v: '->' }); changed = true; }
+      else if (!O(T[k], '->')) break;
+      k = call ? matching(T, k + 2) + 1 : k + 2;
+    }
+  }
+  return changed;
+}
 function rewriteJsDots(T) {              // Math.max(1, 2)  document.getElementById("x").value   ==>   JS-style `.` access is accepted next to `->`
   const O = (t, v) => t && t.t === 'op' && t.v === v;
   for (let i = 0; i < T.length; i++) {
@@ -942,10 +969,32 @@ function markAsync(T) {
   return true;
 }
 
+// a..z  A..F  aa..zz : a bare word beside a range operator is a string (unless it names a sub, a constant or a builtin)
+function rewriteBareRange(T) {
+  const O = (t, v) => t && t.t === 'op' && t.v === v;
+  const R = (t) => O(t, '..') || O(t, '...');
+  const named = new Set();
+  T.forEach((t, i) => {
+    if (t.t !== 'id' || !T[i + 1]) return;
+    if (t.v === 'sub') named.add(T[i + 1].v);
+    if (t.v !== 'constant') return;
+    if (!O(T[i + 1], '{')) { named.add(T[i + 1].v); return; }
+    for (let k = i + 2, e = matching(T, i + 1); k < e; k++) if (O(T[k + 1], '=>')) named.add(T[k].v);
+  });
+  for (let i = 0; i < T.length; i++) {
+    const t = T[i];
+    if (t.t !== 'id' || !/^[A-Za-z]\w*$/.test(t.v) || !(R(T[i + 1]) || (R(T[i - 1]) && valueEnd(T[i - 2])))) continue;
+    if (O(T[i - 1], '->') || O(T[i + 1], '(') || O(T[i + 1], '->')) continue;
+    if (named.has(t.v) || CUR.imports.has(t.v) || BUILTINS.has(t.v) || UNARY.has(t.v) || NOARG.has(t.v) || ['wantarray', 'undef', 'else', 'do'].includes(t.v)) continue;
+    Object.assign(t, { t: 'str', interp: false });
+  }
+}
+
 function prepare(T) {
+  rewriteBareRange(T);
   classify(T);
   for (let guard = 0; guard < 5000; guard++) {
-    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteListIndex(T) || rewriteSubstr(T) || rewriteJsDots(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
+    if (rewriteSubs(T) || (CUR.imports.has('try') && rewriteTryTiny(T)) || rewriteCopyAssign(T) || rewriteListIndex(T) || rewriteSubstr(T) || rewriteJqDots(T) || rewriteJsDots(T) || rewriteAggAssign(T) || rewriteForAlias(T) || rewriteDelete(T) || rewriteCountOf(T) || rewriteSlices(T) || rewriteLastIdx(T) || rewriteEach(T) || rewriteFnBlocks(T) || rewriteMods(T) || rewriteElemOps(T) || rewriteISA(T) || rewriteHashList(T)) { classify(T); continue; }
     if (rewriteReturns(T)) { classify(T); continue; }
     break;
   }
@@ -1023,8 +1072,13 @@ function toPerlError(kind, e, src, js) {
   if (/Cannot read propert(?:y|ies) of (null|undefined) \(reading '(_\$|_p)'\)/.test(raw)) msg = "Can't call method on an undefined value";
   return new PerlError(kind, msg.replace(/\n+$/, ''), line, src, hintFor(raw));
 }
+const SPECIAL_SCALAR = { '`': '$PREMATCH', "'": '$POSTMATCH', '+': '$LASTPAREN', '"': '$LIST_SEP', ';': '$SUBSEP', '.': '$LINENO', ']': '$PERLVER', $: '$PID',
+  '^O': '$OSNAME', '^W': '$WARNING', '^T': '$BASETIME', '^MATCH': '$MATCH', '^PREMATCH': '$PREMATCH', '^POSTMATCH': '$POSTMATCH' };
+const SPECIAL_ARRAY = { '-': '_a$MINUS', '+': '_a$PLUS', '^CAPTURE': '_a$CAPTURE' };
 function vname(t) {
   const nm = t.name;
+  if ((t.sig === '@' || t.elem === '[') && Object.prototype.hasOwnProperty.call(SPECIAL_ARRAY, nm)) return SPECIAL_ARRAY[nm];
+  if (t.sig === '$' && !t.elem && Object.prototype.hasOwnProperty.call(SPECIAL_SCALAR, nm)) return SPECIAL_SCALAR[nm];
   if (t.sig === '$') {
     if (t.elem === '[') return nm === '_' ? '$_args' : '_a$' + safeName(nm);
     if (t.elem === '{') return '_h$' + safeName(nm);
@@ -1106,10 +1160,15 @@ function interp(raw) {
         let end = matchBraceStr(sub, 1);
         if (sub[end + 1] === '[' || sub[end + 1] === '{') end = matchBraceStr(sub, end + 1);       // "@{$r}[0,1]"  "@{$h}{qw(a b)}"
         const code = sub.slice(0, end + 1);
-        s += '${(' + compileExpr(code) + ').join(" ")}';
+        s += '${(' + compileExpr(code) + ').join($LIST_SEP)}';
         i += end + 1; continue;
       }
       if (c === '$' && sub.startsWith('$#{')) { const end = matchBraceStr(sub, 2); s += '${_s(' + compileExpr(sub.slice(0, end + 1)) + ')}'; i += end + 1; continue; }
+      if (c === '$' && (m = /^\$#_(?!\w)/.exec(sub))) { s += '${($_args.length-1)}'; i += m[0].length; continue; }
+      if ((m = c === '$' ? /^\$(?:\{\^(?:MATCH|PREMATCH|POSTMATCH)\}|\^[OWT]|\$(?![\w{$:\[])|[`']|\+(?![{\w$\[])|[-+]\[-?\d+\])/.exec(sub) : /^@\{\^CAPTURE\}/.exec(sub))) {
+        s += c === '$' ? piece('_s(' + compileExpr(m[0]) + ')') : '${' + compileExpr(m[0]) + '.join($LIST_SEP)}';
+        one = ''; i += m[0].length; continue;
+      }
       if (c === '$' && (m = /^\$#\$([A-Za-z_]\w*)/.exec(sub))) { s += '${($' + m[1] + '.length-1)}'; i += m[0].length; continue; }
       if (c === '$' && (m = /^\$#([A-Za-z_]\w*)/.exec(sub))) { s += '${(_a$' + m[1] + '.length-1)}'; i += m[0].length; continue; }
       let pre = null;
@@ -1132,7 +1191,7 @@ function interp(raw) {
           s += piece('_s(' + compileExpr(expr) + ')'); one = '';
         } else {
           if (sub[j] === '[' || sub[j] === '{') { const e = matchBraceStr(sub, j); expr += sub.slice(j, e + 1); j = e + 1; }   // "@a[0,1]"  "@h{qw(a b)}"
-          s += '${' + compileExpr(expr) + '.join(" ")}';
+          s += '${' + compileExpr(expr) + '.join($LIST_SEP)}';
         }
         i += j; continue;
       }
@@ -1154,7 +1213,8 @@ function matchBraceStr(str, at) {
   return str.length - 1;
 }
 
-const STRICT_OK = new Set(['_', '@', '!', '&', '|', ',', '\\', '/', '+', '0', 'a', 'b', 'this', 'ARGV', 'ENV', 'ISA', 'VERSION', 'EXPORT', 'EXPORT_OK', 'INC', 'STDIN', 'STDOUT', 'STDERR']);
+const STRICT_OK = new Set(['_', '@', '!', '&', '|', ',', '\\', '/', '+', '0', 'a', 'b', 'this', 'ARGV', 'ENV', 'ISA', 'VERSION', 'EXPORT', 'EXPORT_OK', 'INC', 'STDIN', 'STDOUT', 'STDERR',
+  '`', "'", '"', ';', '.', ']', '$', '-', '^O', '^W', '^T', '^MATCH', '^PREMATCH', '^POSTMATCH', '^CAPTURE']);
 
 function translate(T, opts) {
   const marks = !!(opts && opts.marks);
@@ -1508,6 +1568,8 @@ function translate(T, opts) {
             while (i < T.length && !isOp(T[i], ';')) i++;
             break;
           }
+          case '__LINE__': emit(String(t.line || 0)); break;
+          case '__FILE__': emit('"main.p2j"'); break;
           case '__PACKAGE__': emit(curPkg === 'main' ? '"main"' : safeName(curPkg) + ' '); break;
           case 'sub': {
             if (next && next.t === 'id' && curPkg !== 'main') {
@@ -1791,6 +1853,8 @@ function translate(T, opts) {
             break;
           }
           case '-': case '+':
+            // -name => 'x'  /  $h{-name} : a minus in front of a bareword makes the string "-name"
+            if (v === '-' && !valueEnd(prev) && next && next.t === 'id' && !next.sp && (isOp(T[i + 2], '=>') || (isOp(prev, '{') && isOp(T[i + 2], '}')))) { emit(JSON.stringify('-' + next.v)); i++; break; }
             if (!valueEnd(prev) && v === '-' && next && next.t === 'num' && isOp(T[i + 2], '%')) { emit('(-' + next.v + ')'); i++; break; }   // (-7) % 3
             if (valueEnd(prev)) {
               flush(UNARY_ONLY);
@@ -2181,7 +2245,7 @@ const RT = {
   _NUM_ASC: (a, b) => a - b,
   _NUM_DESC: (a, b) => b - a,
   _STR_DESC: (a, b) => a < b ? 1 : a > b ? -1 : 0,
-  _arr: (x) => Array.isArray(x) ? Array.from(x) : x,
+  _arr: (x) => Array.isArray(x) ? Array.from(x) : x === undefined ? [] : x,   // `my @a = f();` after a bare `return;`
   _rx: (v) => (v instanceof RegExp ? '(?:' + v.source + ')' : String(v)),
   _s,
   _cU: (x) => String(x).toUpperCase(), _cL: (x) => String(x).toLowerCase(),
@@ -2258,6 +2322,24 @@ hide(Array.prototype, '$x', function (n) { const r = new Lst(); for (let i = 0; 
 let LAST = null;
 for (let k = 1; k < 10; k++) Object.defineProperty(G, '$' + k, { get() { return LAST ? LAST[k] : undefined; }, set() {}, configurable: true });
 Object.defineProperty(G, '$MATCH', { get() { return LAST ? LAST[0] : undefined; }, set() {}, configurable: true });
+// the other special variables.  $, $" $/ stay ordinary globals so that `local` works
+if (G.$LIST_SEP === undefined) G.$LIST_SEP = ' ';
+if (G.$RS === undefined) G.$RS = '\n';
+for (const [k, v] of Object.entries({ $SUBSEP: '\x1c', $PERLVER: 5.036, $PID: 1, $OSNAME: 'browser', $WARNING: 0, $BASETIME: Math.floor(Date.now() / 1000), $LINENO: undefined })) if (!(k in G)) G[k] = v;
+const special = (name, get) => Object.defineProperty(G, name, { get, set() {}, configurable: true });
+special('$PREMATCH', () => (LAST && LAST.input !== undefined ? LAST.input.slice(0, LAST.index) : undefined));
+special('$POSTMATCH', () => (LAST && LAST.input !== undefined ? LAST.input.slice(LAST.index + LAST[0].length) : undefined));
+special('$LASTPAREN', () => { if (LAST) for (let k = LAST.length - 1; k > 0; k--) if (LAST[k] !== undefined) return LAST[k]; return undefined; });
+special('_a$CAPTURE', () => (LAST ? Array.from(LAST).slice(1) : []));
+function offsets(end) {                                   // @- and @+ : where the match and each group start / end
+  if (!LAST || !LAST.re) return [];
+  const re = new RegExp(LAST.re.source, LAST.re.flags.replace(/[gyd]/g, '') + 'yd');
+  re.lastIndex = LAST.index;
+  const m = re.exec(LAST.input);
+  return m ? m.indices.map((p) => (p ? p[end] : undefined)) : [];
+}
+special('_a$MINUS', () => offsets(0));
+special('_a$PLUS', () => offsets(1));
 Object.defineProperty(G, '$NAMED', { get() { return LAST && LAST.groups ? LAST.groups : {}; }, set() {}, configurable: true });   // $+{name}
 function trExpand(s) {
   s = s.replace(/\\(.)/g, (m, c) => ({ n: '\n', t: '\t', r: '\r', '\\': '\\', '-': '\u0001' })[c] || c);
@@ -2314,7 +2396,7 @@ for (const P of [String.prototype, Number.prototype]) {
       if (m) POS.set(key, { str, idx: m[0] === '' ? re.lastIndex + 1 : re.lastIndex }); else POS.delete(key);
     } else m = re.exec(str);
     if (!m) return false;
-    LAST = m;
+    LAST = m; m.re = re;
     return true;
   });
   def(P, '$nm', function (re) { return !this.$m(re); });
@@ -2328,12 +2410,12 @@ for (const P of [String.prototype, Number.prototype]) {
     const str = String(this);
     if (re.global) {
       const out = []; re.lastIndex = 0; let m;
-      while ((m = re.exec(str))) { out.push(...(m.length > 1 ? m.slice(1) : [m[0]])); LAST = m; if (m[0] === '') re.lastIndex++; }
+      while ((m = re.exec(str))) { out.push(...(m.length > 1 ? m.slice(1) : [m[0]])); LAST = m; m.re = re; if (m[0] === '') re.lastIndex++; }
       return mk(out);
     }
     const m = re.exec(str);
     if (!m) return mk([]);
-    LAST = m;
+    LAST = m; m.re = re;
     return mk(m.length > 1 ? m.slice(1) : [1]);
   });
   def(P, '$tr', function (from, to, flags) { return trans(String(this), from, to, flags).out; });
@@ -2343,6 +2425,8 @@ for (const P of [String.prototype, Number.prototype]) {
       const n = typeof a[a.length - 1] === 'object' ? a.length - 3 : a.length - 2;   // number of capture groups
       LAST = a.slice(0, n + 1);
       if (typeof a[a.length - 1] === 'object') LAST.groups = a[a.length - 1];
+      const named = typeof a[a.length - 1] === 'object' ? 1 : 0;
+      Object.assign(LAST, { index: a[a.length - 2 - named], input: a[a.length - 1 - named], re });
       return fn();
     });
   });
@@ -2431,30 +2515,110 @@ function initModule(name) {
   def.name = name; MODS[name] = def;
   return def;
 }
+// CPANjs: modules registered by users, cpanjs/lib/Foo/Bar.pm (Perl) or .js, next to perl2js.js.
+// Only asked for when there is no bundled module of that name.   Perl2JS.cpanjs = false  turns it off.
+function cpanjsBase() {
+  if (Perl2JS.cpanjs === false) return null;
+  if (Perl2JS.cpanjs) return Perl2JS.cpanjs.replace(/\/?$/, '/');
+  if (isNode) return require('path').join(__dirname, 'cpanjs', 'lib') + '/';
+  return new URL('cpanjs/lib/', SCRIPT_URL || document.baseURI).href;
+}
+function candidates(name) {
+  const list = [{ url: modUrl(name), perl: false }], reg = cpanjsBase();
+  if (reg && /^[A-Za-z_]\w*(::\w+)*$/.test(name)) for (const ext of ['.pm', '.js']) list.push({ url: reg + name.replace(/::/g, '/') + ext, perl: ext === '.pm' });
+  return list;
+}
+function addModule(name, c, text) {
+  if (c.perl) PENDING[name] = perlModule(name, text, c.url);
+  else evalModule(text, c.url);
+  if (!PENDING[name]) throw missing(name, c.url, new Error('このファイルは ' + name + ' を登録していません'));
+}
+const LOADING = new Set();                                      // `use` cycles between modules
 function loadSync(name) {
   if (MODS[name]) return MODS[name];
   if (!PENDING[name]) {
-    const url = modUrl(name); let text;
-    try { text = readSync(url); } catch (e) { throw missing(name, url, e); }
-    evalModule(text, url);
-    if (!PENDING[name]) throw missing(name, url, new Error('このファイルは ' + name + ' を登録していません'));
+    let first = null, found = false;
+    for (const c of candidates(name)) {
+      let text;
+      try { text = readSync(c.url); } catch (e) { first = first || missing(name, c.url, e); continue; }
+      addModule(name, c, text); found = true; break;
+    }
+    if (!found) throw first;
   }
-  for (const d of PENDING[name].deps || []) loadSync(d);
-  return MODS[name] || initModule(name);
+  if (LOADING.has(name)) return null;
+  LOADING.add(name);
+  try {
+    for (const d of PENDING[name].deps || []) loadSync(d);
+    return MODS[name] || initModule(name);
+  } finally { LOADING.delete(name); }
 }
-async function loadAsync(name) {
+async function loadAsync(name, seen) {
   if (MODS[name]) return;
   if (!PENDING[name]) {
-    const url = modUrl(name); let text;
-    try {
-      if (isNode || typeof fetch !== 'function') text = readSync(url);     // no fetch (old browsers / jsdom): fall back to a plain request
-      else { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); text = await r.text(); }
-    } catch (e) { throw missing(name, url, e); }
-    evalModule(text, url);
-    if (!PENDING[name]) throw missing(name, url, new Error('このファイルは ' + name + ' を登録していません'));
+    let first = null, found = false;
+    for (const c of candidates(name)) {
+      let text;
+      try {
+        if (isNode || typeof fetch !== 'function') text = readSync(c.url);     // no fetch (old browsers / jsdom): fall back to a plain request
+        else { const r = await fetch(c.url); if (!r.ok) throw new Error('HTTP ' + r.status); text = await r.text(); }
+      } catch (e) { first = first || missing(name, c.url, e); continue; }
+      addModule(name, c, text); found = true; break;
+    }
+    if (!found) throw first;
   }
-  for (const d of PENDING[name].deps || []) await loadAsync(d);
+  seen = seen || new Set();
+  if (seen.has(name)) return;
+  seen.add(name);
+  for (const d of PENDING[name].deps || []) await loadAsync(d, seen);
   if (!MODS[name]) initModule(name);
+}
+// A module written in Perl (.pm): package / sub / bless, @EXPORT and @EXPORT_OK
+function perlModule(name, src, url) {
+  const T = lex(src);
+  const own = new Set(T.flatMap((t, i) => (t.t === 'id' && t.v === 'package' && T[i + 1] && T[i + 1].t === 'id' ? [T[i + 1].v] : [])));
+  if (!own.has(name)) throw missing(name, url, new Error('"package ' + name + ';" がありません'));
+  const deps = scanUses(T).map((u) => u.mod);
+  for (let i = 0; i < T.length; i++) {                          // use parent 'Base';  loads Base (unless -norequire / declared here)
+    if (!(T[i].t === 'id' && T[i].v === 'use' && T[i + 1] && (T[i + 1].v === 'parent' || T[i + 1].v === 'base'))) continue;
+    const names = [];
+    let norequire = false;
+    for (let j = i + 2; j < T.length && !(T[j].t === 'op' && T[j].v === ';'); j++) {
+      const u = T[j];
+      if (u.v === 'norequire') norequire = true;
+      else if (u.t === 'str') names.push(u.interp ? u.raw : u.v); else if (u.t === 'qw') names.push(...u.list);
+    }
+    if (!norequire) deps.push(...names.filter((n) => !own.has(n)));
+  }
+  // `our` variables stay private to this file instead of becoming page globals
+  const vars = new Set(['_a$EXPORT', '_a$EXPORT_OK', '_a$ISA', '$VERSION', '_h$EXPORT_TAGS']);
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].t === 'id' && T[i].v === 'our' && T[i + 1])) continue;
+    const end = T[i + 1].v === '(' ? matching(T, i + 1) : i + 2;
+    for (let j = i + 1; j < end + (end === i + 2 ? 0 : 1); j++) if (T[j] && T[j].t === 'var') vars.add(vname(T[j]));
+  }
+  return {
+    name, deps,
+    init() {
+      const notes = Perl2JS.notes;
+      Perl2JS.notes = [];
+      try {
+        const c = compileFull(src, { marks: false });
+        if (c.async) throw new Error('モジュールの中では sleep を使えません');
+        const js = 'var ' + Array.from(vars).join(', ') + ';\n' + c.js + 'return [_a$EXPORT || [], _a$EXPORT_OK || [], _h$EXPORT_TAGS || {}];\n';
+        const scope = makeScope(c);
+        const [def, ok, tags] = new Function(...Object.keys(scope), js + '//# sourceURL=' + url)(...Object.values(scope));
+        const P = pkg(name), classes = {};
+        for (const p of own) if (p !== 'main') classes[p] = pkg(p);
+        return {
+          exports: Object.assign({}, P.$f), classes, default: Array.from(def),
+          exportable: new Set([...def, ...ok]),
+          tags: (t) => (t === 'all' && !tags[t] ? [...def, ...ok] : t === 'DEFAULT' ? def : tags[t] || []),
+        };
+      } catch (e) {
+        throw new Error('モジュール "' + name + '" (' + url + ')' + (e.line ? ' の ' + e.line + ' 行目' : '') + ': ' + (e.message || e));
+      } finally { Perl2JS.notes = notes; }
+    },
+  };
 }
 // pragmas / core syntax handled by the translator itself: nothing to load
 const PRAGMAS = new Set(['strict', 'warnings', 'utf8', 'feature', 'vars', 'lib', 'parent', 'base', 'constant', 'integer', 'overload', 'Exporter', 'bytes', 'open',
@@ -2486,7 +2650,9 @@ function buildImports(uses) {
     const ex = def.exports || {};
     for (const c of Object.keys(def.classes || {})) cur.classes.add(c);
     for (const n of def.listfns || []) cur.listfns.add(n);
-    const names = (u.names === null ? (def.default || []) : u.names.flatMap((n) => (n[0] === ':' ? Object.keys(ex) : [n]))).filter((n) => Object.prototype.hasOwnProperty.call(ex, n));
+    const asked = u.names === null ? (def.default || []) : u.names.flatMap((n) => (n[0] === ':' ? (def.tags ? def.tags(n.slice(1)) : Object.keys(ex)) : [n]));
+    if (def.exportable) for (const n of asked) if (!def.exportable.has(n)) throw perr('"' + n + '" is not exported by the ' + u.mod + ' module', u.line);
+    const names = asked.filter((n) => Object.prototype.hasOwnProperty.call(ex, n));
     const unary = new Set(def.unary || []), noarg = new Set(def.noarg || []), blocks = def.blockfns || {};
     for (const n of names) {
       const kind = typeof ex[n] !== 'function' ? 'const' : n in blocks ? 'block' : unary.has(n) ? 'unary' : noarg.has(n) ? 'noarg' : 'listop';
@@ -2497,7 +2663,7 @@ function buildImports(uses) {
   }
   return { cur, imports };
 }
-function compileFull(src) {
+function compileFull(src, opts) {
   Perl2JS.notes.length = 0;
   const T = lex(src);
   const seen = new Set(); Perl2JS.notes = Perl2JS.notes.filter((n) => { const k = n.line + n.from; if (seen.has(k)) return false; seen.add(k); return true; });
@@ -2510,7 +2676,7 @@ function compileFull(src) {
   CUR = cur;
   try {
     const P = prepare(T);
-    const body = 'let $_args = [];\n' + translate(P, { marks: true }) + '\n';
+    const body = 'let $_args = [];\n' + translate(P, { marks: !(opts && opts.marks === false) }) + '\n';
     const js = P.asyncMode ? 'return (async () => {' + body + '})();\n' : body;
     return { async: !!P.asyncMode, js, mods: Array.from(new Set(need.map((n) => n.mod))), imports, uses };
   } finally { CUR = emptyCur(); }
@@ -2524,6 +2690,21 @@ function requires(src) {
   } catch (e) { return []; }
 }
 
+// the names a compiled program can see: the runtime plus what its modules provide
+function makeScope(c) {
+  const scope = Object.assign({}, RT);
+  for (const m of c.mods) {
+    const def = MODS[m]; if (!def) continue;
+    const key = safeName(m), ex = def.exports || {};
+    for (const k of Object.keys(ex)) scope[key + '_' + k] = ex[k];                       // List::Util::sum(...)  =>  List_Util_sum
+    for (const cls of Object.keys(def.classes || {})) scope[safeName(cls)] = def.classes[cls];   // DateTime->new
+    const imported = c.imports.filter((x) => x.mod === m).map((x) => x.name);
+    for (const n of imported) scope[jsName(n)] = ex[n];
+    if (def.scope) Object.assign(scope, def.scope(imported, c.uses.filter((x) => x.mod === m).flatMap((x) => x.args)));
+  }
+  return scope;
+}
+
 const API = { G, hide, mk, Lst, RT, _s, root, NUMHOOKS, pkg, hasOwn };
 
 const LIVE = new Set();                                         // stop tokens of the async programs that are running
@@ -2532,7 +2713,9 @@ const Perl2JS = {
   errorText, renderError,
   lex, prepare,
   PerlError,
+  pragmas: PRAGMAS,
   libPath: null,
+  cpanjs: null,                               // where CPANjs modules are looked up (null: cpanjs/lib/ next to perl2js.js, false: off)
   module(def) { PENDING[def.name] = def; },
   async use(...names) { for (const n of names.flat()) await loadAsync(n); },
   requires,
@@ -2543,7 +2726,7 @@ const Perl2JS = {
   run(src, opts) {
     let c;
     try { c = compileFull(src); } catch (e) { throw toPerlError('compile', e, src); }
-    const js = c.js, scope = Object.assign({}, RT);
+    const js = c.js, scope = makeScope(c);
     // async programs (they `sleep`): every run has its own stop token, checked whenever the program wakes up
     const tok = { stopped: false };
     if (opts && opts.exclusive) Perl2JS.stop();
@@ -2552,15 +2735,6 @@ const Perl2JS = {
       if (tok.stopped) return rej({ exit: true });
       setTimeout(() => (tok.stopped ? rej({ exit: true }) : res(Math.round(+n || 0))), Math.max(0, (+n || 0) * 1000));
     });
-    for (const m of c.mods) {
-      const def = MODS[m]; if (!def) continue;
-      const key = safeName(m), ex = def.exports || {};
-      for (const k of Object.keys(ex)) scope[key + '_' + k] = ex[k];                       // List::Util::sum(...)  =>  List_Util_sum
-      for (const cls of Object.keys(def.classes || {})) scope[safeName(cls)] = def.classes[cls];   // DateTime->new
-      const imported = c.imports.filter((x) => x.mod === m).map((x) => x.name);
-      for (const n of imported) scope[jsName(n)] = ex[n];
-      if (def.scope) Object.assign(scope, def.scope(imported, c.uses.filter((x) => x.mod === m).flatMap((x) => x.args)));
-    }
     Object.assign(scope, (opts && opts.globals) || {});
     const names = Object.keys(scope);
     let fn;

@@ -17,6 +17,7 @@ Perl2JS は、Perl 構文で書いたコードを **ブラウザ上で** JavaScr
 | `List::Util`、`JSON::PP`、`POSIX`、`DateTime`... を使いたい | **[同梱モジュール](modules.ja.md)** |
 | 有名な CPAN モジュールが使えるか確認したい | **[主要な CPAN モジュールの対応状況](cpan.ja.md)** |
 | 自分のモジュール (`use Foo::Bar`) を書きたい | **[自作モジュールの書き方](writing-modules.ja.md)** |
+| モジュールを登録・公開したい、CPAN モジュールをリクエストしたい | **[CPANjs](cpanjs.ja.md)** |
 | Web ページに組み込み、DOM や jQuery 風の `$` を使いたい | [ブラウザでの使い方](browser.ja.md) |
 | 本物の Perl と挙動が違う点を知りたい | [Perl との違い](differences.ja.md) |
 

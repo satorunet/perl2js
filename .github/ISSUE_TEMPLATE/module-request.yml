@@ -1,0 +1,22 @@
+name: CPAN モジュール対応リクエスト / Module request
+description: 対応してほしい CPAN モジュール・標準モジュールをリクエストします / Ask for a CPAN or core module to be supported
+title: '[module request] '
+body:
+  - type: input
+    id: module
+    attributes:
+      label: モジュール名 / Module name
+      placeholder: Getopt::Long
+    validations:
+      required: true
+  - type: textarea
+    id: usage
+    attributes:
+      label: 使いたい機能とサンプルコード / What you use it for, with sample code
+      render: perl
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足 / Notes

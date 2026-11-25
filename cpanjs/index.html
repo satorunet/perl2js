@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPANjs — Perl2JS のモジュール登録所</title>
+<meta name="description" content="Perl2JS で use できるモジュールを登録・検索する CPANjs">
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../docs/docs.css">
+<style>
+  .cp { max-width: 820px; margin: 0 auto; padding: 24px 16px; }
+  .cp input { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 16px; }
+  .cp li { margin: 0 0 16px; }
+  .cp ul { list-style: none; padding: 0; }
+  .cp code { user-select: all; }
+</style>
+</head>
+<body>
+<div class="cp">
+  <h1>CPANjs</h1>
+  <p>Perl2JS で <code>use</code> できる、みんなが登録したモジュールです。</p>
+  <p><a href="../docs/cpanjs.ja.html">モジュールを登録する</a> ·
+     <a href="https://github.com/satorunet/perl2js/issues/new?template=module-request.yml">対応してほしい CPAN モジュールをリクエストする</a> ·
+     <a href="../">プレイグラウンド</a></p>
+  <input id="q" type="search" placeholder="モジュール名・説明・作者で検索" aria-label="検索">
+  <ul id="list"></ul>
+</div>
+<script>
+(function () {
+  var list = document.getElementById('list'), q = document.getElementById('q'), mods = [];
+  function el(tag, text) { var e = document.createElement(tag); if (text) e.textContent = text; return e; }
+  function draw() {
+    var w = q.value.trim().toLowerCase();
+    var hit = mods.filter(function (m) { return [m.name, m.abstract, m.authors.join(' ')].join(' ').toLowerCase().indexOf(w) >= 0; });
+    list.textContent = '';
+    hit.forEach(function (m) {
+      var li = el('li'), a = el('a', m.name);
+      a.href = m.file.split('/').map(encodeURIComponent).join('/');
+      li.append(a, ' ' + m.version + ' — ' + m.abstract, el('br'), el('code', 'use ' + m.name + ';'), '  作者: ' + m.authors.join(', ') + ' / ' + m.license);
+      list.append(li);
+    });
+    if (!hit.length) list.append(el('li', '見つかりません'));
+  }
+  q.addEventListener('input', draw);
+  fetch('index.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+    .then(function (d) { mods = d; draw(); }, function () { list.append(el('li', '一覧を読み込めませんでした')); });
+})();
+</script>
+</body>
+</html>

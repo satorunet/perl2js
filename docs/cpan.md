@@ -5,6 +5,8 @@
 Legend: **✅ bundled** (works, compared with real Perl) · **🟡 partial** (common functions only) · **🌐 browser equivalent** (use the JS/DOM way) · **⛔ not possible in a browser** · **➖ not yet**.
 How to load a bundled module: `use List::Util qw(sum);` loads `modules/List/Util.js` on demand (see [Bundled modules](modules.md)).
 
+> Want a CPAN or core module to be supported? [Request it in an Issue](https://github.com/satorunet/perl2js/issues/new?template=module-request.yml). You can also write it and [register it on CPANjs](cpanjs.md).
+
 ## Lists, data and text
 
 | Module | Status | Notes |
@@ -72,7 +74,8 @@ How to load a bundled module: `use List::Util qw(sum);` loads `modules/List/Util
 |---|---|---|
 | jQuery-style `$("#id")->on(...)->fadeIn` | ✅ | `modules/jQuery.js`, loaded when `$` is used; see [browser](browser.md) |
 | `LWP::UserAgent`, `HTTP::Tiny`, `Mojo::UserAgent` | 🌐 | `$->get`, `$->post`, `$->ajax` |
-| `CGI`, `Plack`, `Mojolicious`, `Dancer2` | ⛔ | server frameworks |
+| `CGI`, `CGI::Cookie` | ✅ | cookie handling only; see [modules](modules.md#cgi-cookies) |
+| `Plack`, `Mojolicious`, `Dancer2` | ⛔ | server frameworks |
 | `DBI` and drivers | ⛔ | no database driver; call an HTTP API with `$->ajax` |
 
 Missing something you need? [Write it yourself in a few lines](writing-modules.md) or open an issue.

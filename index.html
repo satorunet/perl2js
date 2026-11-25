@@ -82,12 +82,28 @@
   .editor { display:flex; height:var(--paneH); }
   .editor pre.gutter { width:auto; min-width:3.4em; margin:0; padding:12px 10px 12px 8px; border:0; border-right:1px solid #21262d; border-radius:0; background:#0d1117; color:#6e7681;
     text-align:right; white-space:pre; overflow:hidden; user-select:none; font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .editor pre.gutter .pl { color:#3fb950; }          /* the lines where you write Perl */
   .editor pre.gutter .bad { color:#fff; background:#da3633; border-radius:3px; padding:0 3px; margin-right:-3px; }
   .edbox { position:relative; flex:1; min-width:0; height:100%; }
-  .edbox pre.ws { position:absolute; inset:0; margin:0; padding:12px 14px; border:0; border-radius:0; background:none; color:transparent; overflow:hidden; pointer-events:none; user-select:none;
+  .edbox pre.ws { position:absolute; inset:0; margin:0; padding:12px 14px; border:0; border-radius:0; background:none; color:#e6edf3; overflow:hidden; pointer-events:none; user-select:none;
     font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size:4; white-space:pre; }
   /* Hidemaru-style marks: half-width space = dotted box in the lower half, open at the top, full-width space = dotted square, tab »  line break ↓  end of file [EOF] */
   .ws i { font-style:normal; position:relative; }
+  .ws .x-c { color:#6a737d; }                                                                    /* comments: # to the end of the line */
+  .ws .x-s { color:#a5d6ff; } .ws .x-r { color:#7ee787; } .ws .x-n { color:#79c0ff; } .ws .x-v { color:#ffa657; }
+  .ws .x-k { color:#ff7b72; } .ws .x-f { color:#d2a8ff; } .ws .x-d { color:#f2cc60; } .ws .x-p { color:#56d4dd; } .ws .x-t { color:#8b949e; }
+  .ws .x-bm { background:#3fb95040; box-shadow:0 0 0 1px #3fb950; border-radius:2px; }            /* the matching bracket pair */
+  .snips { display:flex; gap:5px; padding:6px 10px; overflow-x:auto; background:#0d1117; border-bottom:1px solid #21262d; scrollbar-width:thin; }
+  .snips button { flex:none; padding:3px 9px; font:12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#161b22; color:#c9d1d9; border:1px solid #30363d; border-radius:999px; cursor:pointer; }
+  .snips button:hover { border-color:#58a6ff; color:#fff; }
+  .edhint { padding:5px 12px; background:#0d1117; border-top:1px solid #21262d; font:11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#9da7b3; white-space:nowrap; overflow-x:auto; scrollbar-width:none; }
+  .edhint.bad { color:#ff7b72; background:#290000; }
+  .ac { position:fixed; z-index:50; min-width:230px; max-width:min(440px, calc(100vw - 8px)); padding:4px; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.45); font:12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .ac[hidden] { display:none; }
+  .ac div { display:flex; align-items:baseline; gap:8px; padding:3px 8px; border-radius:5px; cursor:pointer; white-space:nowrap; }
+  .ac div[aria-selected=true] { background:#388bfd55; }
+  .ac b { font-weight:600; } .ac em { font-style:normal; font-size:10.5px; color:#7ee787; } .ac span { overflow:hidden; text-overflow:ellipsis; color:#8b949e; font-size:11.5px; }
+  .ac small { display:block; padding:3px 8px 1px; color:#6e7681; font-size:10.5px; border-top:1px solid #21262d; }
   .ws i::after { position:absolute; left:0; right:0; top:0; text-align:center; font-weight:400; color:#454c56; }          /* faint gray, like Hidemaru's marks */
   .ws i.h::after, .ws i.f::after { content:''; top:14%; bottom:10%; left:1px; right:1px; border:1px dotted #5a626d; }
   .ws i.h::after { top:48%; border-top:0; }                                                      /* half-width: only the lower half of the cell */      /* a dotted box: half a cell wide for a half-width space, a square for a full-width one */
@@ -96,9 +112,9 @@
   .ws i.e::after, .ws i.z::after { text-align:left; right:auto; white-space:pre; }
   .ws i.e::after { content:'↓'; }
   .ws i.z::after { content:'[EOF]'; font-size:.85em; }
-  .editor textarea { flex:1; min-width:0; width:100%; height:100%; position:relative; margin:0; padding:12px 14px; border:0; border-radius:0; outline:0; resize:none; background:transparent; color:#e6edf3; caret-color:#58a6ff;
+  .editor textarea { flex:1; min-width:0; width:100%; height:100%; position:relative; margin:0; padding:12px 14px; border:0; border-radius:0; outline:0; resize:none; background:transparent; color:transparent; caret-color:#58a6ff;          /* the text you see is the overlay (.ws) underneath */
     font:13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size:4; white-space:pre; overflow:auto; }
-  .editor textarea::selection { background:#264f78; }
+  .editor textarea::selection { background:rgba(56,139,253,.35); color:transparent; }
   /* ---- console: Chrome DevTools look ---- */
   .console.devtools { background:#1e1e1e; border-color:#3c3c3c; }
   .dt-tabs { display:flex; align-items:center; gap:2px; height:31px; padding:0 8px; background:#292a2d; border-bottom:1px solid #3c3c3c; font:12px system-ui, sans-serif; }
@@ -124,6 +140,7 @@
   @keyframes cur-blink { 50% { opacity:0; } }
   @media (prefers-reduced-motion: reduce) { .cursor { animation:none; } }
   .stage { background: var(--card); font-family: inherit; min-height: 120px; margin-top: 12px; }
+  .stage iframe { display:block; width:100%; height:120px; border:0; border-radius:6px; background:#fff; color-scheme:light; }   /* a pasted page looks as it would on its own */
   .stage:empty::before { content: "#stage  — DOM を操作するサンプルはここに描画されます"; color: var(--mut); font-size: 13px; }
   h2 { font-size: 15px; margin: 0 0 6px; color: var(--mut); font-weight: 600; }
   .col { min-width: 0; }
@@ -154,6 +171,10 @@
   .menu a { display: block; padding: 11px 14px; border-radius: 8px; color: var(--fg); text-decoration: none; font-size: 15px; }
   .menu a:hover { background: var(--code); }
   @media (max-width: 800px) {
+    .console .con-body { height: clamp(200px, 42vh, 380px); }          /* phones: a shorter console */
+    /* phones: iOS zooms the page when a focused field has text under 16px, so the editor uses 16px (all three layers must match) */
+    .editor textarea, .edbox pre.ws, .editor pre.gutter { font-size: 16px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    .notepad { touch-action: manipulation; }                             /* no double-tap zoom while tapping in the editor */
     .burger { display: block; }
     a.gh { display: none; }
     h1.brand img { max-width: calc(100% - 60px); }
@@ -214,6 +235,7 @@
           <button class="mini" id="copyCode" title="表示しているHTMLをそのままコピー(ページに貼れば動きます)">コピー</button>
           <button class="mini" id="copyHtml" title="scriptタグを除いたPerlのコードだけをコピー">Perlのみ</button>
         </div>
+        <div class="snips" id="snips" role="toolbar" aria-label="ひな形を挿入"></div>
         <div class="editor">
           <pre class="gutter" id="gutter" aria-hidden="true">1</pre>
           <div class="edbox" id="edbox">
@@ -221,6 +243,7 @@
             <textarea id="src" spellcheck="false" wrap="off" autocomplete="off" autocapitalize="off" aria-label="Perl2JS のコード"></textarea>
           </div>
         </div>
+        <div class="edhint" id="edHint" aria-live="polite"></div>
         <div class="win-status"><span id="edPos">Ln 1, Col 1</span><span id="edInfo">1 行</span></div>
       </div>
     </div>
@@ -256,6 +279,8 @@
     <a href="docs/modules.ja.html"><b>モジュール</b><span>List::Util・JSON::PP ほか</span></a>
     <a href="docs/cpan.ja.html"><b>人気の CPAN</b><span>対応状況の表</span></a>
     <a href="docs/writing-modules.ja.html"><b>モジュールを作る</b><span>自分で追加できます</span></a>
+    <a href="cpanjs/"><b>CPANjs</b><span>モジュールを登録・検索</span></a>
+    <a href="https://github.com/satorunet/perl2js/issues/new?template=module-request.yml"><b>モジュール要望</b><span>Issue でリクエスト</span></a>
     <a href="docs/differences.ja.html"><b>Perl との違い</b><span>できないこと</span></a>
   </nav>
 
@@ -375,7 +400,7 @@
 </main>
 
 <!-- cache buster: 毎回 ?t=<時刻> を付けて常に最新の perl2js.js を読む(同期読み込みなので下の text/perl2js も従来通り動く) -->
-<script>document.write('<script src="perl2js.js?t=' + Date.now() + '"><\/script>');</script>
+<script>document.write('<script src="perl2js.js?t=' + Date.now() + '"><\/script><script src="assets/p2j-editor.js?t=' + Date.now() + '"><\/script>');</script>
 
 <!-- 実際にHTMLへ直書きした例 -->
 <script type="text/perl2js">
@@ -475,6 +500,94 @@ while ($t > 0) {
     $t--;
 }
 print "おしまい\\n";
+`,
+"$_ (省略できる変数)": `# $_ は「いま扱っている値」。変数名を省略するとここに入ります
+
+# for: 変数を書かないと $_ に入る
+for (1..3) {
+    print "for: $_\\n";
+}
+
+# 後置の for
+print "後置: $_\\n" for qw(apple banana cherry);
+
+# 引数を省略した関数は $_ を使う
+for (qw(perl ruby)) {
+    print;                                   # print $_ と同じ
+    print " → ", uc, " (", length, "文字)\\n";
+}
+
+# 正規表現も $_ が相手
+for ("tel: 03-1234", "name: ann", "tel: 06-9999") {
+    next unless /^tel/;
+    /(\\d+)-(\\d+)/;
+    print "電話: $1 / $2\\n";
+}
+
+# s/// で書き換えると、元の配列も変わる
+my @words = ("  hello ", " world  ");
+s/^\\s+|\\s+$//g for @words;
+print join(",", @words), "\\n";
+
+# map と grep
+my @double = map { $_ * 2 } 1..5;
+my @even   = grep { $_ % 2 == 0 } 1..10;
+print "map:  @double\\n";
+print "grep: @even\\n";
+
+# 組み合わせ
+print join(" ", map { ucfirst } grep { length > 3 } qw(a bird in the hand)), "\\n";
+`,
+"特殊変数 ($` $& $1 など)": `# Perl 独特の特殊変数
+
+# ---- $_ と @_ ----
+print "$_ " for 1..3;                 # $_ : いま扱っている値
+print "\\n";
+sub args { return "個数 " . scalar(@_) . " / 最初 $_[0] / 最後の添字 $#_" }
+print args("a", "b", "c"), "\\n";      # @_ : サブルーチンの引数
+
+# ---- 正規表現のあとに使う変数 ----
+"price: 1200 yen (tax)" =~ /(\\d+) (\\w+)/;
+print "\\$1=$1 \\$2=$2\\n";              # かっこで捕まえた部分
+print "\\$& = $&\\n";                   # マッチした全体
+print "\\$\` = [$\`]\\n";                 # マッチより前
+print "\\$' = [$']\\n";                 # マッチより後
+print "\\$+ = $+\\n";                   # 最後のかっこ
+print "開始 $-[0] 終了 $+[0]\\n";      # @- と @+ : マッチの位置
+print "@{^CAPTURE}\\n";                # かっこ全部
+
+"2026-11-25" =~ /(?<year>\\d+)-(?<month>\\d+)/;
+print "%+ : $+{year}年 $+{month}月\\n";   # 名前つきキャプチャ
+
+# ---- 出力の区切り ----
+my @list = (1, 2, 3);
+{
+    local $" = " + ";                 # 配列を文字列に埋め込むときの区切り
+    print "@list\\n";
+}
+{
+    local $, = ", ";                  # print の引数の間
+    local $\\ = " (end)\\n";            # print の最後
+    print "a", "b", "c";
+}
+
+# ---- 比較・エラー ----
+print join(" ", sort { $a <=> $b } 10, 9, 1), "\\n";    # $a $b : sort の2つの値
+eval { die "失敗\\n" };
+print "\\$@ = $@";                     # eval のエラー
+
+# ---- 配列の最後の添字 ----
+my $ref = [10, 20, 30];
+print "$#list $#{$ref} $list[-1] $list[$#list]\\n";
+
+# ---- プログラムの情報 ----
+$ENV{GREETING} = "hi";
+print "\\%ENV: $ENV{GREETING}\\n";
+print "\\@ARGV: ", scalar(@ARGV), "個\\n";
+print "__PACKAGE__ = ", __PACKAGE__, " / __LINE__ = ", __LINE__, "\\n";
+print length($/), " <- 入力の区切り \\$/ (改行) の長さ\\n";
+print $^T > 0 ? "\\$^T = 開始時刻\\n" : "";
+print "\\$0 = スクリプト名: ", (length($0) ? "あり" : "なし"), "\\n";
 `,
 "ハッシュと単語カウント": `my $text = "the quick brown fox jumps over the lazy dog the end";
 my %count;
@@ -924,20 +1037,59 @@ const CDN = 'https://cdn.jsdelivr.net/gh/satorunet/perl2js@main/perl2js.min.js';
 /* Every sample is shown as the HTML you would paste into a page: the CDN script tag, then a text/perl2js script tag around the Perl.
    Only the Perl between the two tags is run; error line numbers are shifted back to the editor's numbering. */
 const HEAD = '<script src="' + CDN + '"><\/script>\n<script type="text/perl2js">\n', TAIL = '<\/script>\n';
-const wrapSample = (code) => HEAD + code + (code.endsWith('\n') ? '' : '\n') + TAIL;
+const MARK_TOP = '# ここに Perl を書く\n';
+const wrapSample = (code) => HEAD + MARK_TOP + code + (code.endsWith('\n') ? '' : '\n') + TAIL;
 function unwrap(text) {
   const open = /<script\b[^>]*\btype=["']text\/perl2js["'][^>]*>\n?/i.exec(text);
   if (!open) return { code: text, offset: 0 };
-  const start = open.index + open[0].length, end = text.lastIndexOf('</script');
-  return { code: text.slice(start, end > start ? end : text.length), offset: text.slice(0, start).split('\n').length - 1 };
+  const start = open.index + open[0].length, close = /<\/script/ig;          // the first closing tag after it, as a browser reads the page
+  close.lastIndex = start;
+  const m = close.exec(text);
+  return { code: text.slice(start, m ? m.index : text.length), offset: text.slice(0, start).split('\n').length - 1 };
+}
+
+/* ---- HTML around the Perl: shown as a page of its own (iframe) in #stage, so its CSS and ids never clash with the playground ---- */
+function pageOf(text) {                            // the parsed page without its Perl, or null when there is no HTML to show
+  if (unwrap(text).code === text) return null;
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  for (const s of doc.querySelectorAll('script')) {
+    if (s.type.toLowerCase() === 'text/perl2js' || /\bperl2js(\.min)?\.js(\?|$)/.test(s.getAttribute('src') || '')) s.remove();
+  }
+  const has = doc.body.children.length || doc.body.textContent.trim() || doc.querySelector('style, script, link[rel~="stylesheet"]');
+  return has ? doc : null;
+}
+function showPage(doc, code) {                     // resolves to the page's window once it (and its own Perl2JS) has loaded
+  if (/\bstage\b/.test(code) && !doc.getElementById('stage')) { const d = doc.createElement('div'); d.id = 'stage'; doc.body.appendChild(d); }
+  const base = doc.createElement('style'); base.textContent = 'body { font-family: system-ui, sans-serif; }';
+  const lib = doc.createElement('script'); lib.setAttribute('src', new URL('perl2js.js?t=' + Date.now(), document.baseURI).href);
+  doc.head.prepend(lib, base);
+  const frame = document.createElement('iframe');
+  frame.title = 'HTML の表示';
+  return new Promise((resolve, reject) => {
+    frame.onload = () => {
+      frame.onload = null;
+      const win = frame.contentWindow;
+      if (!win.Perl2JS) return reject(new Error('perl2js.js を読み込めませんでした'));
+      const root = win.document.documentElement, fit = () => { frame.style.height = Math.min(640, Math.max(60, Math.ceil(root.getBoundingClientRect().height) + 2)) + 'px'; };
+      if (window.ResizeObserver) new ResizeObserver(fit).observe(root);
+      fit(); resolve(win);
+    };
+    frame.srcdoc = '<!doctype html>\n' + doc.documentElement.outerHTML;
+    stage.appendChild(frame);
+  });
 }
 
 /* ---- notepad: line numbers, cursor position ---- */
 const gutter = byId('gutter');
 function renderGutter(errLine) {
   const n = src.value.split('\n').length;
+  const { code, offset } = unwrap(src.value), wrapped = code !== src.value;
+  const last = offset + code.replace(/\n$/, '').split('\n').length;          // lines offset+1 .. last hold the Perl: marked in the gutter
   let html = '';
-  for (let i = 1; i <= n; i++) html += (i === errLine ? '<span class="bad">' + i + '</span>' : i) + (i < n ? '\n' : '');
+  for (let i = 1; i <= n; i++) {
+    const cls = i === errLine ? 'bad' : wrapped && i > offset && i <= last ? 'pl' : '';
+    html += (cls ? '<span class="' + cls + '">' + i + '</span>' : i) + (i < n ? '\n' : '');
+  }
   gutter.innerHTML = html;
   gutter.scrollTop = src.scrollTop;
   renderWs();
@@ -947,16 +1099,22 @@ function renderPos() {
   const before = src.value.slice(0, src.selectionStart).split('\n');
   byId('edPos').textContent = 'Ln ' + before.length + ', Col ' + (before[before.length - 1].length + 1);
 }
-/* the #stage box is only shown for programs that touch the page (jQuery-style $, document, #stage); otherwise the panes get taller */
-function updateLayout() { document.body.classList.toggle('tall', !/\$\(|\$->|\bdocument\b|\bwindow\b|#stage|\balert\b/.test(src.value)); }
+/* the #stage box is only shown for HTML pages and programs that touch the page (jQuery-style $, document, #stage); otherwise the panes get taller */
+function updateLayout() { document.body.classList.toggle('tall', !/\$\(|\$->|\bdocument\b|\bwindow\b|#stage|\balert\b/.test(src.value) && !pageOf(src.value)); }
 src.addEventListener('input', () => { renderGutter(0); renderPos(); updateLayout(); });
-/* show whitespace as symbols (Hidemaru style): half-width space ･  full-width space □  tab »  line break ↓  [EOF]  no-break space °  (an overlay under the transparent-background textarea) */
-const wsEl = byId('ws');
-function renderWs() {
-  const esc = (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c);
-  wsEl.innerHTML = src.value.replace(/[ \u3000\t\u00a0\n&<>]/g, (c) => (c === ' ' ? '<i class="h"> </i>' : c === '\u3000' ? '<i class="f">\u3000</i>' : c === '\t' ? '<i class="t">\t</i>' : c === '\u00a0' ? '<i class="n">\u00a0</i>' : c === '\n' ? '<i class="e"></i>\n' : esc(c))) + '<i class="z"></i>\n';
-  wsEl.scrollTop = src.scrollTop; wsEl.scrollLeft = src.scrollLeft;
+/* colors, completion, snippets, hints and keys live in assets/p2j-editor.js */
+const known = new Set();                                   // modules already loaded by a run: the live check never fetches anything
+function liveCheck() {
+  const { code, offset } = unwrap(src.value);
+  if (Perl2JS.requires(code).some((m) => !known.has(m))) return null;
+  const notes = Perl2JS.notes.slice();
+  try { Perl2JS.compile(code); return null; }
+  catch (e) { const line = e.line ? e.line + offset : 0; if (line) renderGutter(line); return { line, message: String(e.message || e).split('\n')[0] }; }
+  finally { Perl2JS.notes = notes; }
 }
+const editor = P2JEditor.create({ src, overlay: byId('ws'), unwrap, hint: byId('edHint'), bar: byId('snips'), check: liveCheck });
+function renderWs() { editor.render(); }
+const wsEl = byId('ws');
 src.addEventListener('scroll', () => { gutter.scrollTop = src.scrollTop; wsEl.scrollTop = src.scrollTop; wsEl.scrollLeft = src.scrollLeft; });
 ['keyup', 'click', 'select'].forEach((ev) => src.addEventListener(ev, renderPos));
 
@@ -994,7 +1152,7 @@ for (const pre of document.querySelectorAll('section.doc pre')) {          // ev
 
 /* ---- run ---- */
 /* every example has a short, stable #name so it can be linked from outside: https://satoru.net/perl2js/#fizzbuzz */
-const SLUGS = { 'Hello, world': 'hello', 'FizzBuzz': 'fizzbuzz', 'ループ処理いろいろ': 'loops', 'ハッシュと単語カウント': 'word-count', 'サブルーチンとクロージャ': 'closures', 'ネストしたデータ': 'nested-data', '正規表現': 'regex',
+const SLUGS = { 'Hello, world': 'hello', 'FizzBuzz': 'fizzbuzz', 'ループ処理いろいろ': 'loops', '$_ (省略できる変数)': 'default-var', '特殊変数 ($` $& $1 など)': 'special-vars', 'ハッシュと単語カウント': 'word-count', 'サブルーチンとクロージャ': 'closures', 'ネストしたデータ': 'nested-data', '正規表現': 'regex',
   'Perl + JS ハイブリッド': 'hybrid', 'jQuery風: カウンター': 'jquery-counter', 'jQuery風: ToDoリスト': 'jquery-todo', 'jQuery風: 操作いろいろ': 'jquery-dom', 'jQuery風: フェード/スライド': 'jquery-effects', 'jQuery風: Ajax': 'jquery-ajax',
   'ヒアドキュメント': 'heredoc', 'オブジェクト指向 (package / bless)': 'oop', 'use strict と tr///': 'strict-tr', 'Data::Dumper': 'data-dumper', 'local (動的スコープ)': 'local', 'エラー表示を試す': 'error-demo',
   '日付と時刻 (localtime / POSIX / Time::Local)': 'datetime', '日付: Time::Piece': 'time-piece', '日付: DateTime': 'datetime-module', 'List::Util / Scalar::Util': 'list-util', 'JSON::PP': 'json-pp',
@@ -1005,35 +1163,42 @@ const nameOf = (hash) => { const h0 = decodeURIComponent(hash.replace(/^#/, ''))
 function load(name, keepHash) {
   src.value = wrapSample(EXAMPLES[name]); sel.value = name; byId('fileName').textContent = 'main.p2j';
   if (!keepHash) { try { history.replaceState(null, '', '#' + slugOf(name)); } catch (e) { /* file:// */ } }
-  renderGutter(0); renderPos(); run();
+  editor.reset(); renderGutter(0); renderPos(); run();
 }
-let runSeq = 0;
+let runSeq = 0, runTimer = 0;
 async function run() {
+  clearTimeout(runTimer);
   updateLayout();
   const my = ++runSeq;                       // ignore results of an older, slower run
   byId('stop').hidden = true;
+  Perl2JS.stop();                            // (a previous HTML page stops when its frame is removed below)
   stage.innerHTML = ''; outBuf = ''; outErr.textContent = ''; renderOut(''); renderGutter(0);
   setStatus('', '実行中…');
   const t0 = performance.now();
   try {
     const { code, offset } = unwrap(src.value);
+    const page = pageOf(src.value), win = page ? await showPage(page, code) : null;      // HTML first: it stays visible even if the Perl fails
+    if (my !== runSeq) return;
+    const P = win ? win.Perl2JS : Perl2JS;
     await Perl2JS.use(Perl2JS.requires(code));      // load the modules the program "use"s (List::Util, DateTime ...)
     if (my !== runSeq) return;
+    for (const m of Perl2JS.requires(code)) known.add(m);
     const js = Perl2JS.compile(code);
     if (showJs) { outBuf = js.replace(/;(?=[a-zA-Z_$}\`])/g, ';\n'); renderOut(outBuf); setStatus('', '生成されたJS'); return; }
-    Perl2JS.stdout = (s) => { outBuf += s; scheduleRender(); };
-    const ret = Perl2JS.run(code, { globals: { stage }, exclusive: true });
+    if (win) { await P.use(P.requires(code)); if (my !== runSeq) return; }
+    P.stdout = (s) => { if (my === runSeq) { outBuf += s; scheduleRender(); } };
+    const ret = P.run(code, { globals: { stage: win ? win.document.getElementById('stage') : stage }, exclusive: true });
     renderOut(outBuf);
     let stopped = false;
     if (ret && typeof ret.then === 'function') {                         // the program sleeps: it keeps running without freezing the page
       byId('stop').hidden = false; setStatus('', '実行中… (■ 停止で止められます)');
-      byId('stop').onclick = () => { stopped = true; Perl2JS.stop(); };
+      byId('stop').onclick = () => { stopped = true; P.stop(); };
       await ret;
       if (my !== runSeq) return;
       byId('stop').hidden = true; renderOut(outBuf);
     }
     setStatus(stopped ? '' : 'ok', stopped ? '■ 停止しました' : '✓ 完了 · ' + Math.max(1, Math.round(performance.now() - t0)) + ' ms');
-    const fw = Perl2JS.notes || [];
+    const fw = P.notes || [];
     if (fw.length) {                                                          // 全角記号を半角として解釈したことを知らせる
       const uniq = [...new Set(fw.map((n) => n.from + '→' + n.to))].slice(0, 6).join('  ');
       byId('conInfo').textContent = '全角記号 ' + fw.length + ' 個を半角として解釈: ' + uniq;
@@ -1056,7 +1221,16 @@ function setPane(which) {                         // phones: show the source or 
 }
 const phone = () => !!(window.matchMedia && window.matchMedia('(max-width: 800px)').matches);
 byId('mSrc').onclick = () => setPane('src'); byId('mCon').onclick = () => setPane('con');
-byId('run').onclick = () => { if (phone()) setPane('con'); run(); };           // after ▶ on a phone, look at the console
+const PHONE_DELAY = 500;                          // ms
+function runOnPhone() {                           // phones: open the console screen first, then run, so the output is seen from its start
+  clearTimeout(runTimer); runSeq++; Perl2JS.stop();
+  const x = window.scrollX, y = window.scrollY;
+  setPane('con'); byId('stop').hidden = true;
+  stage.innerHTML = ''; outBuf = ''; outErr.textContent = ''; renderOut(''); setStatus('', '実行中…');
+  window.scrollTo({ left: x, top: y, behavior: 'instant' });          // the page stays where it is
+  runTimer = setTimeout(run, PHONE_DELAY);
+}
+byId('run').onclick = () => (phone() ? runOnPhone() : run());
 const burger = byId('burger'), menuEl = byId('menu');
 burger.onclick = (e) => { e.stopPropagation(); const open = menuEl.hidden; menuEl.hidden = !open; burger.setAttribute('aria-expanded', open); };
 document.addEventListener('click', (e) => { if (!menuEl.hidden && !menuEl.contains(e.target)) { menuEl.hidden = true; burger.setAttribute('aria-expanded', false); } });
@@ -1065,7 +1239,6 @@ window.addEventListener('hashchange', () => { const n = nameOf(location.hash); i
 byId('link').onclick = (e) => copyText(location.origin + location.pathname + '#' + slugOf(sel.value), e.currentTarget);
 src.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
-  if (e.key === 'Tab') { e.preventDefault(); const s = src.selectionStart; src.setRangeText('    ', s, src.selectionEnd, 'end'); renderGutter(0); renderPos(); }
 });
 function setTab(js) {
   showJs = js;

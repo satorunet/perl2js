@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Acme::Hello",
+    "version": "1.0.0",
+    "abstract": "登録のお手本になる、あいさつモジュール",
+    "authors": [
+      "satorunet"
+    ],
+    "license": "MIT",
+    "file": "lib/Acme/Hello.pm"
+  }
+]

@@ -13,6 +13,7 @@ every `perl` block on this page runs identically under real Perl and Perl2JS (`n
 | [Encoding and hashing](#encoding-and-hashing) | `Encode` `MIME::Base64` `URI::Escape` `Digest::MD5` `Digest::SHA` |
 | [Time](#time) | `POSIX` `Time::Local` `Time::Piece` `Time::Seconds` `Time::HiRes` `DateTime` |
 | [Control and testing](#control-and-testing) | `Carp` `Try::Tiny` `Test::More` `constant` |
+| [CGI (cookies)](#cgi-cookies) | `CGI` `CGI::Cookie` |
 | [Files and math](#files-and-math) | `File::Basename` `File::Spec` `Math::Trig` |
 | Browser | [jQuery-style `$`](browser.md#the-dom-and-the-jquery-style) |
 
@@ -305,6 +306,39 @@ use constant COLORS => qw(red green blue);
 my @c = (COLORS);
 print PI, " ", E, " ", NAME, " ", scalar(@c), " ", (COLORS)[1], "\n";
 ```
+
+## CGI (cookies)
+
+`use CGI;` covers cookie handling: `CGI->new`, `cookie`, `header(-cookie => ...)`, `escape` / `unescape`, and `CGI::Cookie` with `new` `fetch` `parse` `raw_fetch` `bake` and its accessors. `use CGI qw(:standard);` imports `cookie` and `header` as functions. The rest of CGI (`param`, HTML generation, ...) is not provided.
+
+```perl
+use CGI;
+$ENV{HTTP_COOKIE} = "name=taro; fruits=apple&banana";   # what a server sets from the request
+my $q = CGI->new;
+print $q->cookie('name'), "\n";
+my @f = $q->cookie('fruits');
+print "@f\n";
+my $c = $q->cookie(-name => 'theme', -value => 'dark mode', -path => '/', -samesite => 'lax');
+print "$c\n";
+```
+
+```perl2js
+use CGI qw(:standard);
+print header(-cookie => cookie(-name => 'visits', -value => (cookie('visits') || 0) + 1, -expires => '+30d'));
+print "visits: ", cookie('visits'), "\n";
+```
+
+| | Browser | Node |
+|---|---|---|
+| Reading cookies | `document.cookie` | `$ENV{HTTP_COOKIE}` |
+| `header(-cookie => ...)`, `bake` | stores the cookies; `header` returns `""` | prints the same header text as CGI.pm |
+
+Differences from the real CGI.pm:
+
+- Values come back as UTF-8 text, not bytes.
+- In the browser, a cookie you have just stored can be read in the same program.
+- JavaScript cannot create `HttpOnly` cookies, so the browser stores them without that attribute.
+- Browsers may not keep cookies for pages opened with `file://`.
 
 ## Files and math
 

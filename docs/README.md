@@ -17,6 +17,7 @@ Every `perl` code block in these pages is run through real Perl 5.40 and Perl2JS
 | use `List::Util`, `JSON::PP`, `POSIX`, `DateTime`... | **[Bundled modules](modules.md)** |
 | check whether a popular CPAN module is available | **[Popular CPAN modules: status](cpan.md)** |
 | write my own module (`use Foo::Bar`) | **[Writing your own module](writing-modules.md)** |
+| publish a module, or request a CPAN module | **[CPANjs](cpanjs.md)** |
 | put it on a web page, use the DOM and jQuery-style `$` | [Using it in the browser](browser.md) |
 | know what behaves differently from real Perl | [Differences from Perl](differences.md) |
 

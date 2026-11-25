@@ -1,0 +1,22 @@
+name: CPANjs index
+on:
+  push:
+    branches: [main]
+    paths: ['cpanjs/lib/**']
+permissions:
+  contents: write
+concurrency: cpanjs-index
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node tools/cpanjs.js index
+      - run: |
+          git add cpanjs/index.json cpanjs/README.md
+          git diff --cached --quiet && exit 0
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'CPANjs: update the module index'
+          git push

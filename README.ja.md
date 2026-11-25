@@ -103,9 +103,15 @@ Perl2JS.module({
 });
 ```
 
+## CPANjs(モジュールの登録)
+
+CPAN のように、モジュールを登録して `use` できます。`.pm`(Perl)でも JavaScript でも書けます。登録は Pull Request です。→ [登録のしかた](docs/cpanjs.ja.md) · [モジュール一覧](https://satoru.net/perl2js/cpanjs/)
+
+**対応してほしい CPAN モジュール・標準モジュールがあれば、[Issue でリクエスト](https://github.com/satorunet/perl2js/issues/new?template=module-request.yml)してください。**
+
 ## ドキュメント
 
-詳しい解説です(`perl` のコード例はすべて本物のPerlと出力を照合済み)。**[対応している構文](docs/syntax.ja.md)** · **[組み込み関数の対応状況](docs/functions.ja.md)** · **[同梱モジュール](docs/modules.ja.md)** · **[人気のCPANモジュールの対応状況](docs/cpan.ja.md)** · **[自分でモジュールを作る](docs/writing-modules.ja.md)** · [ブラウザで使う](docs/browser.ja.md) · [Perlとの違い](docs/differences.ja.md)。Web版: <https://satoru.net/perl2js/docs/README.ja.html>
+詳しい解説です(`perl` のコード例はすべて本物のPerlと出力を照合済み)。**[対応している構文](docs/syntax.ja.md)** · **[組み込み関数の対応状況](docs/functions.ja.md)** · **[同梱モジュール](docs/modules.ja.md)** · **[人気のCPANモジュールの対応状況](docs/cpan.ja.md)** · **[自分でモジュールを作る](docs/writing-modules.ja.md)** · **[CPANjs: モジュールを登録する](docs/cpanjs.ja.md)** · [ブラウザで使う](docs/browser.ja.md) · [Perlとの違い](docs/differences.ja.md)。Web版: <https://satoru.net/perl2js/docs/README.ja.html>
 
 ## 仕組み
 

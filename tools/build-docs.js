@@ -14,13 +14,13 @@ const GROUPS = {
   en: [
     ['Start', [['README', 'Overview']]],
     ['The language', [['syntax', 'Supported syntax'], ['functions', 'Built-in functions'], ['differences', 'Differences from Perl']]],
-    ['Modules', [['modules', 'Bundled modules'], ['cpan', 'Popular CPAN modules'], ['writing-modules', 'Write your own module']]],
+    ['Modules', [['modules', 'Bundled modules'], ['cpan', 'Popular CPAN modules'], ['writing-modules', 'Write your own module'], ['cpanjs', 'CPANjs: register']]],
     ['Use it', [['browser', 'In the browser']]],
   ],
   ja: [
     ['はじめに', [['README', '概要']]],
     ['言語', [['syntax', '対応している構文'], ['functions', '組み込み関数'], ['differences', 'Perl との違い']]],
-    ['モジュール', [['modules', '同梱モジュール'], ['cpan', '人気のCPANモジュール'], ['writing-modules', '自分でモジュールを作る']]],
+    ['モジュール', [['modules', '同梱モジュール'], ['cpan', '人気のCPANモジュール'], ['writing-modules', '自分でモジュールを作る'], ['cpanjs', 'CPANjs: 登録する']]],
     ['使い方', [['browser', 'ブラウザで使う']]],
   ],
 };

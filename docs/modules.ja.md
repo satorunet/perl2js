@@ -13,6 +13,7 @@
 | [エンコーディングとハッシュ](#エンコーディングとハッシュ) | `Encode` `MIME::Base64` `URI::Escape` `Digest::MD5` `Digest::SHA` |
 | [時刻](#時刻) | `POSIX` `Time::Local` `Time::Piece` `Time::Seconds` `Time::HiRes` `DateTime` |
 | [制御とテスト](#制御とテスト) | `Carp` `Try::Tiny` `Test::More` `constant` |
+| [CGI (Cookie)](#cgi-cookie) | `CGI` `CGI::Cookie` |
 | [ファイルと数学](#ファイルと数学) | `File::Basename` `File::Spec` `Math::Trig` |
 | ブラウザ | [jQuery 風の `$`](browser.ja.md) |
 
@@ -305,6 +306,39 @@ use constant COLORS => qw(red green blue);
 my @c = (COLORS);
 print PI, " ", E, " ", NAME, " ", scalar(@c), " ", (COLORS)[1], "\n";
 ```
+
+## CGI (Cookie)
+
+`use CGI;` は Cookie の処理に対応しています: `CGI->new`、`cookie`、`header(-cookie => ...)`、`escape` / `unescape`、そして `CGI::Cookie` の `new` `fetch` `parse` `raw_fetch` `bake` とアクセサーです。`use CGI qw(:standard);` で `cookie` と `header` を関数として使えます。`param` や HTML 生成など、その他の CGI の機能はありません。
+
+```perl
+use CGI;
+$ENV{HTTP_COOKIE} = "name=taro; fruits=apple&banana";   # サーバーがリクエストから設定する値
+my $q = CGI->new;
+print $q->cookie('name'), "\n";
+my @f = $q->cookie('fruits');
+print "@f\n";
+my $c = $q->cookie(-name => 'theme', -value => 'dark mode', -path => '/', -samesite => 'lax');
+print "$c\n";
+```
+
+```perl2js
+use CGI qw(:standard);
+print header(-cookie => cookie(-name => 'visits', -value => (cookie('visits') || 0) + 1, -expires => '+30d'));
+print "visits: ", cookie('visits'), "\n";
+```
+
+| | ブラウザ | Node |
+|---|---|---|
+| Cookie の読み込み | `document.cookie` | `$ENV{HTTP_COOKIE}` |
+| `header(-cookie => ...)`、`bake` | Cookie を保存する。`header` は `""` を返す | CGI.pm と同じヘッダー文字列を出力する |
+
+本物の CGI.pm との違い:
+
+- 値はバイト列ではなく UTF-8 のテキストとして返ります。
+- ブラウザでは保存した Cookie を同じプログラム内ですぐに読めます。
+- JavaScript からは `HttpOnly` の Cookie を作れないため、ブラウザではこの属性を外して保存します。
+- `file://` で開いたページでは、ブラウザが Cookie を保存しないことがあります。
 
 ## ファイルと数学
 

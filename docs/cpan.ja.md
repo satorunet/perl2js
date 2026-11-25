@@ -5,6 +5,8 @@
 凡例: **✅ 同梱** (動作し、本物の Perl と比較済み) · **🟡 一部対応** (よく使う関数のみ) · **🌐 ブラウザの代替あり** (JS/DOM の方法を使う) · **⛔ ブラウザでは不可能** · **➖ 未対応**。
 同梱モジュールの読み込み方: `use List::Util qw(sum);` と書くと `modules/List/Util.js` が必要に応じて読み込まれます ([同梱モジュール](modules.ja.md)を参照)。
 
+> 対応してほしい CPAN モジュール・標準モジュールがあれば、[Issue でリクエスト](https://github.com/satorunet/perl2js/issues/new?template=module-request.yml)してください。自分で作って [CPANjs に登録](cpanjs.ja.md)することもできます。
+
 ## リスト、データ、テキスト
 
 | モジュール | 状況 | 備考 |
@@ -72,7 +74,8 @@
 |---|---|---|
 | jQuery 風の `$("#id")->on(...)->fadeIn` | ✅ | `modules/jQuery.js`。`$` を使うと読み込まれます。[ブラウザ](browser.ja.md)を参照 |
 | `LWP::UserAgent`, `HTTP::Tiny`, `Mojo::UserAgent` | 🌐 | `$->get`、`$->post`、`$->ajax` |
-| `CGI`, `Plack`, `Mojolicious`, `Dancer2` | ⛔ | サーバー用フレームワーク |
+| `CGI`, `CGI::Cookie` | ✅ | Cookie の処理のみ。[モジュール](modules.ja.md#cgi-cookie)を参照 |
+| `Plack`, `Mojolicious`, `Dancer2` | ⛔ | サーバー用フレームワーク |
 | `DBI` とドライバ | ⛔ | データベースドライバがありません。`$->ajax` で HTTP API を呼び出してください |
 
 必要なものが足りませんか? [数行で自分で書く](writing-modules.ja.md)か、issue を開いてください。
